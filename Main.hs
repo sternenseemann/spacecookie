@@ -1,6 +1,5 @@
 import           Control.Monad        (forever, unless, when)
 import           Data.Maybe           (fromJust)
---import           Data.Tuple           (swap)
 import           Network.Socket
 import           System.Directory     (doesDirectoryExist, doesFileExist, getDirectoryContents)
 import           System.FilePath      ((</>), takeFileName)
@@ -50,9 +49,6 @@ fileTypeToCharRelation =
 
 fileTypeToChar :: GopherFileType -> Char
 fileTypeToChar t = fromJust $ lookup t fileTypeToCharRelation
-
---charToFileType :: Char -> GopherFileType
---charToFileType t = fromJust $ lookup t $ map swap fileTypeToCharRelation
 
 -- Note: this is a very simple version of the thing we need
 -- TODO: at least support for GifFile ImageFile and BinaryFile should be added
@@ -105,13 +101,7 @@ gopherDirectoryEntry fileType title path = fileTypeToChar fileType : title ++ "\
 fileResponse :: FilePath -> IO String
 fileResponse = readFile
 
-directoryResponse :: FilePath -> IO String
-directoryResponse path = do
-  directory <- getDirectoryContents path
-  types <- mapM gopherFileType directory
-  let filesWithTypes = zip directory types
-  return $ buildDirectoryResponse filesWithTypes
-
+-- Response for a requested Directory
 directoryEntry :: (FilePath, GopherFileType) -> String
 directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
                                    then gopherDirectoryEntry ft (takeFileName fp) fp
@@ -120,9 +110,18 @@ directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
 buildDirectoryResponse :: [(FilePath, GopherFileType)] -> String
 buildDirectoryResponse = foldl (\acc f -> acc ++ directoryEntry f) ""
 
-errorResponse :: FilePath -> IO String
-errorResponse _ = return $ fileTypeToChar Error : "Fatal Error\tErr\t" ++ serverName ++ "\t" ++ serverPort
+directoryResponse :: FilePath -> IO String
+directoryResponse path = do
+  directory <- getDirectoryContents path
+  types <- mapM gopherFileType directory
+  let filesWithTypes = zip directory types
+  return $ buildDirectoryResponse filesWithTypes
 
+-- Response for a error
+errorResponse :: FilePath -> IO String
+errorResponse fp = return $ fileTypeToChar Error : "Error opening: '" ++ fp ++ "'\tErr\t" ++ serverName ++ "\t" ++ serverPort
+
+-- handle incoming requests
 handleIncoming :: Socket -> String -> IO ()
 handleIncoming sock root = do
   (clientSock, _) <- accept sock
@@ -138,6 +137,7 @@ handleIncoming sock root = do
   when (sentBytes /= length response) (putStrLn "Warning: Not all bytes were sent")
   close clientSock
 
+-- cleanup at the end
 cleanup :: Socket -> IO ()
 cleanup sock = do
   close sock
@@ -160,12 +160,3 @@ main = do
   _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
 
   forever $ handleIncoming sock root
-
---directoryResponse :: FilePath -> IO String
---directoryResponse path = do
---  filesWithTypes <- map (\f -> do
---                        fileType <- gopherFileType f
---                        return (f, fileType)) `fmap` getDirectoryContents path
---  return $ foldl (\acc f ->
---    acc ++ (fileTypeToChar $ snd f) :
---    (fst f ++ "\t" ++ fst f ++ "\t" ++ serverName ++ "\t" ++ serverPort ++ "\r\n")) "" filesWithTypes
