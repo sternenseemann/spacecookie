@@ -20,3 +20,4 @@ spacecookie will now start serving `ROOTDIRECTORY`. Because spacecookie is still
 * Configuration (for replacing `serverName` and `serverPort` for example)
 * systemd unit file
 * Real systemwide installation
+* Clean-up the code, refactor towards more pure code
