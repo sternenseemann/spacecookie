@@ -1,10 +1,12 @@
 import           Control.Monad        (forever, unless, when)
 import           Data.Maybe           (fromJust)
 import           Network.Socket
-import           System.Directory     (doesDirectoryExist, doesFileExist, getDirectoryContents)
-import           System.FilePath      ((</>), takeFileName)
+import           System.Directory     (doesDirectoryExist, doesFileExist,
+                                       getDirectoryContents,
+                                       setCurrentDirectory)
 import           System.Environment   (getArgs)
 import           System.Exit          (exitFailure)
+import           System.FilePath      (takeFileName, (</>))
 import           System.Posix.Signals (Handler (..), installHandler,
                                        keyboardSignal)
 
@@ -110,9 +112,12 @@ directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
 buildDirectoryResponse :: [(FilePath, GopherFileType)] -> String
 buildDirectoryResponse = foldl (\acc f -> acc ++ directoryEntry f) ""
 
+toGopherPath :: FilePath -> FilePath -> FilePath
+toGopherPath dir file = tail $ dir </> file
+
 directoryResponse :: FilePath -> IO String
 directoryResponse path = do
-  directory <- getDirectoryContents path
+  directory <- map (toGopherPath path) `fmap` getDirectoryContents path
   types <- mapM gopherFileType directory
   let filesWithTypes = zip directory types
   return $ buildDirectoryResponse filesWithTypes
@@ -149,8 +154,13 @@ main = do
   unless (length args == 1) $ error "Need only the root directory to serve as argument"
 
   let root = head args
+
+
   rootExists <- doesDirectoryExist root
   unless rootExists $ error "The specified root directory does not exist"
+
+  -- we need for easier path building
+  setCurrentDirectory root
 
   sock <- socket AF_INET Stream defaultProtocol
   bind sock (SockAddrInet 7070 iNADDR_ANY)
