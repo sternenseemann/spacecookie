@@ -6,7 +6,7 @@ import           System.Directory     (doesDirectoryExist, doesFileExist,
                                        setCurrentDirectory)
 import           System.Environment   (getArgs)
 import           System.Exit          (exitFailure)
-import           System.FilePath      (takeFileName, (</>))
+import           System.FilePath      (combine, takeFileName, (</>))
 import           System.Posix.Signals (Handler (..), installHandler,
                                        keyboardSignal)
 
@@ -112,14 +112,11 @@ directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
 buildDirectoryResponse :: [(FilePath, GopherFileType)] -> String
 buildDirectoryResponse = foldl (\acc f -> acc ++ directoryEntry f) ""
 
-toGopherPath :: FilePath -> FilePath -> FilePath
-toGopherPath dir file = tail $ dir </> file
-
 directoryResponse :: FilePath -> IO String
 directoryResponse path = do
-  directory <- map (toGopherPath path) `fmap` getDirectoryContents path
+  directory <- map (combine path) `fmap` getDirectoryContents path
   types <- mapM gopherFileType directory
-  let filesWithTypes = zip directory types
+  let filesWithTypes = zip (map tail directory) types
   return $ buildDirectoryResponse filesWithTypes
 
 -- Response for a error
