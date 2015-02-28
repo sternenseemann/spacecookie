@@ -22,3 +22,5 @@ spacecookie will now start serving `ROOTDIRECTORY`. Because spacecookie is still
 * Real systemwide installation
 * Clean-up the code, refactor towards more pure code
 * Proper error handling whilst client handling
+* Threading
+* Byte count vs. Character count (utf-8)
