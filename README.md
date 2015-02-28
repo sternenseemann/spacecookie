@@ -21,3 +21,4 @@ spacecookie will now start serving `ROOTDIRECTORY`. Because spacecookie is still
 * systemd unit file
 * Real systemwide installation
 * Clean-up the code, refactor towards more pure code
+* Proper error handling whilst client handling
