@@ -1,3 +1,4 @@
+import           Control.Concurrent   (forkIO)
 import           Control.Monad        (forever, unless)
 import           Data.Maybe           (fromJust)
 import           Network.Socket
@@ -112,9 +113,7 @@ errorResponse fp = return $ fileTypeToChar Error : "Error opening: '" ++ fp ++ "
 
 -- handle incoming requests
 handleIncoming :: Socket -> String -> IO ()
-handleIncoming sock root = do
-  (clientSock, _) <- accept sock
-
+handleIncoming clientSock root = do
   hdl <- socketToHandle clientSock ReadWriteMode
   hSetBuffering hdl NoBuffering
 
@@ -129,6 +128,13 @@ handleIncoming sock root = do
   hPutStr hdl response
   hClose hdl
 
+-- main loop
+mainLoop :: Socket -> FilePath -> IO ()
+mainLoop sock root = forever $ do
+  (clientSock, _) <- accept sock
+  forkIO $ handleIncoming clientSock root
+
+
 -- cleanup at the end
 cleanup :: Socket -> IO ()
 cleanup sock = do
@@ -142,7 +148,6 @@ main = do
 
   let root = head args
 
-
   rootExists <- doesDirectoryExist root
   unless rootExists $ error "The specified root directory does not exist"
 
@@ -150,7 +155,7 @@ main = do
   setCurrentDirectory root
 
   sock <- socket AF_INET Stream defaultProtocol
-  -- make socket immediately reusable - eases debugging.
+  -- make socket immediately reusable
   setSocketOption sock ReuseAddr 1
 
   bind sock (SockAddrInet serverPort iNADDR_ANY)
@@ -159,4 +164,4 @@ main = do
   -- react to Crtl-C
   _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
 
-  forever $ handleIncoming sock root
+  mainLoop sock root
