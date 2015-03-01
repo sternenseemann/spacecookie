@@ -7,14 +7,16 @@ import           System.Directory     (doesDirectoryExist, doesFileExist,
 import           System.Environment   (getArgs)
 import           System.Exit          (exitFailure)
 import           System.FilePath      (combine, takeFileName, (</>))
+import           System.IO            (BufferMode (..), IOMode (..),
+                                       hClose, hGetLine, hPutStr, hSetBuffering)
 import           System.Posix.Signals (Handler (..), installHandler,
                                        keyboardSignal)
 
 serverName :: String
 serverName = "localhost"
 
-serverPort :: String
-serverPort = "7070"
+serverPort :: PortNumber
+serverPort = 7070
 
 data GopherFileType = File
   | Directory
@@ -98,7 +100,7 @@ gopherDirectoryEntry :: GopherFileType -> String -> FilePath -> String
 gopherDirectoryEntry fileType title path = fileTypeToChar fileType : title ++ "\t" ++
                                                                      path ++ "\t" ++
                                                                      serverName ++ "\t" ++
-                                                                     serverPort ++ "\r\n"
+                                                                     show serverPort ++ "\r\n"
 
 fileResponse :: FilePath -> IO String
 fileResponse = readFile
