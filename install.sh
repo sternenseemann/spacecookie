@@ -1,3 +1,4 @@
+#!/bin/bash
 cd "$(dirname "$0")"
 EXEC="./dist/build/spacecookie/spacecookie"
 PREFIX="/usr/local"
