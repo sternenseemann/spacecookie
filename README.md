@@ -12,6 +12,8 @@ spacecookie is a gopher server written in Haskell.
 	git clone https://github.com/lukasepple/spacecookie.git
 	cd spacecookie
 	cabal run spacecookie ROOTDIRECTORY
+	# to install the binary system-wide in /usr/local/bin use install.sh
+	# read it before using
 
 spacecookie will now start serving `ROOTDIRECTORY`. Because spacecookie is still in a early development stage there are no fancy daemon features yet.
 
@@ -19,7 +21,7 @@ spacecookie will now start serving `ROOTDIRECTORY`. Because spacecookie is still
 
 * Configuration (for replacing `serverName` and `serverPort` for example)
 * systemd unit file
-* Real systemwide installation
+* ~~Real systemwide installation~~
 * Clean-up the code, refactor towards more pure code
 * Proper error handling whilst client handling
 * ~~Threading~~
