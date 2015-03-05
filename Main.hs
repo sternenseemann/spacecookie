@@ -1,5 +1,5 @@
 import           Control.Concurrent   (forkIO)
-import           Control.Monad        (forever, unless)
+import           Control.Monad        (forever, unless, when)
 import           Data.Maybe           (fromJust)
 import           Network.Socket
 import           System.Directory     (doesDirectoryExist, doesFileExist,
@@ -8,16 +8,22 @@ import           System.Directory     (doesDirectoryExist, doesFileExist,
 import           System.Environment   (getArgs)
 import           System.Exit          (exitFailure)
 import           System.FilePath      (combine, takeFileName, (</>))
-import           System.IO            (BufferMode (..), IOMode (..),
-                                       hClose, hGetLine, hPutStr, hSetBuffering)
+import           System.IO            (BufferMode (..), IOMode (..), hClose,
+                                       hGetLine, hPutStr, hSetBuffering)
 import           System.Posix.Signals (Handler (..), installHandler,
                                        keyboardSignal)
+import           System.Posix.User    (UserEntry (..), getRealUserID,
+                                       getUserEntryForName, setGroupID,
+                                       setUserID)
 
 serverName :: String
 serverName = "localhost"
 
 serverPort :: PortNumber
-serverPort = 7070
+serverPort = 70
+
+runUserName :: String
+runUserName = "lukas"
 
 data GopherFileType = File
   | Directory
@@ -141,6 +147,15 @@ cleanup sock = do
   sClose sock
   exitFailure
 
+dropPrivileges :: IO ()
+dropPrivileges = do
+  uid <- getRealUserID
+  when (uid /= 0) $ return ()
+
+  user <- getUserEntryForName runUserName
+  setGroupID $ userGroupID user
+  setUserID $ userID user
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -158,8 +173,11 @@ main = do
   -- make socket immediately reusable
   setSocketOption sock ReuseAddr 1
 
+
   bind sock (SockAddrInet serverPort iNADDR_ANY)
   listen sock 5
+
+  dropPrivileges
 
   -- react to Crtl-C
   _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
