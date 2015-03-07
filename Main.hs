@@ -2,6 +2,7 @@
 import           Prelude              hiding (lookup)
 
 import           Control.Concurrent   (forkIO)
+import           Control.Applicative  ((<$>))
 import           Control.Monad        (forever, unless, when)
 import           Data.Map             (Map (), fromList, lookup)
 import           Data.Maybe           (fromJust)
@@ -24,14 +25,16 @@ import           System.Posix.Signals (Handler (..), installHandler,
 import           System.Posix.User    (UserEntry (..), getRealUserID,
                                        getUserEntryForName, setGroupID,
                                        setUserID)
+import Data.Text (Text, pack, unpack)
+import qualified Data.Text as T
 
-serverName :: String
+serverName :: Text
 serverName = "localhost"
 
 serverPort :: PortNumber
 serverPort = 7070
 
-runUserName :: String
+runUserName :: Text
 runUserName = "lukas"
 
 data GopherFileType = File
@@ -81,40 +84,37 @@ gopherFileType f = do
        (False, True) -> File
        _             -> Error
 
-stripNewline :: String -> String
+stripNewline :: Text -> Text
 stripNewline "" = ""
-stripNewline (x:xs)
-  | x `elem` "\n\r" = "" ++ stripNewline xs
-  | otherwise       = x   : stripNewline xs
+stripNewline s
+  | T.head s `elem` "\n\r" = "" `T.append` stripNewline (T.tail s)
+  | otherwise       = T.head s `T.cons` stripNewline (T.tail s)
 
-checkPath :: FilePath -> String -> IO (FilePath, GopherFileType)
+checkPath :: FilePath -> Text -> IO (FilePath, GopherFileType)
 checkPath root line = if line == ""
                          then return (root, Directory)
                          else do
-                                let path = root </> (if head line /= '/' then line else tail line)
+                                let path = root </> unpack (if T.head line /= '/' then line else T.tail line)
                                 fileType <- gopherFileType path
                                 return (path, fileType)
 
 
-gopherDirectoryEntry :: GopherFileType -> String -> FilePath -> String
-gopherDirectoryEntry fileType title path = fileTypeToChar fileType : title ++ "\t" ++
-                                                                     path ++ "\t" ++
-                                                                     serverName ++ "\t" ++
-                                                                     show serverPort ++ "\r\n"
+gopherDirectoryEntry :: GopherFileType -> Text -> Text -> Text
+gopherDirectoryEntry fileType title path = fileTypeToChar fileType `T.cons` T.concat [title, "\t", path, "\t", serverName, "\t", pack $ show serverPort, "\r\n"]
 
-fileResponse :: FilePath -> IO String
-fileResponse = readFile
+fileResponse :: FilePath -> IO Text
+fileResponse file = pack <$> readFile file
 
 -- Response for a requested Directory
-directoryEntry :: (FilePath, GopherFileType) -> String
+directoryEntry :: (FilePath, GopherFileType) -> Text
 directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
-                                   then gopherDirectoryEntry ft (takeFileName fp) fp
+                                   then gopherDirectoryEntry ft (pack $ takeFileName fp) (pack fp)
                                    else ""
 
-buildDirectoryResponse :: [(FilePath, GopherFileType)] -> String
-buildDirectoryResponse = foldl (\acc f -> acc ++ directoryEntry f) ""
+buildDirectoryResponse :: [(FilePath, GopherFileType)] -> Text
+buildDirectoryResponse = foldl (\acc f -> acc `T.append` directoryEntry f) ""
 
-directoryResponse :: FilePath -> IO String
+directoryResponse :: FilePath -> IO Text
 directoryResponse path = do
   directory <- map (combine path) `fmap` getDirectoryContents path
   types <- mapM gopherFileType directory
@@ -122,16 +122,16 @@ directoryResponse path = do
   return $ buildDirectoryResponse filesWithTypes
 
 -- Response for a error
-errorResponse :: FilePath -> IO String
-errorResponse fp = return $ fileTypeToChar Error : "Error opening: '" ++ fp ++ "'\tErr\t" ++ serverName ++ "\t" ++ show serverPort
+errorResponse :: FilePath -> IO Text
+errorResponse fp = return $ fileTypeToChar Error `T.cons` T.concat ["Error opening: '", pack fp, "'\tErr\t", serverName, "\t", pack $ show serverPort]
 
 -- handle incoming requests
-handleIncoming :: Socket -> String -> IO ()
+handleIncoming :: Socket -> FilePath -> IO ()
 handleIncoming clientSock root = do
   hdl <- socketToHandle clientSock ReadWriteMode
   hSetBuffering hdl NoBuffering
 
-  line <- stripNewline `fmap` hGetLine hdl
+  line <- (stripNewline . pack) `fmap` hGetLine hdl
   (path, fileType) <- checkPath root line
 
   response <- case fileType of
@@ -139,7 +139,7 @@ handleIncoming clientSock root = do
       File      -> fileResponse path
       _         -> errorResponse path
 
-  hPutStr hdl response
+  hPutStr hdl $ unpack response
   hClose hdl
 
 -- main loop
@@ -160,7 +160,7 @@ dropPrivileges = do
   uid <- getRealUserID
   when (uid /= 0) $ return ()
 
-  user <- getUserEntryForName runUserName
+  user <- getUserEntryForName $ unpack runUserName
   setGroupID $ userGroupID user
   setUserID $ userID user
 
