@@ -1,5 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+import           Prelude              hiding (lookup)
+
 import           Control.Concurrent   (forkIO)
 import           Control.Monad        (forever, unless, when)
+import           Data.Map             (Map (), fromList, lookup)
 import           Data.Maybe           (fromJust)
 import           Network.Socket
 import           System.Directory     (doesDirectoryExist, doesFileExist,
@@ -20,7 +24,7 @@ serverName :: String
 serverName = "localhost"
 
 serverPort :: PortNumber
-serverPort = 70
+serverPort = 7070
 
 runUserName :: String
 runUserName = "lukas"
@@ -39,11 +43,10 @@ data GopherFileType = File
   | Tn3270Session
   | GifFile
   | ImageFile
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Enum)
 
-fileTypeToCharRelation :: [(GopherFileType, Char)]
-fileTypeToCharRelation =
-  [ (File, '0')
+fileTypeToCharRelation :: Map GopherFileType Char
+fileTypeToCharRelation = fromList [ (File, '0')
   , (Directory, '1')
   , (PhoneBookServer, '2')
   , (Error, '3')
