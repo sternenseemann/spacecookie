@@ -6,7 +6,7 @@ cd ..
 EXEC="./dist/build/spacecookie/spacecookie"
 PREFIX="/usr/local"
 
-test -e "$EXEC" || (echo "Build spacecookie first"; exit 1)
+test -e "$EXEC" || (echo "Use etc/build.sh to build spacecookie first!"; exit 1)
 
 install -d "$PREFIX/bin"
 install -m755 "$EXEC" "$PREFIX/bin"
