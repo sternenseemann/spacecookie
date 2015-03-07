@@ -1,4 +1,4 @@
-name:                gopherspacecookie
+name:                spacecookie
 version:             0.1.0.0
 synopsis:            gopher server daemon
 description:         simple gopher server daemon
@@ -21,5 +21,7 @@ executable spacecookie
                      , unix
                      , directory
                      , filepath
+                     , containers
+                     , text
   -- hs-source-dirs:      
   default-language:    Haskell2010
