@@ -5,7 +5,12 @@ import           Control.Concurrent   (forkIO)
 import           Control.Monad        (forever, unless, when)
 import           Data.Map             (Map (), fromList, lookup)
 import           Data.Maybe           (fromJust)
-import           Network.Socket
+import           Network.Socket       (Family (..), PortNumber (),
+                                       SockAddr (..), Socket (..),
+                                       SocketOption (..), SocketType (..),
+                                       accept, bind, defaultProtocol,
+                                       iNADDR_ANY, listen, sClose,
+                                       setSocketOption, socket, socketToHandle)
 import           System.Directory     (doesDirectoryExist, doesFileExist,
                                        getDirectoryContents,
                                        setCurrentDirectory)
