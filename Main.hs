@@ -1,152 +1,86 @@
 {-# LANGUAGE OverloadedStrings #-}
-import           Prelude              hiding (lookup)
+import           BasicPrelude              hiding (lookup)
+import           Prelude                   ()
 
-import           Control.Concurrent   (forkIO)
-import           Control.Applicative  ((<$>))
-import           Control.Monad        (forever, unless, when)
-import           Data.Map             (Map (), fromList, lookup)
-import           Data.Maybe           (fromJust)
-import           Network.Socket       (Family (..), PortNumber (),
-                                       SockAddr (..), Socket (..),
-                                       SocketOption (..), SocketType (..),
-                                       accept, bind, defaultProtocol,
-                                       iNADDR_ANY, listen, sClose,
-                                       setSocketOption, socket, socketToHandle)
-import           System.Directory     (doesDirectoryExist, doesFileExist,
-                                       getDirectoryContents,
-                                       setCurrentDirectory)
-import           System.Environment   (getArgs)
-import           System.Exit          (exitFailure)
-import           System.FilePath      (combine, takeFileName, (</>))
-import           System.IO            (BufferMode (..), IOMode (..), hClose,
-                                       hGetLine, hPutStr, hSetBuffering)
-import           System.Posix.Signals (Handler (..), installHandler,
-                                       keyboardSignal)
-import           System.Posix.User    (UserEntry (..), getRealUserID,
-                                       getUserEntryForName, setGroupID,
-                                       setUserID)
-import Data.Text (Text, pack, unpack)
-import qualified Data.Text as T
+import           Control.Concurrent        (forkIO)
+import           Data.ByteString.Char8     (pack, unpack)
+import qualified Data.ByteString.Char8     as B
+import           Data.Map                  (fromList, lookup)
+import           Data.Maybe                (fromJust)
+import qualified Filesystem.Path.CurrentOS as F
+import           Gopher.Types
+import           Network.Socket            (Family (..), PortNumber (),
+                                            SockAddr (..), Socket (..),
+                                            SocketOption (..), SocketType (..),
+                                            accept, bind, defaultProtocol,
+                                            iNADDR_ANY, listen, sClose,
+                                            setSocketOption, socket,
+                                            socketToHandle)
+import           System.Directory          (doesDirectoryExist, doesFileExist,
+                                            getDirectoryContents,
+                                            setCurrentDirectory)
+import           System.Exit               (exitFailure)
+import           System.IO                 (BufferMode (..), IOMode (..),
+                                            hClose, hGetLine, hPutStr,
+                                            hSetBuffering)
+import           System.Posix.Signals      (Handler (..), installHandler,
+                                            keyboardSignal)
+import           System.Posix.User         (UserEntry (..), getRealUserID,
+                                            getUserEntryForName, setGroupID,
+                                            setUserID)
 
-serverName :: Text
-serverName = "localhost"
+serverName :: ByteString
+serverName = pack "localhost"
 
 serverPort :: PortNumber
 serverPort = 7070
 
-runUserName :: Text
-runUserName = "lukas"
-
-data GopherFileType = File
-  | Directory
-  | PhoneBookServer
-  | Error
-  | BinHexMacintoshFile
-  | DOSArchive
-  | UnixUuencodedFile
-  | IndexSearchServer
-  | TelnetSession
-  | BinaryFile
-  | RedundantServer
-  | Tn3270Session
-  | GifFile
-  | ImageFile
-  deriving (Show, Eq, Ord, Enum)
-
-fileTypeToCharRelation :: Map GopherFileType Char
-fileTypeToCharRelation = fromList [ (File, '0')
-  , (Directory, '1')
-  , (PhoneBookServer, '2')
-  , (Error, '3')
-  , (BinHexMacintoshFile, '4')
-  , (DOSArchive, '5')
-  , (UnixUuencodedFile, '6')
-  , (IndexSearchServer, '7')
-  , (TelnetSession, '8')
-  , (BinaryFile, '9')
-  , (RedundantServer, '+')
-  , (Tn3270Session, 'T')
-  , (GifFile, 'g')
-  , (ImageFile, 'I') ]
-
-fileTypeToChar :: GopherFileType -> Char
-fileTypeToChar t = fromJust $ lookup t fileTypeToCharRelation
+runUserName :: ByteString
+runUserName = pack "lukas"
 
 -- Note: this is a very simple version of the thing we need
 -- TODO: at least support for GifFile ImageFile and BinaryFile should be added
 -- (the other FileTypes are mostly there for the sake of completeness)
-gopherFileType :: FilePath -> IO GopherFileType
-gopherFileType f = do
-  isDir <- doesDirectoryExist f
-  isFile <- doesFileExist f
-  return $ case (isDir, isFile) of
-       (True, False) -> Directory
-       (False, True) -> File
+gopherFileType :: FilePath -> GopherPath -> IO GopherFileType
+gopherFileType serveRoot f = do
+  isDir <- doesDirectoryExist $ F.encodeString filePath
+  isFile <- doesFileExist $ F.encodeString filePath
+  return $ case (isDir, isFile, isGif, isImage) of
+       (True, False, False, False) -> Directory
+       (False, True, False, False) -> File
+       (False, True, True, True)   -> GifFile
+       (False, True, False, True)  -> ImageFile
        _             -> Error
+  where isGif = hasExtension filePath "gif"
+        isImage = isGif || hasExtension filePath "png" || hasExtension filePath "jpg" || hasExtension filePath "jpeg" || hasExtension filePath "raw"
+        filePath = destructGopherPath serveRoot f
 
-stripNewline :: Text -> Text
-stripNewline "" = ""
+stripNewline :: ByteString -> ByteString
 stripNewline s
-  | T.head s `elem` "\n\r" = "" `T.append` stripNewline (T.tail s)
-  | otherwise       = T.head s `T.cons` stripNewline (T.tail s)
-
-checkPath :: FilePath -> Text -> IO (FilePath, GopherFileType)
-checkPath root line = if line == ""
-                         then return (root, Directory)
-                         else do
-                                let path = root </> unpack (if T.head line /= '/' then line else T.tail line)
-                                fileType <- gopherFileType path
-                                return (path, fileType)
-
-
-gopherDirectoryEntry :: GopherFileType -> Text -> Text -> Text
-gopherDirectoryEntry fileType title path = fileTypeToChar fileType `T.cons` T.concat [title, "\t", path, "\t", serverName, "\t", pack $ show serverPort, "\r\n"]
-
-fileResponse :: FilePath -> IO Text
-fileResponse file = pack <$> readFile file
-
--- Response for a requested Directory
-directoryEntry :: (FilePath, GopherFileType) -> Text
-directoryEntry (fp, ft) = if head (takeFileName fp) /= '.'
-                                   then gopherDirectoryEntry ft (pack $ takeFileName fp) (pack fp)
-                                   else ""
-
-buildDirectoryResponse :: [(FilePath, GopherFileType)] -> Text
-buildDirectoryResponse = foldl (\acc f -> acc `T.append` directoryEntry f) ""
-
-directoryResponse :: FilePath -> IO Text
-directoryResponse path = do
-  directory <- map (combine path) `fmap` getDirectoryContents path
-  types <- mapM gopherFileType directory
-  let filesWithTypes = zip (map tail directory) types
-  return $ buildDirectoryResponse filesWithTypes
-
--- Response for a error
-errorResponse :: FilePath -> IO Text
-errorResponse fp = return $ fileTypeToChar Error `T.cons` T.concat ["Error opening: '", pack fp, "'\tErr\t", serverName, "\t", pack $ show serverPort]
+  | B.null s               = B.empty
+  | B.head s `elem` "\n\r" = pack "" `B.append` stripNewline (B.tail s)
+  | otherwise              = B.head s `B.cons` stripNewline (B.tail s)
 
 -- handle incoming requests
 handleIncoming :: Socket -> FilePath -> IO ()
-handleIncoming clientSock root = do
+handleIncoming clientSock serveRoot = do
   hdl <- socketToHandle clientSock ReadWriteMode
   hSetBuffering hdl NoBuffering
 
-  line <- (stripNewline . pack) `fmap` hGetLine hdl
-  (path, fileType) <- checkPath root line
+  line <- stripNewline `fmap` B.hGetLine hdl
+  let path = gopherRequestToPath line
+  gopherType <- gopherFileType serveRoot path
 
-  response <- case fileType of
-      Directory -> directoryResponse path
-      File      -> fileResponse path
-      _         -> errorResponse path
-
-  hPutStr hdl $ unpack response
+  --hPutStr hdl $ unpack response
   hClose hdl
 
 -- main loop
 mainLoop :: Socket -> FilePath -> IO ()
-mainLoop sock root = forever $ do
-  (clientSock, _) <- accept sock
-  forkIO $ handleIncoming clientSock root
+mainLoop sock serveRoot = do
+  _ <- forever $ do
+    (clientSock, _) <- accept sock
+    forkIO $ handleIncoming clientSock serveRoot
+  cleanup sock
 
 
 -- cleanup at the end
@@ -169,13 +103,13 @@ main = do
   args <- getArgs
   unless (length args == 1) $ error "Need only the root directory to serve as argument"
 
-  let root = head args
+  let serveRoot = F.fromText $ head args
 
-  rootExists <- doesDirectoryExist root
-  unless rootExists $ error "The specified root directory does not exist"
+  serveRootExists <- doesDirectoryExist $ F.encodeString serveRoot
+  unless serveRootExists $ error "The specified root directory does not exist"
 
   -- we need for easier path building
-  setCurrentDirectory root
+  setCurrentDirectory $ F.encodeString serveRoot
 
   sock <- socket AF_INET Stream defaultProtocol
   -- make socket immediately reusable
@@ -190,4 +124,4 @@ main = do
   -- react to Crtl-C
   _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
 
-  mainLoop sock root
+  mainLoop sock serveRoot

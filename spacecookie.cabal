@@ -22,6 +22,8 @@ executable spacecookie
                      , directory
                      , filepath
                      , containers
-                     , text
+                     , bytestring
+                     , system-filepath
+                     , basic-prelude
   -- hs-source-dirs:      
   default-language:    Haskell2010
