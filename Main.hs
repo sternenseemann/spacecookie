@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-import           BasicPrelude              hiding (lookup)
-import           Prelude                   ()
+import           Prelude                   hiding (FilePath (), lookup)
 
 import           Control.Concurrent        (forkIO)
-import           Data.ByteString.Char8     (pack, unpack)
+import           Control.Monad             (forever, unless, when)
+import           Data.ByteString.Char8     (ByteString (), pack, unpack)
 import qualified Data.ByteString.Char8     as B
-import           Data.Map                  (fromList, lookup)
+import           Data.Map                  (Map (..), fromList, lookup)
 import           Data.Maybe                (fromJust)
+import           Filesystem.Path.CurrentOS (FilePath ())
 import qualified Filesystem.Path.CurrentOS as F
 import           Gopher.Types
 import           Network.Socket            (Family (..), PortNumber (),
@@ -19,6 +20,7 @@ import           Network.Socket            (Family (..), PortNumber (),
 import           System.Directory          (doesDirectoryExist, doesFileExist,
                                             getDirectoryContents,
                                             setCurrentDirectory)
+import           System.Environment        (getArgs)
 import           System.Exit               (exitFailure)
 import           System.IO                 (BufferMode (..), IOMode (..),
                                             hClose, hGetLine, hPutStr,
@@ -28,7 +30,6 @@ import           System.Posix.Signals      (Handler (..), installHandler,
 import           System.Posix.User         (UserEntry (..), getRealUserID,
                                             getUserEntryForName, setGroupID,
                                             setUserID)
-
 serverName :: ByteString
 serverName = pack "localhost"
 
@@ -51,8 +52,8 @@ gopherFileType serveRoot f = do
        (False, True, True, True)   -> GifFile
        (False, True, False, True)  -> ImageFile
        _             -> Error
-  where isGif = hasExtension filePath "gif"
-        isImage = isGif || hasExtension filePath "png" || hasExtension filePath "jpg" || hasExtension filePath "jpeg" || hasExtension filePath "raw"
+  where isGif = F.hasExtension filePath "gif"
+        isImage = isGif || F.hasExtension filePath "png" || F.hasExtension filePath "jpg" || F.hasExtension filePath "jpeg" || F.hasExtension filePath "raw"
         filePath = destructGopherPath serveRoot f
 
 stripNewline :: ByteString -> ByteString
@@ -103,7 +104,7 @@ main = do
   args <- getArgs
   unless (length args == 1) $ error "Need only the root directory to serve as argument"
 
-  let serveRoot = F.fromText $ head args
+  let serveRoot = F.decodeString $ head args
 
   serveRootExists <- doesDirectoryExist $ F.encodeString serveRoot
   unless serveRootExists $ error "The specified root directory does not exist"

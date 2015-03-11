@@ -12,12 +12,13 @@ module Gopher.Types
   , gopherRequestToPath)
   where
 
-import           BasicPrelude              hiding (lookup)
-import           Prelude                   ()
+import           Prelude                   hiding (FilePath (), lookup)
 
+import           Data.ByteString.Char8     (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8     as B
-import           Data.Map                  (fromList, lookup)
+import           Data.Map                  (Map (), fromList, lookup)
 import           Data.Maybe                (fromJust)
+import           Filesystem.Path.CurrentOS (FilePath ())
 import qualified Filesystem.Path.CurrentOS as F
 import           Network.Socket            (PortNumber ())
 
@@ -29,7 +30,7 @@ combine = (++)
 
 implode :: GopherPath -> FilePath
 implode [] = F.decodeString "/"
-implode path = F.decode $ foldl (\acc p -> B.concat [acc, B.pack "/", p]) B.empty path
+implode path = F.decode $ foldl (\acc p -> B.concat [acc, pack "/", p]) B.empty path
 
 destructGopherPath :: FilePath -> GopherPath -> FilePath
 destructGopherPath root path = root `F.append` implode path
@@ -60,10 +61,10 @@ data GopherResponse = MenuResponse [GopherMenuItem]
 response :: GopherResponse -> ByteString
 response (MenuResponse items) = foldl (\acc (Item fileType title path server port) -> B.append acc $
   fileTypeToChar fileType `B.cons` B.concat [title, F.encode $ implode path, server,
-                                            encodeUtf8 $ show port, B.pack "\r\n"]) B.empty items
+                                            pack $ show port, pack "\r\n"]) B.empty items
 response (FileResponse str) = str
 response (ErrorResponse reason server port) = fileTypeToChar Error `B.cons`
-  B.concat [reason, B.pack "\tErr\t", server, encodeUtf8 $ show port, B.pack "\r\n"]
+  B.concat [reason, pack "\tErr\t", server, pack $ show port, pack "\r\n"]
 
 -- GopherFileType
 data GopherFileType = File
