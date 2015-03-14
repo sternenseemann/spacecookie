@@ -1,9 +1,11 @@
 import           Prelude               hiding (lookup)
 
+import           Control.Applicative   ((<$>), (<*>), liftA2)
 import           Control.Concurrent    (forkIO)
 import           Control.Monad         (forever, unless, when)
 import           Data.ByteString.Char8 (ByteString (), pack, unpack)
 import qualified Data.ByteString.Char8 as B
+import           Data.Char             (toLower)
 import           Data.Map              (Map (..), fromList, lookup)
 import           Data.Maybe            (fromJust)
 import           Gopher.Types
@@ -35,6 +37,13 @@ serverPort = 7070
 runUserName :: ByteString
 runUserName = pack "lukas"
 
+-- does this file deserve to be listed?
+isListable :: GopherPath -> Bool
+isListable p
+  | null p                 = False
+  | B.head (last p) == '.' = False
+  | otherwise              = True
+
 -- LISPy conditional statement
 cond :: [(Bool, a)] -> a
 cond [] = error "cond: no matching condition"
@@ -44,8 +53,8 @@ cond ((condition, val) : xs) = if condition
 
 -- Note: this is a very simple version of the thing we need
 -- TODO: at least support for BinaryFile should be added
-gopherFileType :: FilePath -> GopherPath -> IO GopherFileType
-gopherFileType serveRoot f = do
+gopherFileType :: GopherPath -> IO GopherFileType
+gopherFileType f = do
   isDir <- doesDirectoryExist filePath
   isFile <- doesFileExist filePath
   return $ cond [ (isDir, Directory)
@@ -54,8 +63,8 @@ gopherFileType serveRoot f = do
                 , (isFile, File)
                 , (True, Error)]
   where isGif = takeExtension filePath == "gif"
-        isImage = isGif || takeExtension filePath `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
-        filePath = destructGopherPath serveRoot f
+        isImage = isGif || map toLower (takeExtension filePath) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
+        filePath = destructGopherPath f
 
 stripNewline :: ByteString -> ByteString
 stripNewline s
@@ -63,25 +72,47 @@ stripNewline s
   | B.head s `elem` "\n\r" = pack "" `B.append` stripNewline (B.tail s)
   | otherwise              = B.head s `B.cons` stripNewline (B.tail s)
 
+requestToResponse :: GopherPath -> GopherFileType -> (FilePath -> IO GopherResponse)
+requestToResponse path fileType
+  | isFile fileType       = fileResponse
+  | fileType == Directory = directoryResponse
+  | otherwise             = \f -> return $
+    ErrorResponse (pack "An error occured while handling your request") serverName serverPort
+
+fileResponse :: FilePath -> IO GopherResponse
+fileResponse fp = FileResponse <$> B.readFile fp
+
+directoryResponse :: FilePath -> IO GopherResponse
+directoryResponse fp = do
+  dir <- map (combine (constructGopherPath fp)) <$> filter isListable <$> map constructGopherPath
+    <$> getDirectoryContents fp
+  items <- zipWith (menuItem serverName serverPort) dir <$> mapM gopherFileType dir
+  return $ MenuResponse items
+
 -- handle incoming requests
-handleIncoming :: Socket -> FilePath -> IO ()
-handleIncoming clientSock serveRoot = do
+handleIncoming :: Socket -> IO ()
+handleIncoming clientSock = do
   hdl <- socketToHandle clientSock ReadWriteMode
   hSetBuffering hdl NoBuffering
 
   line <- stripNewline `fmap` B.hGetLine hdl
   let path = gopherRequestToPath line
-  gopherType <- gopherFileType serveRoot path
+  gopherType <- gopherFileType path
 
-  --hPutStr hdl $ unpack response
+  let buildReponse :: FilePath -> IO GopherResponse
+      buildReponse = requestToResponse path gopherType
+
+  resp <- fmap response $ buildReponse $ destructGopherPath path
+
+  B.hPutStr hdl resp
   hClose hdl
 
 -- main loop
-mainLoop :: Socket -> FilePath -> IO ()
-mainLoop sock serveRoot = do
+mainLoop :: Socket -> IO ()
+mainLoop sock = do
   _ <- forever $ do
     (clientSock, _) <- accept sock
-    forkIO $ handleIncoming clientSock serveRoot
+    forkIO $ handleIncoming clientSock
   cleanup sock
 
 
@@ -126,4 +157,4 @@ main = do
   -- react to Crtl-C
   _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
 
-  mainLoop sock serveRoot
+  mainLoop sock
