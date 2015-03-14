@@ -1,35 +1,31 @@
-{-# LANGUAGE OverloadedStrings #-}
-import           Prelude                   hiding (FilePath (), lookup)
+import           Prelude               hiding (lookup)
 
-import           Control.Concurrent        (forkIO)
-import           Control.Monad             (forever, unless, when)
-import           Data.ByteString.Char8     (ByteString (), pack, unpack)
-import qualified Data.ByteString.Char8     as B
-import           Data.Map                  (Map (..), fromList, lookup)
-import           Data.Maybe                (fromJust)
-import           Filesystem.Path.CurrentOS (FilePath ())
-import qualified Filesystem.Path.CurrentOS as F
+import           Control.Concurrent    (forkIO)
+import           Control.Monad         (forever, unless, when)
+import           Data.ByteString.Char8 (ByteString (), pack, unpack)
+import qualified Data.ByteString.Char8 as B
+import           Data.Map              (Map (..), fromList, lookup)
+import           Data.Maybe            (fromJust)
 import           Gopher.Types
-import           Network.Socket            (Family (..), PortNumber (),
-                                            SockAddr (..), Socket (..),
-                                            SocketOption (..), SocketType (..),
-                                            accept, bind, defaultProtocol,
-                                            iNADDR_ANY, listen, sClose,
-                                            setSocketOption, socket,
-                                            socketToHandle)
-import           System.Directory          (doesDirectoryExist, doesFileExist,
-                                            getDirectoryContents,
-                                            setCurrentDirectory)
-import           System.Environment        (getArgs)
-import           System.Exit               (exitFailure)
-import           System.IO                 (BufferMode (..), IOMode (..),
-                                            hClose, hGetLine, hPutStr,
-                                            hSetBuffering)
-import           System.Posix.Signals      (Handler (..), installHandler,
-                                            keyboardSignal)
-import           System.Posix.User         (UserEntry (..), getRealUserID,
-                                            getUserEntryForName, setGroupID,
-                                            setUserID)
+import           Network.Socket        (Family (..), PortNumber (),
+                                        SockAddr (..), Socket (..),
+                                        SocketOption (..), SocketType (..),
+                                        accept, bind, defaultProtocol,
+                                        iNADDR_ANY, listen, sClose,
+                                        setSocketOption, socket, socketToHandle)
+import           System.Directory      (doesDirectoryExist, doesFileExist,
+                                        getDirectoryContents,
+                                        setCurrentDirectory)
+import           System.Environment    (getArgs)
+import           System.Exit           (exitFailure)
+import           System.FilePath       (takeExtension)
+import           System.IO             (BufferMode (..), IOMode (..), hClose,
+                                        hGetLine, hPutStr, hSetBuffering)
+import           System.Posix.Signals  (Handler (..), installHandler,
+                                        keyboardSignal)
+import           System.Posix.User     (UserEntry (..), getRealUserID,
+                                        getUserEntryForName, setGroupID,
+                                        setUserID)
 serverName :: ByteString
 serverName = pack "localhost"
 
@@ -44,16 +40,16 @@ runUserName = pack "lukas"
 -- (the other FileTypes are mostly there for the sake of completeness)
 gopherFileType :: FilePath -> GopherPath -> IO GopherFileType
 gopherFileType serveRoot f = do
-  isDir <- doesDirectoryExist $ F.encodeString filePath
-  isFile <- doesFileExist $ F.encodeString filePath
+  isDir <- doesDirectoryExist filePath
+  isFile <- doesFileExist filePath
   return $ case (isDir, isFile, isGif, isImage) of
        (True, False, False, False) -> Directory
        (False, True, False, False) -> File
        (False, True, True, True)   -> GifFile
        (False, True, False, True)  -> ImageFile
        _             -> Error
-  where isGif = F.hasExtension filePath "gif"
-        isImage = isGif || F.hasExtension filePath "png" || F.hasExtension filePath "jpg" || F.hasExtension filePath "jpeg" || F.hasExtension filePath "raw"
+  where isGif = takeExtension filePath == "gif"
+        isImage = isGif || takeExtension filePath `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
         filePath = destructGopherPath serveRoot f
 
 stripNewline :: ByteString -> ByteString
@@ -104,13 +100,13 @@ main = do
   args <- getArgs
   unless (length args == 1) $ error "Need only the root directory to serve as argument"
 
-  let serveRoot = F.decodeString $ head args
+  let serveRoot = head args
 
-  serveRootExists <- doesDirectoryExist $ F.encodeString serveRoot
+  serveRootExists <- doesDirectoryExist serveRoot
   unless serveRootExists $ error "The specified root directory does not exist"
 
   -- we need for easier path building
-  setCurrentDirectory $ F.encodeString serveRoot
+  setCurrentDirectory serveRoot
 
   sock <- socket AF_INET Stream defaultProtocol
   -- make socket immediately reusable

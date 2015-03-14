@@ -12,15 +12,14 @@ module Gopher.Types
   , gopherRequestToPath)
   where
 
-import           Prelude                   hiding (FilePath (), lookup)
+import           Prelude               hiding (lookup)
 
-import           Data.ByteString.Char8     (ByteString, pack, unpack)
-import qualified Data.ByteString.Char8     as B
-import           Data.Map                  (Map (), fromList, lookup)
-import           Data.Maybe                (fromJust)
-import           Filesystem.Path.CurrentOS (FilePath ())
-import qualified Filesystem.Path.CurrentOS as F
-import           Network.Socket            (PortNumber ())
+import           Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Char8 as B
+import           Data.Map              (Map (), fromList, lookup)
+import           Data.Maybe            (fromJust)
+import           Network.Socket        (PortNumber ())
+import           System.FilePath       (splitPath)
 
 -- GopherPath
 type GopherPath = [ByteString]
@@ -29,20 +28,20 @@ combine :: GopherPath -> GopherPath -> GopherPath
 combine = (++)
 
 implode :: GopherPath -> FilePath
-implode [] = F.decodeString "/"
-implode path = F.decode $ foldl (\acc p -> B.concat [acc, pack "/", p]) B.empty path
+implode [] = "/"
+implode path = unpack $ foldl (\acc p -> B.concat [acc, pack "/", p]) B.empty path
 
 destructGopherPath :: FilePath -> GopherPath -> FilePath
-destructGopherPath root path = root `F.append` implode path
+destructGopherPath root path = root ++ implode path
 
 constructGopherPath :: FilePath -> FilePath -> GopherPath
-constructGopherPath _ file = canonicalizePath $ map (dropSlash . F.encode) $ F.splitDirectories file
+constructGopherPath _ file = canonicalizePath $ map (dropSlash . pack) $ splitPath file
   where dropSlash x = if B.null x || B.last x /= '/'
                         then x
                         else B.init x
 
 gopherRequestToPath :: ByteString -> GopherPath
-gopherRequestToPath line = constructGopherPath F.empty $ F.decode line
+gopherRequestToPath line = constructGopherPath "" $ B.unpack line
 
 -- drops all '..' and '.' because we don't allow them
 canonicalizePath :: GopherPath -> GopherPath
@@ -60,7 +59,7 @@ data GopherResponse = MenuResponse [GopherMenuItem]
 
 response :: GopherResponse -> ByteString
 response (MenuResponse items) = foldl (\acc (Item fileType title path server port) -> B.append acc $
-  fileTypeToChar fileType `B.cons` B.concat [title, F.encode $ implode path, server,
+  fileTypeToChar fileType `B.cons` B.concat [title, pack $ implode path, server,
                                             pack $ show port, pack "\r\n"]) B.empty items
 response (FileResponse str) = str
 response (ErrorResponse reason server port) = fileTypeToChar Error `B.cons`
