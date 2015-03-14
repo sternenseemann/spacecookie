@@ -35,19 +35,24 @@ serverPort = 7070
 runUserName :: ByteString
 runUserName = pack "lukas"
 
+-- LISPy conditional statement
+cond :: [(Bool, a)] -> a
+cond [] = error "cond: no matching condition"
+cond ((condition, val) : xs) = if condition
+                                 then val
+                                 else cond xs
+
 -- Note: this is a very simple version of the thing we need
--- TODO: at least support for GifFile ImageFile and BinaryFile should be added
--- (the other FileTypes are mostly there for the sake of completeness)
+-- TODO: at least support for BinaryFile should be added
 gopherFileType :: FilePath -> GopherPath -> IO GopherFileType
 gopherFileType serveRoot f = do
   isDir <- doesDirectoryExist filePath
   isFile <- doesFileExist filePath
-  return $ case (isDir, isFile, isGif, isImage) of
-       (True, False, False, False) -> Directory
-       (False, True, False, False) -> File
-       (False, True, True, True)   -> GifFile
-       (False, True, False, True)  -> ImageFile
-       _             -> Error
+  return $ cond [ (isDir, Directory)
+                , (isGif, GifFile)
+                , (isImage, ImageFile)
+                , (isFile, File)
+                , (True, Error)]
   where isGif = takeExtension filePath == "gif"
         isImage = isGif || takeExtension filePath `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
         filePath = destructGopherPath serveRoot f
