@@ -13,11 +13,7 @@
 
 ## Usage
 
-	git clone https://github.com/lukasepple/spacecookie.git
-	cd spacecookie
-	./etc/build.sh # a convience wrapper around cabal commands
-	cabal run spacecookie ROOTDIRECTORY
-	# to install the binary system-wide in /usr/local/bin
+	git clone https://github.com/lukasepple/spacecookie.git cd spacecookie ./etc/build.sh # a convience wrapper around cabal commands cabal run spacecookie ROOTDIRECTORY # to install the binary system-wide in /usr/local/bin
 	# use ./etc/install.sh
 	# Please read it before using
 
@@ -31,5 +27,6 @@ spacecookie will now start serving `ROOTDIRECTORY`.
 * ~~Byte count vs. Character count (utf-8)~~
 * ~~Proper error handling whilst client handling~~ (Good enough for now)
 * ~~Drop privileges~~
+* chroot if possible
 * Configuration (for replacing `serverName` and `serverPort` for example)
 * Clean-up the code, refactor towards more pure code
