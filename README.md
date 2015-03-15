@@ -13,7 +13,10 @@
 
 ## Usage
 
-	git clone https://github.com/lukasepple/spacecookie.git cd spacecookie ./etc/build.sh # a convience wrapper around cabal commands cabal run spacecookie ROOTDIRECTORY # to install the binary system-wide in /usr/local/bin
+	git clone https://github.com/lukasepple/spacecookie.git
+	cd spacecookie
+	./etc/build.sh # a convience wrapper around cabal commands
+	cabal run spacecookie ROOTDIRECTORY # to install the binary system-wide in /usr/local/bin
 	# use ./etc/install.sh
 	# Please read it before using
 
