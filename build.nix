@@ -16,4 +16,4 @@ let pkg = haskellngPackages.callPackage
                license = stdenv.lib.licenses.gpl3;
              }) {};
 in
-  pkg.env
+  pkg

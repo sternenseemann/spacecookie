@@ -3,6 +3,7 @@
 cd "$(dirname "$0")"
 cd ..
 
-test -d .cabal-sandbox && nix-shell --pure --command 'cabal sandbox delete'
+test -d ./.cabal-sandbox && cabal sandbox delete
+test -d ./dist && rm -rf ./dist
 
-nix-shell --pure --command 'cabal configure && cabal build'
+nix-build build.nix
