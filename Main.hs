@@ -44,15 +44,6 @@ newtype Spacecookie a = Spacecookie
                       deriving ( Functor, Applicative, Monad
                                , MonadIO, MonadReader GopherdEnv)
 
--- serverName :: ByteString
--- serverName = pack "localhost"
---
--- serverPort :: PortNumber
--- serverPort = 7070
---
--- runUserName :: ByteString
--- runUserName = pack "lukas"
-
 -- does this file deserve to be listed?
 isListable :: GopherPath -> Bool
 isListable p
