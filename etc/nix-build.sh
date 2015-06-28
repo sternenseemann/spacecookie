@@ -6,4 +6,4 @@ cd ..
 test -d ./.cabal-sandbox && cabal sandbox delete
 test -d ./dist && rm -rf ./dist
 
-nix-build build.nix
+nix-build -v build.nix

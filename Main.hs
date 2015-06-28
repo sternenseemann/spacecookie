@@ -1,41 +1,57 @@
-import           Prelude               hiding (lookup)
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+import           Prelude                hiding (lookup)
 
-import           Control.Applicative   ((<$>), (<*>), liftA2)
-import           Control.Concurrent    (forkIO)
-import           Control.Monad         (forever, unless, when)
-import           Data.ByteString.Char8 (ByteString (), pack, unpack)
-import qualified Data.ByteString.Char8 as B
-import           Data.Char             (toLower)
-import           Data.Map              (Map (..), fromList, lookup)
-import           Data.Maybe            (fromJust)
+import           Control.Applicative    (Applicative (..), liftA2, (<$>), (<*>))
+import           Control.Concurrent     (forkIO)
+import           Control.Monad          (forever, unless, when)
+import           Control.Monad.IO.Class (MonadIO (..), liftIO)
+import           Control.Monad.Reader   (MonadReader (..), ReaderT (..), ask)
+import           Data.ByteString.Char8  (ByteString (), pack, unpack)
+import qualified Data.ByteString.Char8  as B
+import           Data.Char              (toLower)
+import           Data.Map               (Map (..), fromList, lookup)
+import           Data.Maybe             (fromJust)
 import           Gopher.Types
-import           Network.Socket        (Family (..), PortNumber (),
-                                        SockAddr (..), Socket (..),
-                                        SocketOption (..), SocketType (..),
-                                        accept, bind, defaultProtocol,
-                                        iNADDR_ANY, listen, sClose,
-                                        setSocketOption, socket, socketToHandle)
-import           System.Directory      (doesDirectoryExist, doesFileExist,
-                                        getDirectoryContents,
-                                        setCurrentDirectory)
-import           System.Environment    (getArgs)
-import           System.Exit           (exitFailure)
-import           System.FilePath       (takeExtension)
-import           System.IO             (BufferMode (..), IOMode (..), hClose,
-                                        hGetLine, hPutStr, hSetBuffering)
-import           System.Posix.Signals  (Handler (..), installHandler,
-                                        keyboardSignal)
-import           System.Posix.User     (UserEntry (..), getRealUserID,
-                                        getUserEntryForName, setGroupID,
-                                        setUserID)
-serverName :: ByteString
-serverName = pack "localhost"
+import           Network.Socket         (Family (..), PortNumber (),
+                                         SockAddr (..), Socket (..),
+                                         SocketOption (..), SocketType (..),
+                                         accept, bind, defaultProtocol,
+                                         iNADDR_ANY, listen, sClose,
+                                         setSocketOption, socket,
+                                         socketToHandle)
+import           System.Directory       (doesDirectoryExist, doesFileExist,
+                                         getDirectoryContents,
+                                         setCurrentDirectory)
+import           System.Environment     (getArgs)
+import           System.Exit            (exitFailure)
+import           System.FilePath        (takeExtension)
+import           System.IO              (BufferMode (..), IOMode (..), hClose,
+                                         hGetLine, hPutStr, hSetBuffering)
+import           System.Posix.Signals   (Handler (..), installHandler,
+                                         keyboardSignal)
+import           System.Posix.User      (UserEntry (..), getRealUserID,
+                                         getUserEntryForName, setGroupID,
+                                         setUserID)
+data GopherdEnv = GopherdEnv { serverSocket :: Socket
+                             , serverConfig :: Config
+                             }
+data Config = Config { serverName  :: ByteString
+                     , serverPort  :: PortNumber
+                     , runUserName :: ByteString
+                     }
+newtype Spacecookie a = Spacecookie
+                      { runSpacecookie :: ReaderT GopherdEnv IO a }
+                      deriving ( Functor, Applicative, Monad
+                               , MonadIO, MonadReader GopherdEnv)
 
-serverPort :: PortNumber
-serverPort = 7070
-
-runUserName :: ByteString
-runUserName = pack "lukas"
+-- serverName :: ByteString
+-- serverName = pack "localhost"
+--
+-- serverPort :: PortNumber
+-- serverPort = 7070
+--
+-- runUserName :: ByteString
+-- runUserName = pack "lukas"
 
 -- does this file deserve to be listed?
 isListable :: GopherPath -> Bool
@@ -53,83 +69,108 @@ cond ((condition, val) : xs) = if condition
 
 -- Note: this is a very simple version of the thing we need
 -- TODO: at least support for BinaryFile should be added
-gopherFileType :: GopherPath -> IO GopherFileType
+gopherFileType :: GopherPath -> Spacecookie GopherFileType
 gopherFileType f = do
-  isDir <- doesDirectoryExist filePath
-  isFile <- doesFileExist filePath
+  isDir <- liftIO $ doesDirectoryExist filePath
+  isFile <- liftIO $ doesFileExist filePath
   return $ cond [ (isDir, Directory)
                 , (isGif, GifFile)
                 , (isImage, ImageFile)
                 , (isFile, File)
                 , (True, Error)]
   where isGif = takeExtension filePath == "gif"
-        isImage = isGif || map toLower (takeExtension filePath) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
+        isImage = map toLower (takeExtension filePath) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"] || isGif
         filePath = destructGopherPath f
 
 stripNewline :: ByteString -> ByteString
 stripNewline s
   | B.null s               = B.empty
-  | B.head s `elem` "\n\r" = pack "" `B.append` stripNewline (B.tail s)
+  | B.head s `elem` "\n\r" = stripNewline (B.tail s)
   | otherwise              = B.head s `B.cons` stripNewline (B.tail s)
 
-requestToResponse :: GopherPath -> GopherFileType -> (FilePath -> IO GopherResponse)
-requestToResponse path fileType
-  | isFile fileType       = fileResponse
-  | fileType == Directory = directoryResponse
-  | otherwise             = \f -> return $
-    ErrorResponse (pack "An error occured while handling your request") serverName serverPort
+requestToResponse :: GopherPath -> GopherFileType -> (FilePath -> Spacecookie GopherResponse)
+requestToResponse path fileType = response
+  where response
+          | isFile fileType       = fileResponse
+          | fileType == Directory = directoryResponse
+          | otherwise             = errorResponse $ pack "An error occured while handling your request"
 
-fileResponse :: FilePath -> IO GopherResponse
-fileResponse fp = FileResponse <$> B.readFile fp
+fileResponse :: FilePath -> Spacecookie GopherResponse
+fileResponse fp = liftIO $ FileResponse <$> B.readFile fp
 
-directoryResponse :: FilePath -> IO GopherResponse
+directoryResponse :: FilePath -> Spacecookie GopherResponse
 directoryResponse fp = do
-  dir <- map (combine (constructGopherPath fp)) <$> filter isListable <$> map constructGopherPath
-    <$> getDirectoryContents fp
-  items <- zipWith (menuItem serverName serverPort) dir <$> mapM gopherFileType dir
+  env <- ask
+  let conf = serverConfig env
+      host = serverName conf
+      port = serverPort conf
+  dir <- liftIO $ map (combine (constructGopherPath fp)) <$> filter isListable <$> map constructGopherPath <$> getDirectoryContents fp
+  items <- zipWith (menuItem host port) dir <$> mapM gopherFileType dir
   return $ MenuResponse items
 
--- handle incoming requests
-handleIncoming :: Socket -> IO ()
-handleIncoming clientSock = do
-  hdl <- socketToHandle clientSock ReadWriteMode
-  hSetBuffering hdl NoBuffering
+errorResponse :: ByteString -> FilePath -> Spacecookie GopherResponse
+errorResponse errorMsg _ = do
+  env <- ask
+  let conf = serverConfig env
+      host = serverName conf
+      port = serverPort conf
+  return $ ErrorResponse errorMsg host port
 
-  line <- stripNewline `fmap` B.hGetLine hdl
+-- handle incoming requests
+handleIncoming :: Socket -> Spacecookie ()
+handleIncoming clientSock = do
+  hdl <- liftIO $ socketToHandle clientSock ReadWriteMode
+  liftIO $ hSetBuffering hdl NoBuffering
+
+  line <- liftIO $ stripNewline <$> B.hGetLine hdl
   let path = gopherRequestToPath line
   gopherType <- gopherFileType path
 
-  let buildReponse :: FilePath -> IO GopherResponse
+  let buildReponse :: FilePath -> Spacecookie GopherResponse
       buildReponse = requestToResponse path gopherType
 
   resp <- fmap response $ buildReponse $ destructGopherPath path
 
-  B.hPutStr hdl resp
-  hClose hdl
+  liftIO $ B.hPutStr hdl resp
+  liftIO $ hClose hdl
 
 -- main loop
-mainLoop :: Socket -> IO ()
-mainLoop sock = do
+mainLoop :: Spacecookie ()
+mainLoop = do
+  env <- ask
+  let sock = serverSocket env
   _ <- forever $ do
-    (clientSock, _) <- accept sock
-    forkIO $ handleIncoming clientSock
-  cleanup sock
+    (clientSock, _) <- liftIO $ accept sock
+    liftIO $ forkIO $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
+  cleanup
 
 
 -- cleanup at the end
-cleanup :: Socket -> IO ()
-cleanup sock = do
-  sClose sock
-  exitFailure
+cleanup :: Spacecookie ()
+cleanup = do
+  env <- ask
+  let sock = serverSocket env
+  liftIO $ sClose sock
+  liftIO exitFailure
 
-dropPrivileges :: IO ()
+dropPrivileges :: Spacecookie ()
 dropPrivileges = do
-  uid <- getRealUserID
+  env <- ask
+  let conf = serverConfig env
+  uid <- liftIO getRealUserID
   when (uid /= 0) $ return ()
 
-  user <- getUserEntryForName $ unpack runUserName
-  setGroupID $ userGroupID user
-  setUserID $ userID user
+  user <- liftIO $ getUserEntryForName $ unpack $ runUserName conf
+  liftIO $ setGroupID $ userGroupID user
+  liftIO $ setUserID $ userID user
+
+spacecookieMain :: Spacecookie ()
+spacecookieMain = do
+  dropPrivileges
+
+  -- react to Crtl-C
+--  _ <- installHandler keyboardSignal (Catch $ liftIO $ cleanup) Nothing
+  mainLoop
 
 main :: IO ()
 main = do
@@ -137,24 +178,23 @@ main = do
   unless (length args == 1) $ error "Need only the root directory to serve as argument"
 
   let serveRoot = head args
+      conf      = Config { serverName   = pack "localhost"
+                         , serverPort   = 7070
+                         , runUserName  = pack "lukas"
+                         }
 
   serveRootExists <- doesDirectoryExist serveRoot
   unless serveRootExists $ error "The specified root directory does not exist"
 
-  -- we need for easier path building
+  -- needed for easier path building
   setCurrentDirectory serveRoot
 
   sock <- socket AF_INET Stream defaultProtocol
   -- make socket immediately reusable
   setSocketOption sock ReuseAddr 1
 
-
-  bind sock (SockAddrInet serverPort iNADDR_ANY)
+  bind sock (SockAddrInet (serverPort conf) iNADDR_ANY)
   listen sock 5
 
-  dropPrivileges
-
-  -- react to Crtl-C
-  _ <- installHandler keyboardSignal (Catch $ cleanup sock) Nothing
-
-  mainLoop sock
+  let env = GopherdEnv sock conf
+  (runReaderT . runSpacecookie) spacecookieMain env
