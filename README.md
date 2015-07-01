@@ -30,6 +30,6 @@ spacecookie will now start serving `ROOTDIRECTORY`.
 * ~~Byte count vs. Character count (utf-8)~~
 * ~~Proper error handling whilst client handling~~ (Good enough for now)
 * ~~Drop privileges~~
+* ~~Clean-up the code, refactor towards more pure code~~
 * chroot if possible
-* Configuration (for replacing `serverName` and `serverPort` for example)
-* Clean-up the code, refactor towards more pure code
+* Configuration parsing
