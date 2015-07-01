@@ -133,16 +133,14 @@ mainLoop = do
   _ <- forever $ do
     (clientSock, _) <- liftIO $ accept sock
     liftIO $ forkIO $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
-  cleanup
+  liftIO $ cleanup sock
 
 
 -- cleanup at the end
-cleanup :: Spacecookie ()
-cleanup = do
-  env <- ask
-  let sock = serverSocket env
-  liftIO $ sClose sock
-  liftIO exitFailure
+cleanup :: Socket -> IO ()
+cleanup sock = do
+  sClose sock
+  exitFailure
 
 dropPrivileges :: Spacecookie ()
 dropPrivileges = do
@@ -158,9 +156,10 @@ dropPrivileges = do
 spacecookieMain :: Spacecookie ()
 spacecookieMain = do
   dropPrivileges
+  env <- ask
 
   -- react to Crtl-C
---  _ <- installHandler keyboardSignal (Catch $ liftIO $ cleanup) Nothing
+  _ <- liftIO $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
   mainLoop
 
 main :: IO ()
