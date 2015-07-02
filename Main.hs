@@ -32,34 +32,43 @@ import           System.Posix.Signals   (Handler (..), installHandler,
 import           System.Posix.User      (UserEntry (..), getRealUserID,
                                          getUserEntryForName, setGroupID,
                                          setUserID)
+-- | GopherdEnv holds the Environment for the Spacecookie
+-- application / all functions operating on the Monad.
+-- it is the socket used for communicating with the client
+-- and the server's config
 data GopherdEnv = GopherdEnv { serverSocket :: Socket
                              , serverConfig :: Config
                              }
+-- | The config holds some simple parameters that modify
+-- the behavior of the server.
 data Config = Config { serverName  :: ByteString
                      , serverPort  :: PortNumber
                      , runUserName :: ByteString
                      }
+-- | The Spacecookie Monad is a wrapper around the ReaderT Monad
+-- using GopherdEnv as Environment and has Effects to IO
 newtype Spacecookie a = Spacecookie
                       { runSpacecookie :: ReaderT GopherdEnv IO a }
                       deriving ( Functor, Applicative, Monad
                                , MonadIO, MonadReader GopherdEnv)
 
--- does this file deserve to be listed?
+-- | isListable filters out system files for directory listnings
 isListable :: GopherPath -> Bool
 isListable p
   | null p                 = False
   | B.head (last p) == '.' = False
   | otherwise              = True
 
--- LISPy conditional statement
+-- | cond is a LISPy conditional statement
 cond :: [(Bool, a)] -> a
 cond [] = error "cond: no matching condition"
 cond ((condition, val) : xs) = if condition
                                  then val
                                  else cond xs
 
--- Note: this is a very simple version of the thing we need
 -- TODO: at least support for BinaryFile should be added
+-- | calculates the file type identifier used in the Gopher protocol
+-- for a given file
 gopherFileType :: GopherPath -> Spacecookie GopherFileType
 gopherFileType f = do
   isDir <- liftIO $ doesDirectoryExist filePath
@@ -73,22 +82,28 @@ gopherFileType f = do
         isImage = map toLower (takeExtension filePath) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"] || isGif
         filePath = destructGopherPath f
 
+-- | strips "\n" and "\r" from a string. Used on all strings
+-- coming from the client to make them parseable.
 stripNewline :: ByteString -> ByteString
 stripNewline s
   | B.null s               = B.empty
   | B.head s `elem` "\n\r" = stripNewline (B.tail s)
   | otherwise              = B.head s `B.cons` stripNewline (B.tail s)
 
-requestToResponse :: GopherPath -> GopherFileType -> (FilePath -> Spacecookie GopherResponse)
+-- | requestToResponse takes a Path and a file type and returns the function
+-- that calculates the response for a given file.
+requestToResponse :: GopherPath -> GopherFileType -> FilePath -> Spacecookie GopherResponse
 requestToResponse path fileType = response
   where response
           | isFile fileType       = fileResponse
           | fileType == Directory = directoryResponse
           | otherwise             = errorResponse $ pack "An error occured while handling your request"
 
+-- | creates a gopher file response
 fileResponse :: FilePath -> Spacecookie GopherResponse
 fileResponse fp = liftIO $ FileResponse <$> B.readFile fp
 
+-- | creates a gopher directory response
 directoryResponse :: FilePath -> Spacecookie GopherResponse
 directoryResponse fp = do
   env <- ask
@@ -99,6 +114,7 @@ directoryResponse fp = do
   items <- zipWith (menuItem host port) dir <$> mapM gopherFileType dir
   return $ MenuResponse items
 
+-- | creates a gopher error response
 errorResponse :: ByteString -> FilePath -> Spacecookie GopherResponse
 errorResponse errorMsg _ = do
   env <- ask
@@ -107,7 +123,7 @@ errorResponse errorMsg _ = do
       port = serverPort conf
   return $ ErrorResponse errorMsg host port
 
--- handle incoming requests
+-- | handleIncoming is used to handle a client (socket).
 handleIncoming :: Socket -> Spacecookie ()
 handleIncoming clientSock = do
   hdl <- liftIO $ socketToHandle clientSock ReadWriteMode
@@ -125,7 +141,7 @@ handleIncoming clientSock = do
   liftIO $ B.hPutStr hdl resp
   liftIO $ hClose hdl
 
--- main loop
+-- | main loop
 mainLoop :: Spacecookie ()
 mainLoop = do
   env <- ask
@@ -136,12 +152,15 @@ mainLoop = do
   liftIO $ cleanup sock
 
 
--- cleanup at the end
+-- | cleanup closes the socket
 cleanup :: Socket -> IO ()
 cleanup sock = do
   sClose sock
   exitFailure
 
+-- | dropPrivileges is used to run spacecookie as
+-- a normal user after the socket has been setup
+-- (as root).
 dropPrivileges :: Spacecookie ()
 dropPrivileges = do
   env <- ask
@@ -153,6 +172,8 @@ dropPrivileges = do
   liftIO $ setGroupID $ userGroupID user
   liftIO $ setUserID $ userID user
 
+-- | does the setup in the Spacecookie monad
+-- and starts the main loop.
 spacecookieMain :: Spacecookie ()
 spacecookieMain = do
   dropPrivileges
@@ -162,6 +183,7 @@ spacecookieMain = do
   _ <- liftIO $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
   mainLoop
 
+-- | parses args and config and binds the socket
 main :: IO ()
 main = do
   args <- getArgs

@@ -23,9 +23,10 @@ import           Data.Maybe            (fromJust)
 import           Network.Socket        (PortNumber ())
 import           System.FilePath       (splitPath, takeBaseName)
 
--- GopherPath
+-- | Internal representation of a gopher path
 type GopherPath = [ByteString]
 
+-- | concatenates two GopherPaths
 combine :: GopherPath -> GopherPath -> GopherPath
 combine = (++)
 
@@ -35,37 +36,43 @@ implode [] = "/"
 implode path = unpack $ foldl (\acc p -> B.concat [acc, pack "/", p]) B.empty path
 
 -- | destructGopherPath is intended to create a path usable for accessing the file
--- | it makes use of the fact that wie chdir into our root.
+-- it makes use of the fact that wie chdir into our root.
 destructGopherPath :: GopherPath -> FilePath
 destructGopherPath = ("." ++) . implode
 
+-- | builds a GopherPath from a regular FilePath
 constructGopherPath :: FilePath -> GopherPath
 constructGopherPath file = canonicalizePath $ map (dropSlash . pack) $ splitPath file
   where dropSlash x = if B.null x || B.last x /= '/'
                         then x
                         else B.init x
 
+-- | builds a path to the requested file or directory
+-- from a line sent by the gopher client.
 gopherRequestToPath :: ByteString -> GopherPath
 gopherRequestToPath line = constructGopherPath $ B.unpack line
 
--- drops all '..' and '.' because we don't allow them
+-- | fixes some possible exploits by avoiding directory traversal.
 canonicalizePath :: GopherPath -> GopherPath
 canonicalizePath = filter (\part -> (not . B.null) part && part /= pack ".." && part /= pack ".")
 
--- GopherMenuItem
+-- | a gopher menu item represented as type used in directory listnings.
 data GopherMenuItem = Item GopherFileType ByteString GopherPath ByteString PortNumber
   deriving (Show, Eq)
 
+-- | convinience wrapper around the GopherMenuItem constructor
 menuItem :: ByteString -> PortNumber -> GopherPath -> GopherFileType -> GopherMenuItem
 menuItem server port fp ft = Item ft basename fp server port
   where basename = if null fp then pack "" else last fp
 
--- GopherResponse
+-- | type representation of a response of the gopher server
 data GopherResponse = MenuResponse [GopherMenuItem]
   | FileResponse ByteString
   | ErrorResponse ByteString ByteString PortNumber
   deriving (Show, Eq)
 
+-- | converts the GopherResponse into a ByteString that can be sent to the
+-- client.
 response :: GopherResponse -> ByteString
 response (MenuResponse items) = foldl (\acc (Item fileType title path server port) -> B.append acc $
   fileTypeToChar fileType `B.cons` B.concat [title, pack "\t", pack $ implode path, pack "\t", server,
@@ -74,7 +81,7 @@ response (FileResponse str) = str
 response (ErrorResponse reason server port) = fileTypeToChar Error `B.cons`
   B.concat [reason, pack "\tErr\t", server, pack "\t", pack $ show port, pack "\r\n"]
 
--- GopherFileType
+-- | type representation of the defined gopher file types
 data GopherFileType = File
   | Directory
   | PhoneBookServer
@@ -91,6 +98,8 @@ data GopherFileType = File
   | ImageFile
   deriving (Show, Eq, Ord, Enum)
 
+-- | holds the relation between the Type and the
+-- characters used in the protocol
 fileTypeToCharRelation :: Map GopherFileType Char
 fileTypeToCharRelation = fromList [ (File, '0')
   , (Directory, '1')
@@ -107,6 +116,7 @@ fileTypeToCharRelation = fromList [ (File, '0')
   , (GifFile, 'g')
   , (ImageFile, 'I') ]
 
+-- | lookup function for fileTypeToCharRelation
 fileTypeToChar :: GopherFileType -> Char
 fileTypeToChar t = fromJust $ lookup t fileTypeToCharRelation
 
