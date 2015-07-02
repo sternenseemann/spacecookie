@@ -5,7 +5,7 @@ let
   inherit (nixpkgs) pkgs;
 
   f = { mkDerivation, base, bytestring, containers, directory
-      , filepath, mtl, network, stdenv, unix
+      , filepath, mtl, network, stdenv, text, transformers, unix, yaml
       }:
       mkDerivation {
         pname = "spacecookie";
@@ -14,7 +14,8 @@ let
         isLibrary = false;
         isExecutable = true;
         buildDepends = [
-          base bytestring containers directory filepath mtl network unix
+          base bytestring containers directory filepath mtl network text
+          transformers unix yaml
         ];
         description = "gopher server daemon";
         license = stdenv.lib.licenses.gpl3;
@@ -23,4 +24,5 @@ let
   drv = pkgs.haskell.packages.${compiler}.callPackage f {};
 
 in
+
   drv
