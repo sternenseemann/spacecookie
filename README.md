@@ -16,7 +16,8 @@
 	git clone https://github.com/lukasepple/spacecookie.git
 	cd spacecookie
 	./etc/build.sh # a convience wrapper around cabal commands
-	cabal run spacecookie ROOTDIRECTORY # to install the binary system-wide in /usr/local/bin
+	cabal run spacecookie example.yaml # or your config file
+	# to install the binary system-wide in /usr/local/bin
 	# use ./etc/install.sh
 	# Please read it before using
 
@@ -32,4 +33,5 @@ spacecookie will now start serving `ROOTDIRECTORY`.
 * ~~Drop privileges~~
 * ~~Clean-up the code, refactor towards more pure code~~
 * chroot if possible
-* Configuration parsing
+* test, test, test
+* update systemd files and optimize system-wide experience
