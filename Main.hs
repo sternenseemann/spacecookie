@@ -120,10 +120,10 @@ gopherFileType f = do
 -- coming from the client to make them parseable.
 stripNewline :: ByteString -> ByteString
 stripNewline s
-  | B.null s         = B.empty
+  | B.null s           = B.empty
   | B.head s `elem`
-    "\n\r" :: String = stripNewline (B.tail s)
-  | otherwise        = B.head s `B.cons` stripNewline (B.tail s)
+    ("\n\r" :: String) = stripNewline (B.tail s)
+  | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
 -- | requestToResponse takes a Path and a file type and returns the function
 -- that calculates the response for a given file.
