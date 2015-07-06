@@ -32,6 +32,7 @@ spacecookie will now start serving `ROOTDIRECTORY`.
 * ~~Proper error handling whilst client handling~~ (Good enough for now)
 * ~~Drop privileges~~
 * ~~Clean-up the code, refactor towards more pure code~~
+* Add support for [gophermap files](https://en.wikipedia.org/wiki/Gophermap)
 * chroot if possible
 * test, test, test
 * update systemd files and optimize system-wide experience
