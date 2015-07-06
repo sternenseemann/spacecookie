@@ -12,5 +12,6 @@ install -d "$PREFIX/bin"
 install -m755 "$EXEC" "$PREFIX/bin"
 install -d "$PREFIX/share/licenses/spacecookie"
 install -m644 "LICENSE" "$PREFIX/share/licenses/spacecookie"
+install -m644 "example.yaml" "/etc/spacecookie.yaml"
 
-echo "To uninstall spacecookie run 'rm $PREFIX/bin/spacecookie $PREFIX/share/licenses/spacecookie/LICENSE'"
+echo "To uninstall spacecookie run 'rm $PREFIX/bin/spacecookie $PREFIX/share/licenses/spacecookie/LICENSE /etc/spacecookie.yaml'"

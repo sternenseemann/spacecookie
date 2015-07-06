@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/spacecookie /srv/gopher
+ExecStart=/usr/local/bin/spacecookie /etc/spacecookie.yaml
 
 [Install]
 WantedBy=multi-user.target
