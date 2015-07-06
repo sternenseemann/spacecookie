@@ -181,7 +181,7 @@ mainLoop :: Spacecookie ()
 mainLoop = do
   env <- ask
   let sock = serverSocket env
-  _ <- forever $ do
+  forever $ do
     (clientSock, _) <- liftIO $ accept sock
     liftIO $ forkIO $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
   liftIO $ cleanup sock
@@ -215,7 +215,7 @@ spacecookieMain = do
   env <- ask
 
   -- react to Crtl-C
-  _ <- liftIO $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
+  liftIO $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
   mainLoop
 
 -- | parses args and config and binds the socket
