@@ -1,4 +1,4 @@
-module Gopher.Types
+module Spacecookie.Types
   ( GopherPath ()
   , GopherFileType (..)
   , GopherResponse (..)

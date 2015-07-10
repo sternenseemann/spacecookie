@@ -1,90 +1,45 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
-import           Prelude                hiding (lookup)
+{-# LANGUAGE OverloadedStrings #-}
+import           Spacecookie.ConfigParsing
+import           Spacecookie.Monad
+import           Spacecookie.Types
 
-import           Control.Applicative    (Applicative (..), liftA2, (<$>), (<*>))
-import           Control.Concurrent     (forkIO)
-import           Control.Monad          (forever, mzero, unless, when)
-import           Control.Monad.IO.Class (MonadIO (..), liftIO)
-import           Control.Monad.Reader   (MonadReader (..), ReaderT (..), ask)
-import           Data.ByteString.Char8  (ByteString (), pack, unpack)
-import qualified Data.ByteString.Char8  as B
-import           Data.Char              (toLower)
-import           Data.Map               (Map (..), fromList, lookup)
-import           Data.Maybe             (fromJust, isNothing)
-import           Data.Text              (Text ())
-import           Data.Text.Encoding     (decodeUtf8, encodeUtf8)
-import           Data.Yaml              hiding (Result (..))
-import           Gopher.Types
-import           Network.Socket         (Family (..), PortNumber (),
-                                         SockAddr (..), Socket (..),
-                                         SocketOption (..), SocketType (..),
-                                         accept, bind, defaultProtocol,
-                                         iNADDR_ANY, listen, sClose,
-                                         setSocketOption, socket,
-                                         socketToHandle)
-import           System.Directory       (doesDirectoryExist, doesFileExist,
-                                         getDirectoryContents,
-                                         setCurrentDirectory)
-import           System.Environment     (getArgs)
-import           System.Exit            (exitFailure)
-import           System.FilePath        (takeExtension)
-import           System.IO              (BufferMode (..), IOMode (..), hClose,
-                                         hGetLine, hPutStr, hSetBuffering)
-import           System.Posix.Signals   (Handler (..), installHandler,
-                                         keyboardSignal)
-import           System.Posix.User      (UserEntry (..), getRealUserID,
-                                         getUserEntryForName, setGroupID,
-                                         setUserID)
+import           Prelude                   hiding (lookup)
 
--- | GopherdEnv holds the Environment for the Spacecookie
--- application / all functions operating on the Monad.
--- it is the socket used for communicating with the client
--- and the server's config
-data GopherdEnv = GopherdEnv { serverSocket :: Socket
-                             , serverConfig :: Config
-                             }
+import           Control.Applicative       (Applicative (..), liftA2, (<$>),
+                                            (<*>))
+import           Control.Concurrent        (forkIO)
+import           Control.Monad             (forever, mzero, unless, when)
+import           Control.Monad.IO.Class    (liftIO)
+import           Control.Monad.Reader      (ask, runReaderT)
+import           Data.ByteString.Char8     (ByteString (), pack, unpack)
+import qualified Data.ByteString.Char8     as B
+import           Data.Char                 (toLower)
+import           Data.Map                  (Map (..), fromList, lookup)
+import           Data.Maybe                (fromJust, isNothing)
+import           Data.Text                 (Text ())
+import           Data.Yaml                 (decode)
+import           Network.Socket            (Family (..), PortNumber (),
+                                            SockAddr (..), Socket (..),
+                                            SocketOption (..), SocketType (..),
+                                            accept, bind, defaultProtocol,
+                                            iNADDR_ANY, listen, sClose,
+                                            setSocketOption, socket,
+                                            socketToHandle)
+import           System.Directory          (doesDirectoryExist, doesFileExist,
+                                            getDirectoryContents,
+                                            setCurrentDirectory)
+import           System.Environment        (getArgs)
+import           System.Exit               (exitFailure)
+import           System.FilePath           (takeExtension)
+import           System.IO                 (BufferMode (..), IOMode (..),
+                                            hClose, hGetLine, hPutStr,
+                                            hSetBuffering)
+import           System.Posix.Signals      (Handler (..), installHandler,
+                                            keyboardSignal)
+import           System.Posix.User         (UserEntry (..), getRealUserID,
+                                            getUserEntryForName, setGroupID,
+                                            setUserID)
 
--- | The config holds some simple parameters that modify
--- the behavior of the server.
-data Config = Config { serverName    :: ByteString
-                     , serverPort    :: PortNumber
-                     , runUserName   :: ByteString
-                     , rootDirectory :: FilePath
-                     }
-
-instance FromJSON Config where
-  parseJSON (Object v) = Config <$>
-    v .: "hostname" <*>
-    v .: "port" <*>
-    v .: "user" <*>
-    v .: "root"
-  parseJSON _ = mzero
-
-instance ToJSON Config where
-  toJSON (Config host port user root) = object ["hostname" .= host, "port" .= port, "user" .= user, "root" .= root]
-
--- auxiliary instances for types that have no default instance
-instance FromJSON ByteString where
-  parseJSON (String s) = encodeUtf8 <$> (parseJSON (String s) :: Parser Text)
-  parseJSON _ = mzero
-
-instance FromJSON PortNumber where
-  parseJSON (Number port) = fromIntegral <$> (parseJSON (Number port) :: Parser Integer)
-  parseJSON _ = mzero
-
-instance ToJSON ByteString where
-  toJSON str = toJSON $ decodeUtf8 str
-
-instance ToJSON PortNumber where
-  toJSON port = toJSON (fromIntegral port :: Integer)
-
--- | The Spacecookie Monad is a wrapper around the ReaderT Monad
--- using GopherdEnv as Environment and has Effects to IO
-newtype Spacecookie a = Spacecookie
-                      { runSpacecookie :: ReaderT GopherdEnv IO a }
-                      deriving ( Functor, Applicative, Monad
-                               , MonadIO, MonadReader GopherdEnv)
 
 -- | isListable filters out system files for directory listnings
 isListable :: GopherPath -> Bool
