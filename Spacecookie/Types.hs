@@ -2,7 +2,9 @@ module Spacecookie.Types
   ( GopherPath ()
   , GopherFileType (..)
   , GopherResponse (..)
+  , GopherMenuItem (..)
   , fileTypeToChar
+  , charToFileType
   , isFile
   , menuItem
   , combine
@@ -20,6 +22,7 @@ import           Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import           Data.Map              (Map (), fromList, lookup)
 import           Data.Maybe            (fromJust)
+import           Data.Tuple            (swap)
 import           Network.Socket        (PortNumber ())
 import           System.FilePath       (splitPath, takeBaseName)
 
@@ -96,12 +99,13 @@ data GopherFileType = File
   | Tn3270Session
   | GifFile
   | ImageFile
+  | InfoLine
   deriving (Show, Eq, Ord, Enum)
 
 -- | holds the relation between the Type and the
 -- characters used in the protocol
-fileTypeToCharRelation :: Map GopherFileType Char
-fileTypeToCharRelation = fromList [ (File, '0')
+masterFileTypeCharRelation:: [(GopherFileType, Char)]
+masterFileTypeCharRelation = [ (File, '0')
   , (Directory, '1')
   , (PhoneBookServer, '2')
   , (Error, '3')
@@ -114,11 +118,23 @@ fileTypeToCharRelation = fromList [ (File, '0')
   , (RedundantServer, '+')
   , (Tn3270Session, 'T')
   , (GifFile, 'g')
-  , (ImageFile, 'I') ]
+  , (ImageFile, 'I')
+  -- non-official filetypes
+  , (InfoLine, 'i')
+  ]
+
+fileTypeToCharRelation :: Map GopherFileType Char
+fileTypeToCharRelation = fromList masterFileTypeCharRelation
+
+charToFileTypeRelation :: Map Char GopherFileType
+charToFileTypeRelation = fromList $ map swap masterFileTypeCharRelation
 
 -- | lookup function for fileTypeToCharRelation
 fileTypeToChar :: GopherFileType -> Char
 fileTypeToChar t = fromJust $ lookup t fileTypeToCharRelation
+
+charToFileType :: Char -> GopherFileType
+charToFileType c = fromJust $ lookup c charToFileTypeRelation
 
 isFile :: GopherFileType -> Bool
 isFile File = True
