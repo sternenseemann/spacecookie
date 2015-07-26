@@ -1,44 +1,50 @@
 {-# LANGUAGE OverloadedStrings #-}
 import           Spacecookie.ConfigParsing
+import           Spacecookie.Gophermap
 import           Spacecookie.Monad
 import           Spacecookie.Types
 
-import           Prelude                   hiding (lookup)
+import           Prelude                          hiding (lookup)
 
-import           Control.Applicative       (Applicative (..), liftA2, (<$>),
-                                            (<*>))
-import           Control.Concurrent        (forkIO)
-import           Control.Monad             (forever, mzero, unless, when)
-import           Control.Monad.IO.Class    (liftIO)
-import           Control.Monad.Reader      (ask, runReaderT)
-import           Data.ByteString.Char8     (ByteString (), pack, unpack)
-import qualified Data.ByteString.Char8     as B
-import           Data.Char                 (toLower)
-import           Data.Map                  (Map (..), fromList, lookup)
-import           Data.Maybe                (fromJust, isNothing)
-import           Data.Text                 (Text ())
-import           Data.Yaml                 (decode)
-import           Network.Socket            (Family (..), PortNumber (),
-                                            SockAddr (..), Socket (..),
-                                            SocketOption (..), SocketType (..),
-                                            accept, bind, defaultProtocol,
-                                            iNADDR_ANY, listen, sClose,
-                                            setSocketOption, socket,
-                                            socketToHandle)
-import           System.Directory          (doesDirectoryExist, doesFileExist,
-                                            getDirectoryContents,
-                                            setCurrentDirectory)
-import           System.Environment        (getArgs)
-import           System.Exit               (exitFailure)
-import           System.FilePath           (takeExtension)
-import           System.IO                 (BufferMode (..), IOMode (..),
-                                            hClose, hGetLine, hPutStr,
-                                            hSetBuffering)
-import           System.Posix.Signals      (Handler (..), installHandler,
-                                            keyboardSignal)
-import           System.Posix.User         (UserEntry (..), getRealUserID,
-                                            getUserEntryForName, setGroupID,
-                                            setUserID)
+import           Control.Applicative              (Applicative (..), liftA2,
+                                                   (<$>), (<*>))
+import           Control.Concurrent               (forkIO)
+import           Control.Monad                    (forever, mzero, unless, when)
+import           Control.Monad.IO.Class           (liftIO)
+import           Control.Monad.Reader             (ask, runReaderT)
+import           Data.Attoparsec.ByteString.Char8
+import           Data.ByteString.Char8            (ByteString (), pack, unpack)
+import qualified Data.ByteString.Char8            as B
+import           Data.Char                        (toLower)
+import           Data.Either                      (isLeft)
+import           Data.Map                         (Map (..), fromList, lookup)
+import           Data.Maybe                       (fromJust, isNothing)
+import           Data.Text                        (Text ())
+import           Data.Yaml                        (decode)
+import           Network.Socket                   (Family (..), PortNumber (),
+                                                   SockAddr (..), Socket (..),
+                                                   SocketOption (..),
+                                                   SocketType (..), accept,
+                                                   bind, defaultProtocol,
+                                                   iNADDR_ANY, listen, sClose,
+                                                   setSocketOption, socket,
+                                                   socketToHandle)
+import           System.Directory                 (doesDirectoryExist,
+                                                   doesFileExist,
+                                                   getDirectoryContents,
+                                                   setCurrentDirectory)
+import           System.Environment               (getArgs)
+import           System.Exit                      (exitFailure)
+import           System.FilePath                  (takeExtension, (</>))
+import           System.IO                        (BufferMode (..), IOMode (..),
+                                                   hClose, hGetLine, hPutStr,
+                                                   hSetBuffering)
+import           System.Posix.Signals             (Handler (..), installHandler,
+                                                   keyboardSignal)
+import           System.Posix.User                (UserEntry (..),
+                                                   getRealUserID,
+                                                   getUserEntryForName,
+                                                   setGroupID, setUserID)
 
 
 -- | isListable filters out system files for directory listnings
@@ -80,12 +86,14 @@ stripNewline s
     ("\n\r" :: String) = stripNewline (B.tail s)
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
--- | requestToResponse takes a Path and a file type and returns the function
--- that calculates the response for a given file.
-requestToResponse :: GopherPath -> GopherFileType -> FilePath -> Spacecookie GopherResponse
-requestToResponse path fileType = response
+-- | requestToResponse takes a Path and a file type and wether the directory has a gophermap
+-- and returns the function that calculates the response for a given request.
+requestToResponse :: GopherPath -> GopherFileType -> Bool -> FilePath -> Spacecookie GopherResponse
+requestToResponse path fileType hasGophermap = response
   where response
           | isFile fileType       = fileResponse
+          | fileType == Directory &&
+            hasGophermap          = gophermapDirectoryResponse
           | fileType == Directory = directoryResponse
           | otherwise             = errorResponse $ pack "An error occured while handling your request"
 
@@ -113,6 +121,47 @@ errorResponse errorMsg _ = do
       port = serverPort conf
   return $ ErrorResponse errorMsg host port
 
+-- | converts a GophermapEntry to a GopherMenuItem and adds the missing
+-- information
+gophermapEntryToMenuItem :: GophermapEntry -> Spacecookie GopherMenuItem
+gophermapEntryToMenuItem (GophermapEntry ft desc path host port) = do
+  env <- ask
+  let conf = serverConfig env
+      confHost = serverName conf
+      confPort = serverPort conf
+  return $ Item ft desc (replaceIfNothing path (gopherRequestToPath desc))
+    (replaceIfNothing host confHost) (replaceIfNothing port confPort)
+  where replaceIfNothing Nothing  r = r
+        replaceIfNothing (Just x) _ = x
+
+-- | gophermapToDirectoryResponse adds the missing values of the
+-- parsedGophermap so that it can used to construct a response for
+-- the client
+gophermapToDirectoryResponse :: Gophermap -> Spacecookie GopherResponse
+gophermapToDirectoryResponse entries = do
+  menuItems <- mapM gophermapEntryToMenuItem entries
+  return $ MenuResponse menuItems
+
+-- | gophermapDirectoryResponse generates a DirectoryResponse from
+-- the directory's .gophermap file
+gophermapDirectoryResponse :: FilePath -> Spacecookie GopherResponse
+gophermapDirectoryResponse fp = do
+  let gophermap = fp </> ".gophermap"
+  parsedGM <- liftIO $ parseOnly parseGophermap <$> B.readFile gophermap
+  when (isLeft parsedGM) $ error $ "Could not parse Gophermap file " ++ gophermap
+  let (Right right) = parsedGM
+  gophermapToDirectoryResponse right
+
+-- | hasGophermap determines if a directory has a corresponding
+-- .gophermap file which describes the gopher menu that will be
+-- sent to the client
+hasGophermap :: GopherPath -> IO Bool
+hasGophermap gopherPath = do
+  let path = destructGopherPath gopherPath
+  isRealDir <- doesDirectoryExist path
+  hasGmap <- doesFileExist (path </> ".gophermap")
+  return $ hasGmap && isRealDir
+
 -- | handleIncoming is used to handle a client (socket).
 handleIncoming :: Socket -> Spacecookie ()
 handleIncoming clientSock = do
@@ -122,9 +171,10 @@ handleIncoming clientSock = do
   line <- liftIO $ stripNewline <$> B.hGetLine hdl
   let path = gopherRequestToPath line
   gopherType <- gopherFileType path
+  hasGmap <- liftIO $ hasGophermap path
 
   let buildReponse :: FilePath -> Spacecookie GopherResponse
-      buildReponse = requestToResponse path gopherType
+      buildReponse = requestToResponse path gopherType hasGmap
 
   resp <- fmap response $ buildReponse $ destructGopherPath path
 
