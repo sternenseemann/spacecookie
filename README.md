@@ -23,6 +23,9 @@
 
 spacecookie will now start serving `ROOTDIRECTORY`.
 
+### Gophermaps
+If you want to have something else than the automatically generated gopher menu you can use a [gophermap file](./docs/docs/gophermap-pygopherd.txt) to describe the menu. Spacecookie will use it automatically if you save it as `.gophermap` in the corresponding directory. ([Example file](./docs/gophermap), [WP: Gophermap](https://en.wikipedia.org/wiki/Gophermap))
+
 ## To-Do
 
 * ~~systemd unit file~~
@@ -32,7 +35,7 @@ spacecookie will now start serving `ROOTDIRECTORY`.
 * ~~Proper error handling whilst client handling~~ (Good enough for now)
 * ~~Drop privileges~~
 * ~~Clean-up the code, refactor towards more pure code~~
-* Add support for [gophermap files](https://en.wikipedia.org/wiki/Gophermap)
+* ~~Add support for [gophermap files](https://en.wikipedia.org/wiki/Gophermap)~~
 * chroot if possible
 * test, test, test
 * update systemd files and optimize system-wide experience
