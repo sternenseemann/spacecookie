@@ -24,7 +24,7 @@
 spacecookie will now start serving `ROOTDIRECTORY`.
 
 ### Gophermaps
-If you want to have something else than the automatically generated gopher menu you can use a [gophermap file](./docs/docs/gophermap-pygopherd.txt) to describe the menu. Spacecookie will use it automatically if you save it as `.gophermap` in the corresponding directory. ([Example file](./docs/gophermap), [WP: Gophermap](https://en.wikipedia.org/wiki/Gophermap))
+If you want to have something else than the automatically generated gopher menu you can use a [gophermap file](./docs/gophermap-pygopherd.txt) to describe the menu. Spacecookie will use it automatically if you save it as `.gophermap` in the corresponding directory. ([Example file](./docs/gophermap), [WP: Gophermap](https://en.wikipedia.org/wiki/Gophermap))
 
 ## To-Do
 
