@@ -4,8 +4,9 @@ let
 
   inherit (nixpkgs) pkgs;
 
-  f = { mkDerivation, base, bytestring, containers, directory
-      , filepath, mtl, network, stdenv, text, transformers, unix, yaml
+  f = { mkDerivation, attoparsec, base, bytestring, containers
+      , directory, filepath, mtl, network, stdenv, text, transformers
+      , unix, yaml
       }:
       mkDerivation {
         pname = "spacecookie";
@@ -14,8 +15,8 @@ let
         isLibrary = false;
         isExecutable = true;
         buildDepends = [
-          base bytestring containers directory filepath mtl network text
-          transformers unix yaml
+          attoparsec base bytestring containers directory filepath mtl
+          network text transformers unix yaml
         ];
         description = "gopher server daemon";
         license = stdenv.lib.licenses.gpl3;
