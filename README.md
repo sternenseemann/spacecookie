@@ -11,17 +11,13 @@
 
 – [WP](https://en.wikipedia.org/wiki/Gopher_(protocol))
 
-## Usage
+## Installation and Usage
 
 	git clone https://github.com/lukasepple/spacecookie.git
 	cd spacecookie
-	./etc/build.sh # a convience wrapper around cabal commands
-	cabal run spacecookie example.yaml # or your config file
-	# to install the binary system-wide in /usr/local/bin
-	# use ./etc/install.sh
-	# Please read it before using
-
-spacecookie will now start serving `ROOTDIRECTORY`.
+	make
+	sudo make install
+	spacecookie <configfile> # /usr/local/etc/spacecookie.yaml
 
 ### Gophermaps
 If you want to have something else than the automatically generated gopher menu you can use a [gophermap file](./docs/gophermap-pygopherd.txt) to describe the menu. Spacecookie will use it automatically if you save it as `.gophermap` in the corresponding directory. ([Example file](./docs/gophermap), [WP: Gophermap](https://en.wikipedia.org/wiki/Gophermap))
