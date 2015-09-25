@@ -1,8 +1,11 @@
 CORES=2
 PREFIX=/usr/local
 
-build: clean deps
+build: deps
 	cabal build
+
+
+rebuild: clean build
 
 clean:
 	cabal sandbox delete
