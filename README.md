@@ -22,8 +22,6 @@
 ### Gophermaps
 If you want to have something else than the automatically generated gopher menu you can use a [gophermap file](./docs/gophermap-pygopherd.txt) to describe the menu. Spacecookie will use it automatically if you save it as `.gophermap` in the corresponding directory. ([Example file](./docs/gophermap), [WP: Gophermap](https://en.wikipedia.org/wiki/Gophermap))
 
-**Please note that spacecookie currently always requires a filetype at the beginning of a gophermap line**
-
 ## To-Do
 
 * ~~systemd unit file~~
