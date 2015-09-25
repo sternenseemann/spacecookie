@@ -5,6 +5,7 @@ module Spacecookie.Types
   , GopherMenuItem (..)
   , fileTypeToChar
   , charToFileType
+  , fileTypeChars
   , isFile
   , menuItem
   , combine
@@ -21,7 +22,7 @@ import           Prelude               hiding (lookup)
 import           Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Char8 as B
 import           Data.Map              (Map (), fromList, lookup)
-import           Data.Maybe            (fromJust)
+import           Data.Maybe            (fromJust, fromMaybe)
 import           Data.Tuple            (swap)
 import           Network.Socket        (PortNumber ())
 import           System.FilePath       (splitPath, takeBaseName)
@@ -123,6 +124,9 @@ masterFileTypeCharRelation = [ (File, '0')
   , (InfoLine, 'i')
   ]
 
+fileTypeChars :: [Char]
+fileTypeChars = map snd masterFileTypeCharRelation
+
 fileTypeToCharRelation :: Map GopherFileType Char
 fileTypeToCharRelation = fromList masterFileTypeCharRelation
 
@@ -134,7 +138,7 @@ fileTypeToChar :: GopherFileType -> Char
 fileTypeToChar t = fromJust $ lookup t fileTypeToCharRelation
 
 charToFileType :: Char -> GopherFileType
-charToFileType c = fromJust $ lookup c charToFileTypeRelation
+charToFileType c = fromMaybe InfoLine $ lookup c charToFileTypeRelation
 
 isFile :: GopherFileType -> Bool
 isFile File = True
