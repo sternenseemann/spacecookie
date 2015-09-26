@@ -21,8 +21,10 @@ install: build
 	install -D -m755 dist/build/spacecookie/spacecookie $(PREFIX)/bin/spacecookie
 	install -D -m644 etc/config.yaml $(PREFIX)/etc/spacecookie.yaml
 	install -D -m644 LICENSE $(PREFIX)/share/licenses/spacecookie/LICENSE
+	test -d /usr/lib/systemd/system/ && install -D -m644 etc/spacecookie.service /usr/lib/systemd/system/
 
 uninstall:
 	rm -rf $(PREFIX)/share/licenses/spacecookie
 	rm $(PREFIX)/bin/spacecookie
 	rm $(PREFIX)/etc/spacecookie.yaml
+	test -d /usr/lib/systemd/system/ && rm /usr/lib/systemd/system/spacecookie.service
