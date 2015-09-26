@@ -13,7 +13,14 @@
 
 ## What is Spacecookie?
 
+Spacecookie is a gopher server that follows RF1435 and supports certain additions to the protocol (gophermaps and comment lines).
+
 ## Spacecookie's features
+
+* simple unix gopher daemon
+* simple configuration
+* Support for gophermaps
+* just works™ :)
 
 ## Installation
 
