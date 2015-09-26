@@ -34,7 +34,20 @@ gopherFileTypeChar :: Parser Char
 gopherFileTypeChar = satisfy (inClass fileTypeChars)
 
 parseGophermapLine :: Parser GophermapEntry
-parseGophermapLine = emptyGophermapline <|> regularGophermapline <|> gophermaplineWithoutFileTypeChar
+parseGophermapLine = emptyGophermapline <|> 
+                     infoGophermapline <|> 
+                     regularGophermapline <|>
+                     gophermaplineWithoutFileTypeChar
+
+infoGophermapline :: Parser GophermapEntry
+infoGophermapline = do
+  text <- takeWhile (notInClass "\t\r\n")
+  endOfLine
+  return $ GophermapEntry InfoLine
+    text
+    Nothing
+    Nothing
+    Nothing
 
 regularGophermapline :: Parser GophermapEntry
 regularGophermapline = do
