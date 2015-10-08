@@ -8,7 +8,6 @@ module Spacecookie.Types
   , fileTypeChars
   , isFile
   , menuItem
-  , combine
   , implode
   , response
   , constructGopherPath
@@ -29,10 +28,6 @@ import           System.FilePath       (splitPath, takeBaseName)
 
 -- | Internal representation of a gopher path
 type GopherPath = [ByteString]
-
--- | concatenates two GopherPaths
-combine :: GopherPath -> GopherPath -> GopherPath
-combine = (++)
 
 -- | Implode is intended for getting a path usable in the protocol from GopherPath
 implode :: GopherPath -> FilePath

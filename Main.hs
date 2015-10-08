@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-import           Spacecookie.ConfigParsing
+
 import           Spacecookie.Gophermap
 import           Spacecookie.Monad
 import           Spacecookie.Types
+import           Spacecookie.ConfigParsing
 
 import           Prelude                          hiding (lookup)
 
@@ -108,7 +109,7 @@ directoryResponse fp = do
   let conf = serverConfig env
       host = serverName conf
       port = serverPort conf
-  dir <- liftIO $ map (combine (constructGopherPath fp)) <$> filter isListable <$> map constructGopherPath <$> getDirectoryContents fp
+  dir <- liftIO $ map ((constructGopherPath fp) ++) <$> filter isListable <$> map constructGopherPath <$> getDirectoryContents fp
   items <- zipWith (menuItem host port) dir <$> mapM gopherFileType dir
   return $ MenuResponse items
 
