@@ -89,14 +89,15 @@ stripNewline s
 
 -- | requestToResponse takes a Path and a file type and wether the directory has a gophermap
 -- and returns the function that calculates the response for a given request.
-requestToResponse :: GopherPath -> GopherFileType -> Bool -> FilePath -> Spacecookie GopherResponse
+requestToResponse :: GopherPath -> GopherFileType -> Bool -> Spacecookie GopherResponse
 requestToResponse path fileType hasGophermap = response
   where response
-          | isFile fileType       = fileResponse
+          | isFile fileType       = fileResponse filePath
           | fileType == Directory &&
-            hasGophermap          = gophermapDirectoryResponse
-          | fileType == Directory = directoryResponse
-          | otherwise             = errorResponse $ pack "An error occured while handling your request"
+            hasGophermap          = gophermapDirectoryResponse filePath
+          | fileType == Directory = directoryResponse filePath
+          | otherwise             = errorResponse "An error occured while handling your request" filePath
+        filePath = destructGopherPath path
 
 -- | creates a gopher file response
 fileResponse :: FilePath -> Spacecookie GopherResponse
@@ -174,10 +175,8 @@ handleIncoming clientSock = do
   gopherType <- gopherFileType path
   hasGmap <- liftIO $ hasGophermap path
 
-  let buildReponse :: FilePath -> Spacecookie GopherResponse
-      buildReponse = requestToResponse path gopherType hasGmap
-
-  resp <- fmap response $ buildReponse $ destructGopherPath path
+  resp <- fmap response
+    $ requestToResponse path gopherType hasGmap
 
   liftIO $ B.hPutStr hdl resp
   liftIO $ hClose hdl
