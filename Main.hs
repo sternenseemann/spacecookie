@@ -8,7 +8,7 @@ import           Spacecookie.ConfigParsing
 import           Prelude                          hiding (lookup)
 
 import           Control.Applicative              (Applicative (..), liftA2,
-                                                   (<$>), (<*>))
+                                                   (<$>), (<*>), (<|>))
 import           Control.Concurrent               (forkIO)
 import           Control.Monad                    (forever, mzero, unless, when)
 import           Control.Monad.IO.Class           (liftIO)
@@ -55,27 +55,26 @@ isListable p
   | B.head (last p) == '.' = False
   | otherwise              = True
 
--- | cond is a LISPy conditional statement
-cond :: [(Bool, a)] -> a
-cond [] = error "cond: no matching condition"
-cond ((condition, val) : xs) = if condition
-                                 then val
-                                 else cond xs
+-- | True -> Just a
+-- False -> Nothing
+boolToMaybe :: a -> Bool -> Maybe a
+boolToMaybe a True  = Just a
+boolToMaybe _ False = Nothing
 
 -- TODO: at least support for BinaryFile should be added
 -- | calculates the file type identifier used in the Gopher protocol
 -- for a given file
 gopherFileType :: GopherPath -> Spacecookie GopherFileType
 gopherFileType f = do
-  isDir <- liftIO $ doesDirectoryExist filePath
-  isFile <- liftIO $ doesFileExist filePath
-  return $ cond [ (isDir, Directory)
-                , (isGif, GifFile)
-                , (isImage, ImageFile)
-                , (isFile, File)
-                , (True, Error)]
-  where isGif = takeExtension filePath == "gif"
-        isImage = map toLower (takeExtension filePath) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"] || isGif
+  isDir <-  fmap (boolToMaybe Directory)
+    . liftIO . doesDirectoryExist $ filePath
+  isFile <- fmap (boolToMaybe File)
+    . liftIO . doesFileExist $ filePath
+  return . fromJust $ isDir <|> isGif <|> isImage <|>  isFile <|> Just Error
+  where isGif = boolToMaybe GifFile $ takeExtension filePath == "gif"
+        isImage = boolToMaybe ImageFile $
+          map toLower (takeExtension filePath) `elem`
+            ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
         filePath = destructGopherPath f
 
 -- | strips "\n" and "\r" from a string. Used on all strings
