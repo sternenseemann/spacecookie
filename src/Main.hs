@@ -66,12 +66,12 @@ boolToMaybe _ False = Nothing
 -- for a given file
 gopherFileType :: GopherPath -> Spacecookie GopherFileType
 gopherFileType f = do
-  isDir <-  fmap (boolToMaybe Directory)
-    . liftIO . doesDirectoryExist $ filePath
-  isFile <- fmap (boolToMaybe File)
-    . liftIO . doesFileExist $ filePath
+  isDir  <- ioCheck Directory doesDirectoryExist
+  isFile <- ioCheck File doesFileExist
   return . fromJust $ isDir <|> isGif <|> isImage <|>  isFile <|> Just Error
-  where isGif = boolToMaybe GifFile $ takeExtension filePath == "gif"
+  where ioCheck onSuccess check = fmap (boolToMaybe onSuccess) . liftIO
+          . check $ destructGopherPath f
+        isGif = boolToMaybe GifFile $ takeExtension filePath == "gif"
         isImage = boolToMaybe ImageFile $
           map toLower (takeExtension filePath) `elem`
             ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
