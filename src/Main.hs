@@ -62,6 +62,7 @@ boolToMaybe a True  = Just a
 boolToMaybe _ False = Nothing
 
 -- TODO: at least support for BinaryFile should be added
+-- (This is going to be difficult and involve a lot of black magic)
 -- | calculates the file type identifier used in the Gopher protocol
 -- for a given file
 gopherFileType :: GopherPath -> Spacecookie GopherFileType
@@ -78,7 +79,7 @@ gopherFileType f = do
         filePath = destructGopherPath f
 
 -- | strips "\n" and "\r" from a string. Used on all strings
--- coming from the client to make them parseable.
+-- coming from the client to make them usable.
 stripNewline :: ByteString -> ByteString
 stripNewline s
   | B.null s           = B.empty
@@ -86,8 +87,9 @@ stripNewline s
     ("\n\r" :: String) = stripNewline (B.tail s)
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
--- | requestToResponse takes a Path and a file type and wether the directory has a gophermap
--- and returns the function that calculates the response for a given request.
+-- | requestToResponse takes a Path and a file type and wether the directory has
+-- a gophermap and returns the function that calculates the response for a given
+-- request.
 requestToResponse :: GopherPath -> GopherFileType -> Bool -> Spacecookie GopherResponse
 requestToResponse path fileType hasGophermap = response
   where response
@@ -95,10 +97,11 @@ requestToResponse path fileType hasGophermap = response
           | fileType == Directory &&
             hasGophermap          = gophermapDirectoryResponse filePath
           | fileType == Directory = directoryResponse filePath
-          | otherwise             = errorResponse "An error occured while handling your request" filePath
+          | otherwise             = errorResponse
+              "An error occured while handling your request" filePath
         filePath = destructGopherPath path
 
--- | creates a gopher file response
+-- | Creates a gopher file response.
 fileResponse :: FilePath -> Spacecookie GopherResponse
 fileResponse fp = liftIO $ FileResponse <$> B.readFile fp
 
@@ -109,7 +112,8 @@ directoryResponse fp = do
   let conf = serverConfig env
       host = serverName conf
       port = serverPort conf
-  dir <- liftIO $ map ((constructGopherPath fp) ++) <$> filter isListable <$> map constructGopherPath <$> getDirectoryContents fp
+  dir <- liftIO $ map ((constructGopherPath fp) ++) <$> filter isListable <$>
+    map constructGopherPath <$> getDirectoryContents fp
   items <- zipWith (menuItem host port) dir <$> mapM gopherFileType dir
   return $ MenuResponse items
 
