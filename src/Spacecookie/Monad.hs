@@ -1,11 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Spacecookie.Monad where
 
-import           Control.Applicative       (Applicative (..))
-import           Control.Monad.IO.Class    (MonadIO (..))
-import           Control.Monad.Reader      (MonadReader (..), ReaderT (..))
-import           Network.Socket            (Socket ())
-import           Spacecookie.ConfigParsing (Config (..))
+import           Control.Applicative    (Applicative (..))
+import           Control.Monad.IO.Class (MonadIO (..))
+import           Control.Monad.Reader   (MonadReader (..), ReaderT (..))
+import           Network.Socket         (Socket ())
+import           Spacecookie.Config     (Config (..))
 
 -- | GopherdEnv holds the Environment for the Spacecookie
 -- application / all functions operating on the Monad.

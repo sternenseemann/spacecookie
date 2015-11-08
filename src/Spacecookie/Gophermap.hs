@@ -3,7 +3,7 @@ module Spacecookie.Gophermap where
 
 import           Prelude                          hiding (take, takeWhile)
 
-import           Spacecookie.ConfigParsing
+import           Spacecookie.Config
 import           Spacecookie.Monad
 import           Spacecookie.Types
 
@@ -17,7 +17,9 @@ import           Data.Maybe                       (Maybe (..))
 import           Data.Word                        (Word8 ())
 import           Network.Socket                   (PortNumber ())
 
-data GophermapEntry = GophermapEntry GopherFileType ByteString (Maybe GopherPath) (Maybe ByteString) (Maybe PortNumber)
+data GophermapEntry = GophermapEntry
+  GopherFileType ByteString
+  (Maybe GopherPath) (Maybe ByteString) (Maybe PortNumber)
   deriving (Show, Eq)
 
 type Gophermap = [GophermapEntry]

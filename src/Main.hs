@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import           Spacecookie.Config
 import           Spacecookie.Gophermap
 import           Spacecookie.Monad
 import           Spacecookie.Types
-import           Spacecookie.ConfigParsing
 
 import           Prelude                          hiding (lookup)
 

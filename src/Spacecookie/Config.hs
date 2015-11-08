@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Spacecookie.ConfigParsing where
+module Spacecookie.Config where
+
 import           Control.Applicative ((<$>), (<*>))
 import           Control.Monad       (mzero)
 import           Data.ByteString     (ByteString ())
@@ -25,7 +26,12 @@ instance FromJSON Config where
   parseJSON _ = mzero
 
 instance ToJSON Config where
-  toJSON (Config host port user root) = object ["hostname" .= host, "port" .= port, "user" .= user, "root" .= root]
+  toJSON (Config host port user root) = object
+    [ "hostname" .= host
+    , "port" .= port
+    , "user" .= user
+    , "root" .= root
+    ]
 
 -- auxiliary instances for types that have no default instance
 instance FromJSON ByteString where
@@ -33,7 +39,8 @@ instance FromJSON ByteString where
   parseJSON _ = mzero
 
 instance FromJSON PortNumber where
-  parseJSON (Number port) = fromIntegral <$> (parseJSON (Number port) :: Parser Integer)
+  parseJSON (Number port) = fromIntegral
+    <$> (parseJSON (Number port) :: Parser Integer)
   parseJSON _ = mzero
 
 instance ToJSON ByteString where
