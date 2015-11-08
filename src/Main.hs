@@ -184,17 +184,6 @@ handleIncoming clientSock = do
   liftIO $ B.hPutStr hdl resp
   liftIO $ hClose hdl
 
--- | main loop
-mainLoop :: Spacecookie ()
-mainLoop = do
-  env <- ask
-  let sock = serverSocket env
-  forever $ do
-    (clientSock, _) <- liftIO $ accept sock
-    liftIO $ forkIO $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
-  liftIO $ cleanup sock
-
-
 -- | cleanup closes the socket
 cleanup :: Socket -> IO ()
 cleanup sock = do
@@ -223,8 +212,15 @@ spacecookieMain = do
   env <- ask
 
   -- react to Crtl-C
-  liftIO $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
-  mainLoop
+  liftIO
+    $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
+
+  let sock = serverSocket env
+  forever $ do
+    (clientSock, _) <- liftIO $ accept sock
+    liftIO $ forkIO
+      $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
+  liftIO $ cleanup sock
 
 -- | parses args and config and binds the socket
 main :: IO ()
