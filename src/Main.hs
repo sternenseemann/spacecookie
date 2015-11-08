@@ -48,7 +48,7 @@ import           System.Posix.User                (UserEntry (..),
                                                    setGroupID, setUserID)
 
 
--- | isListable filters out system files for directory listnings
+-- | isListable filters out system files for directory listings
 isListable :: GopherPath -> Bool
 isListable p
   | null p                 = False
