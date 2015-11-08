@@ -24,12 +24,7 @@ Spacecookie is a gopher server that follows RF1435 and supports certain addition
 
 ## Installation
 
-For starters, clone the git repository, build and install Spacecookie!
-
-	git clone https://github.com/lukasepple/spacecookie.git
-	cd spacecookie
-	make
-	sudo make install
+You can either use cabal, stack or nix-shell plus cabal. The necessary files are provided.
 
 ## Configuration
 

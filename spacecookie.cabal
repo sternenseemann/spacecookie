@@ -5,17 +5,13 @@ description:         simple gopher server daemon
 license:             GPL-3
 license-file:        LICENSE
 author:              sternenseemann
-maintainer:          git@lukasepple.de
-copyright:           (c) 2015 Lukas Epple
+maintainer:          lambda@lukasepple.de
 category:            Network
 build-type:          Simple
--- extra-source-files:  
 cabal-version:       >=1.10
 
 executable spacecookie
   main-is:             Main.hs
-  -- other-modules:       
-  -- other-extensions:    
   build-depends:       base
                      , network
                      , unix

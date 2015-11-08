@@ -1,4 +1,4 @@
 hostname: schlepptopp.fritz.box
 user: lukas
 port: 7070
-root: ./test
+root: ./
