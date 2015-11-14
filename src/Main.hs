@@ -29,7 +29,8 @@ import           Network.Socket                   (Family (..), PortNumber (),
                                                    bind, defaultProtocol,
                                                    iNADDR_ANY, listen, close,
                                                    setSocketOption, socket,
-                                                   socketToHandle)
+                                                   socketToHandle, shutdown,
+                                                   ShutdownCmd(..))
 import           System.Directory                 (doesDirectoryExist,
                                                    doesFileExist,
                                                    getDirectoryContents,
@@ -40,8 +41,6 @@ import           System.FilePath                  (takeExtension, (</>))
 import           System.IO                        (BufferMode (..), IOMode (..),
                                                    hClose, hGetLine, hPutStr,
                                                    hSetBuffering)
-import           System.Posix.Signals             (Handler (..), installHandler,
-                                                   keyboardSignal)
 import           System.Posix.User                (UserEntry (..),
                                                    getRealUserID,
                                                    getUserEntryForName,
@@ -112,7 +111,7 @@ directoryResponse fp = do
   let conf = serverConfig env
       host = serverName conf
       port = serverPort conf
-  dir <- liftIO $ map ((constructGopherPath fp) ++) <$> filter isListable <$>
+  dir <- liftIO $ map (constructGopherPath fp ++) <$> filter isListable <$>
     map constructGopherPath <$> getDirectoryContents fp
   items <- zipWith (menuItem host port) dir <$> mapM gopherFileType dir
   return $ MenuResponse items
@@ -178,17 +177,10 @@ handleIncoming clientSock = do
   gopherType <- gopherFileType path
   hasGmap <- liftIO $ hasGophermap path
 
-  resp <- fmap response
-    $ requestToResponse path gopherType hasGmap
+  resp <- response <$> requestToResponse path gopherType hasGmap
 
   liftIO $ B.hPutStr hdl resp
   liftIO $ hClose hdl
-
--- | cleanup closes the socket
-cleanup :: Socket -> IO ()
-cleanup sock = do
-  close sock
-  exitFailure
 
 -- | dropPrivileges is used to run spacecookie as
 -- a normal user after the socket has been setup
@@ -211,16 +203,11 @@ spacecookieMain = do
   dropPrivileges
   env <- ask
 
-  -- react to Crtl-C
-  liftIO
-    $ installHandler keyboardSignal (Catch $ cleanup $ serverSocket env) Nothing
-
   let sock = serverSocket env
   forever $ do
     (clientSock, _) <- liftIO $ accept sock
-    liftIO $ forkIO
+    liftIO . forkIO
       $ (runReaderT . runSpacecookie) (handleIncoming clientSock) env
-  liftIO $ cleanup sock
 
 -- | parses args and config and binds the socket
 main :: IO ()
