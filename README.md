@@ -13,22 +13,22 @@
 
 ## What is Spacecookie?
 
-Spacecookie is a gopher server that follows RF1435 and supports certain additions to the protocol (gophermaps and comment lines).
+Spacecookie is a gopher server that implements RFC1435. It supports comment lines (i-Type) as 100% compatible protocol extension (which is widely used). Support for the popular gophermap format to denote menus is in place.
 
 ## Spacecookie's features
 
-* simple unix gopher daemon
-* simple configuration
+* Simple unix gopher daemon
+* Simple configuration
 * Support for gophermaps
-* just works™ :)
+* Just works™
 
-## Installation
+## Building
 
 You can either use cabal, stack or nix-shell plus cabal. The necessary files are provided.
 
 ## Configuration
 
-In order to run your new gopher server, you got to configure it first. This is done using the file `/usr/local/etc/spacecookie.yaml` (but you can place an equivalent file anywhere in your file system). It looks like this:
+In order to run your new gopher server, you got to configure it first. The example configuration file is `./etc/spacecookie.yaml`:
 
 	hostname: my.gopher.space
 	user: gopher
@@ -44,7 +44,7 @@ option     | meaning
 `port`     | The port spacecookie should listen on. The well-known port for gopher is 70.
 `root`     | The directory which the files to serve via gopher are located in.
 
-## Running Spacecookie
+## Running
 
 After you've created your config file just start spacecookie like this:
 
@@ -55,13 +55,13 @@ Of course it is more convenient to run it as a system wide demon. For that reaso
 	systemctl enable spacecookie.service
 	systemctl start  spacecookie.service
 
-Per default the service uses `/usr/local/etc/spacecookie.yaml` as configuration file.
+Please note that you have to move the necessary file in place manually at the moment.
 
 ## Adding Content
 
-Having a gopher server is nice but not that nice without any nice content to serve. Luckily adding content is extremely easy as Spacecookie does nothing else than serving files beneath the `root`-directory (note that Spacecookie does _not_ serve files with names that start with a dot).
+Spacecookie per-default acts as a simple file server of any files that are beneath the root directory excluding files that start with a `.`.
 
-Directory listings are also generated automatically for you. If you want a fancy listning with future information and text you can use a [gophermap](https://en.wikipedia.org/wiki/Gophermap) to define a custom (static) listning for a directory. This is often used to create a nice "homepage", i. e. the root directory listning. Below is an example gophermap file.
+If you are not happy with the automaticly generated gopher menus you can customize them using the [gophermap](https://en.wikipedia.org/wiki/Gophermap) file format:
 
 	You can just start writing text that
 	will be displayed by the gopher client
@@ -92,6 +92,4 @@ The file type characters are defined in [RFC1435](https://tools.ietf.org/html/rf
 * ~~Drop privileges~~
 * ~~Clean-up the code, refactor towards more pure code~~
 * ~~Add support for [gophermap files](https://en.wikipedia.org/wiki/Gophermap)~~
-* chroot if possible
-* test, test, test
-* update systemd files and optimize system-wide experience
+* ~~update systemd files and optimize system-wide experience~~
