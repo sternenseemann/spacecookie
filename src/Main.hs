@@ -27,7 +27,7 @@ import           Network.Socket                   (Family (..), PortNumber (),
                                                    SocketOption (..),
                                                    SocketType (..), accept,
                                                    bind, defaultProtocol,
-                                                   iNADDR_ANY, listen, sClose,
+                                                   iNADDR_ANY, listen, close,
                                                    setSocketOption, socket,
                                                    socketToHandle)
 import           System.Directory                 (doesDirectoryExist,
@@ -187,7 +187,7 @@ handleIncoming clientSock = do
 -- | cleanup closes the socket
 cleanup :: Socket -> IO ()
 cleanup sock = do
-  sClose sock
+  close sock
   exitFailure
 
 -- | dropPrivileges is used to run spacecookie as
