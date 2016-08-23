@@ -13,7 +13,7 @@
 
 ## What is Spacecookie?
 
-Spacecookie is a gopher server that implements RFC1435. It supports comment lines (i-Type) as 100% compatible protocol extension (which is widely used). Support for the popular gophermap format to denote menus is in place.
+Spacecookie is a gopher server that implements RFC1436. It supports comment lines (i-Type) as 100% compatible protocol extension (which is widely used). Support for the popular gophermap format to denote menus is in place.
 
 ## Spacecookie's features
 
@@ -80,7 +80,7 @@ So what does that all mean? These are the rules for a gophermap file:
 * menu entries for files or directories start with a single char which specifies the file type, followed by the text for that file without a space or tab between them! Then the path is added after a tab.
 * "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
 
-The file type characters are defined in [RFC1435](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt) (taken from the pygopherd man page).
+The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt) (taken from the pygopherd man page).
 
 ## To-Do
 
