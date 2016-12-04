@@ -69,14 +69,14 @@ dropPrivileges username = do
 
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
 runGopher cfg f = do
-  -- Change UID and GID if necessary
-  when (isJust (cRunUserName cfg)) $ dropPrivileges (fromJust (cRunUserName cfg))
-
   -- setup the socket
   sock <- socket AF_INET Stream defaultProtocol
   setSocketOption sock ReuseAddr 1
   bind sock (SockAddrInet (cServerPort cfg) iNADDR_ANY)
   listen sock 5
+
+  -- Change UID and GID if necessary
+  when (isJust (cRunUserName cfg)) $ dropPrivileges (fromJust (cRunUserName cfg))
 
   (flip (runReaderT . runGopherM)) (Env sock (cServerName cfg) (cServerPort cfg) f) $
     forever $ do
