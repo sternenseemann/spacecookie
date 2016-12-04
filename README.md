@@ -28,12 +28,7 @@ You can either use cabal, stack or nix-shell plus cabal. The necessary files are
 
 ## Configuration
 
-In order to run your new gopher server, you got to configure it first. The example configuration file is `./etc/spacecookie.yaml`:
-
-	hostname: my.gopher.space
-	user: gopher
-	port: 70
-	root: /srv/gopher
+In order to run your new gopher server, you got to configure it first. The example configuration file is `./etc/spacecookie.json`.
 
 Let's have a quick look at the options:
 
@@ -48,7 +43,7 @@ option     | meaning
 
 After you've created your config file just start spacecookie like this:
 
-	spacecookie /path/to/spacecookie.yaml
+	spacecookie /path/to/spacecookie.json
 
 Of course it is more convenient to run it as a system wide demon. For that reason a systemd `spacecookie.service` is provided. You can use it like this:
 
@@ -69,7 +64,7 @@ If you are not happy with the automaticly generated gopher menus you can customi
 	also possible.
 
 	1Menu Entry for a directory full of funny stuff	/funny
-	IFunny Image	/funy.jpg
+	iFunny Image	/funy.jpg
 	gcat gif	/cat.gif
 	0about me	/about.txt
 	1Floodgap's gopher server	/	gopher.floodgap.com	70
@@ -81,15 +76,3 @@ So what does that all mean? These are the rules for a gophermap file:
 * "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
 
 The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt) (taken from the pygopherd man page).
-
-## To-Do
-
-* ~~systemd unit file~~
-* ~~Real systemwide installation~~
-* ~~Threading~~
-* ~~Byte count vs. Character count (utf-8)~~
-* ~~Proper error handling whilst client handling~~ (Good enough for now)
-* ~~Drop privileges~~
-* ~~Clean-up the code, refactor towards more pure code~~
-* ~~Add support for [gophermap files](https://en.wikipedia.org/wiki/Gophermap)~~
-* ~~update systemd files and optimize system-wide experience~~

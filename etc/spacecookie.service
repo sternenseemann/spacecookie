@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/spacecookie /usr/local/etc/spacecookie.yaml
+ExecStart=/usr/local/bin/spacecookie /usr/local/etc/spacecookie.json
 
 [Install]
 WantedBy=multi-user.target

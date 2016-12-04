@@ -1,19 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Spacecookie.Config where
+module Config
+  ( Config (..)
+  ) where
 
-import           Control.Applicative ((<$>), (<*>))
-import           Control.Monad       (mzero)
-import           Data.ByteString     (ByteString ())
-import           Data.Text           (Text ())
-import           Data.Text.Encoding  (decodeUtf8, encodeUtf8)
-import           Data.Yaml           hiding (Result (..))
-import           Network.Socket      (PortNumber ())
+import Control.Applicative ((<$>), (<*>))
+import Control.Monad (mzero)
+import Data.Aeson
+import Data.Aeson.Types
+import Data.ByteString (ByteString ())
+import qualified Data.ByteString as B
+import Network.Socket (PortNumber ())
+import Network.Gopher.Util
 
--- | The config holds some simple parameters that modify
--- the behavior of the server.
 data Config = Config { serverName    :: ByteString
                      , serverPort    :: PortNumber
-                     , runUserName   :: ByteString
+                     , runUserName   :: String
                      , rootDirectory :: FilePath
                      }
 
@@ -35,7 +36,7 @@ instance ToJSON Config where
 
 -- auxiliary instances for types that have no default instance
 instance FromJSON ByteString where
-  parseJSON (String s) = encodeUtf8 <$> (parseJSON (String s) :: Parser Text)
+  parseJSON (String s) = uEncode <$> (parseJSON (String s))
   parseJSON _ = mzero
 
 instance FromJSON PortNumber where
@@ -44,7 +45,7 @@ instance FromJSON PortNumber where
   parseJSON _ = mzero
 
 instance ToJSON ByteString where
-  toJSON str = toJSON $ decodeUtf8 str
+  toJSON = toJSON . uDecode
 
 instance ToJSON PortNumber where
   toJSON port = toJSON (fromIntegral port :: Integer)
