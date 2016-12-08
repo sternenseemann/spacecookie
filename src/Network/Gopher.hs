@@ -60,12 +60,12 @@ handleIncoming clientSock = do
 
 dropPrivileges :: String -> IO ()
 dropPrivileges username = do
-  uid <- liftIO getRealUserID
+  uid <- getRealUserID
   when (uid /= 0) $ return ()
 
-  user <- liftIO $ getUserEntryForName username
-  liftIO $ setGroupID $ userGroupID user
-  liftIO $ setUserID $ userID user
+  user <- getUserEntryForName username
+  setGroupID $ userGroupID user
+  setUserID $ userID user
 
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
 runGopher cfg f = do
