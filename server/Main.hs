@@ -50,7 +50,7 @@ directoryResponse :: FilePath -> IO GopherResponse
 directoryResponse path = do
   dir <- liftIO $ filter isListable <$> getDirectoryContents path
   fileTypes <- mapM gopherFileType dir
-  pure . MenuResponse $ zipWith (\t f -> Item t (uEncode f) f) fileTypes dir
+  pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode f) f) fileTypes dir
 
 gophermapResponse :: FilePath -> IO GopherResponse
 gophermapResponse path = do

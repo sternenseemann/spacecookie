@@ -6,6 +6,7 @@ module Network.Gopher
   , GopherConfig (..)
   , GopherResponse (..)
   , Gophermap (..)
+  , GophermapEntry (..)
   , GopherFileType (..)
   , GopherMenuItem (..)
   ) where
@@ -17,7 +18,7 @@ import Network.Gopher.Util.Gophermap
 import Network.Socket
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust, fromMaybe)
 import Control.Applicative ((<$>), (<*>), Applicative (..))
 import Control.Concurrent (forkIO)
 import Control.Monad (forever, when)
@@ -27,18 +28,19 @@ import qualified Data.String.UTF8 as U
 import System.IO
 import System.Posix.User
 
-data GopherConfig =
-  GopherConfig { cServerName    :: ByteString
-               , cServerPort    :: PortNumber
-               , cRunUserName   :: Maybe String
-               }
+-- | necessary information to handle gopher requests
+data GopherConfig
+  = GopherConfig { cServerName    :: ByteString   -- ^ “name” of the server (either ip address or dns name)
+                 , cServerPort    :: PortNumber   -- ^ port to listen on
+                 , cRunUserName   :: Maybe String -- ^ user to run the process as
+                 }
 
-data Env =
-  Env { serverSocket :: Socket
-      , serverName   :: ByteString
-      , serverPort   :: PortNumber
-      , serverFun    :: (String -> IO GopherResponse)
-      }
+data Env
+  = Env { serverSocket :: Socket
+        , serverName   :: ByteString
+        , serverPort   :: PortNumber
+        , serverFun    :: (String -> IO GopherResponse)
+        }
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
@@ -67,6 +69,9 @@ dropPrivileges username = do
   setGroupID $ userGroupID user
   setUserID $ userID user
 
+-- | Run a gopher application that may cause effects in IO.
+--   The application function is given the gopher request (path)
+--   and required to produce a GopherResponse.
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
 runGopher cfg f = do
   -- setup the socket
@@ -86,17 +91,18 @@ runGopher cfg f = do
       liftIO . forkIO
         $ (runReaderT . runGopherM) (handleIncoming clientSock) env
 
+-- | Run a gopher application that may not cause effects in IO.
 runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
 runGopherPure cfg f = runGopher cfg (\x -> pure (f x))
 
 response :: GopherResponse -> GopherM ByteString
 response (MenuResponse items) = do
   env <- ask
-  pure $ foldl (\acc (Item fileType title path) ->
+  pure $ foldl (\acc (Item fileType title path host port) ->
                  B.append acc $
                    fileTypeToChar fileType `B.cons`
-                     B.concat [ title, uEncode "\t", uEncode path, uEncode "\t", serverName env,
-                                uEncode "\t", uEncode . show $ serverPort env, uEncode "\r\n" ])
+                     B.concat [ title, uEncode "\t", uEncode path, uEncode "\t", fromMaybe (serverName env) host,
+                                uEncode "\t", uEncode . show $ fromMaybe (serverPort env) port, uEncode "\r\n" ])
               B.empty items
 
 response (FileResponse str) = pure str

@@ -22,34 +22,33 @@ import           Data.Word             (Word8 ())
 import           Network.Socket        (PortNumber ())
 import           System.FilePath       (splitPath, takeBaseName)
 
--- | a gopher menu item represented as type used in directory listings.
-data GopherMenuItem = Item GopherFileType ByteString FilePath
+-- | entry in a gopher menu
+data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString) (Maybe PortNumber) -- ^ file type, menu text, filepath (does not need to be a real file), server name (optional), port (optional)
   deriving (Show, Eq)
 
--- | type representation of a response of the gopher server
-data GopherResponse = MenuResponse [GopherMenuItem]
-  | FileResponse ByteString
-  | ErrorResponse ByteString
+data GopherResponse
+  = MenuResponse [GopherMenuItem] -- ^ gopher menu, wrapper around a list of GopherMenuItem
+  | FileResponse ByteString       -- ^ return the given ByteString as a file
+  | ErrorResponse ByteString      -- ^ gopher menu containing a single error with the given string
   deriving (Show, Eq)
 
--- | converts the GopherResponse into a ByteString that can be sent to the
--- client.
--- | type representation of the defined gopher file types
-data GopherFileType = File
-  | Directory
+-- | rfc-defined gopher file types plus info line
+data GopherFileType
+  = File                 -- ^ text file, default type
+  | Directory            -- ^ a gopher menu
   | PhoneBookServer
-  | Error
+  | Error                -- ^ error entry in menu
   | BinHexMacintoshFile
   | DOSArchive
   | UnixUuencodedFile
   | IndexSearchServer
   | TelnetSession
-  | BinaryFile
+  | BinaryFile           -- ^ binary file
   | RedundantServer
   | Tn3270Session
-  | GifFile
-  | ImageFile
-  | InfoLine
+  | GifFile              -- ^ gif
+  | ImageFile            -- ^ image of any format
+  | InfoLine             -- ^ menu entry without associated file
   deriving (Show, Eq, Ord, Enum)
 
 fileTypeToChar :: GopherFileType -> Word8
@@ -68,12 +67,13 @@ fileTypeToChar t = asciiOrd $
     RedundantServer -> '+'
     Tn3270Session -> 'T'
     GifFile -> 'g'
-    ImageFile -> 'i'
-    InfoLine -> 'I'
+    ImageFile -> 'I'
+    InfoLine -> 'i'
 
 charToFileType :: Word8 -> GopherFileType
 charToFileType c =
   case asciiChr c of
+     '0' -> File
      '1' -> Directory
      '2' -> PhoneBookServer
      '3' -> Error
@@ -86,8 +86,8 @@ charToFileType c =
      '+' -> RedundantServer
      'T' -> Tn3270Session
      'g' -> GifFile
-     'i' -> ImageFile
-     'I' -> InfoLine
+     'I' -> ImageFile
+     'i' -> InfoLine
      _   -> InfoLine -- default value
 
 isFile :: GopherFileType -> Bool

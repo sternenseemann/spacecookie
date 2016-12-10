@@ -2,8 +2,8 @@
 module Network.Gopher.Util.Gophermap
   ( gophermapToDirectoryResponse
   , parseGophermap
-  , Gophermap (..))
-    where
+  , Gophermap (..)
+  , GophermapEntry (..)) where
 
 import Prelude hiding (take, takeWhile)
 
@@ -16,6 +16,7 @@ import Control.Monad.Reader (ask)
 import Data.Attoparsec.ByteString
 import Data.ByteString (ByteString (), append, empty,
                         pack, singleton, unpack)
+import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import Network.Socket (PortNumber ())
@@ -31,12 +32,10 @@ gophermapToDirectoryResponse entries =
 -- information
 gophermapEntryToMenuItem :: GophermapEntry -> GopherMenuItem
 gophermapEntryToMenuItem (GophermapEntry ft desc path host port) =
-  Item ft desc (replaceIfNothing path (uDecode desc))
-  where replaceIfNothing Nothing  r = r
-        replaceIfNothing (Just x) _ = x
+  Item ft desc (fromMaybe (uDecode desc) path) host port
 
 fileTypeChars :: [Char]
-fileTypeChars = "123456789+TgIi"
+fileTypeChars = "0123456789+TgIi"
 
 data GophermapEntry = GophermapEntry
   GopherFileType ByteString
@@ -58,8 +57,8 @@ gopherFileTypeChar = satisfy (inClass fileTypeChars)
 
 parseGophermapLine :: Parser GophermapEntry
 parseGophermapLine = emptyGophermapline <|>
-                     infoGophermapline <|>
                      regularGophermapline <|>
+                     infoGophermapline <|>
                      gophermaplineWithoutFileTypeChar
 
 infoGophermapline :: Parser GophermapEntry
