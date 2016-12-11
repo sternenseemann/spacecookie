@@ -144,4 +144,4 @@ response (FileResponse str) = pure str
 response (ErrorResponse reason) = do
   env <- ask
   pure $ fileTypeToChar Error `B.cons`
-    B.concat [reason, uEncode $  "\tErr\t", serverName env, uEncode "\t", uEncode . show $ serverPort env, uEncode "\r\n"]
+    B.concat [uEncode reason, uEncode $  "\tErr\t", serverName env, uEncode "\t", uEncode . show $ serverPort env, uEncode "\r\n"]
