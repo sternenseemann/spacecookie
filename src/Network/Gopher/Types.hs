@@ -27,9 +27,9 @@ data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString)
   deriving (Show, Eq)
 
 data GopherResponse
-  = MenuResponse [GopherMenuItem] -- ^ gopher menu, wrapper around a list of GopherMenuItem
-  | FileResponse ByteString       -- ^ return the given ByteString as a file
-  | ErrorResponse ByteString      -- ^ gopher menu containing a single error with the given string
+  = MenuResponse [GopherMenuItem] -- ^ gopher menu, wrapper around a list of 'GopherMenuItem's
+  | FileResponse ByteString       -- ^ return the given 'ByteString' as a file
+  | ErrorResponse ByteString      -- ^ gopher menu containing a single error with the given 'ByteString'
   deriving (Show, Eq)
 
 -- | rfc-defined gopher file types plus info line

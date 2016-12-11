@@ -1,14 +1,50 @@
+{-|
+Module      : Network.Gopher
+Stability   : experimental
+Portability : POSIX
+
+= Overview
+
+This is the main module of the spacecookie library. It allows to write gopher applications by taking care of handling gopher requests while leaving the application logic to a user-supplied function.
+
+For a small tutorial an example of a trivial pure gopher application:
+
+@
+{-# LANGUAGE OverloadedStrings #-}
+import Network.Gopher
+import Network.Gopher.Util
+
+main = do
+  'runGopherPure' ('GopherConfig' "localhost" 7000 Nothing) (\\req -> 'FileResponse' ('uEncode' req))
+@
+
+This server just returns the request string as a file.
+
+There are three possibilities for a 'GopherResponse':
+
+* 'FileResponse': file type agnostic file response, takes a 'ByteString' to support both text and binary files
+* 'MenuResponse': a gopher menu (“directory listning”) consisting of a list of 'GopherMenuItem's
+* 'ErrorResponse': gopher way to show an error (e. g. if a file is not found). A 'ErrorResponse' results in a menu response with a single entry.
+
+If you use 'runGopher', it is the same story like in the example above, but you can do 'IO' effects. To see a more elaborate example, have a look at the server code in this package.
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module Network.Gopher
-  ( runGopher
+module Network.Gopher (
+  -- * Main API
+    runGopher
   , runGopherPure
-  , gophermapToDirectoryResponse
   , GopherConfig (..)
+  -- * Helper Functions
+  , gophermapToDirectoryResponse
+  -- * Representations
+  -- ** Responses
   , GopherResponse (..)
-  , Gophermap (..)
-  , GophermapEntry (..)
-  , GopherFileType (..)
   , GopherMenuItem (..)
+  , GopherFileType (..)
+  -- ** Gophermaps
+  , GophermapEntry (..)
+  , Gophermap (..)
   ) where
 
 import Network.Gopher.Types
@@ -46,7 +82,6 @@ newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
            , MonadIO, MonadReader Env)
 
--- | handleIncoming is used to handle a client (socket).
 handleIncoming :: Socket -> GopherM ()
 handleIncoming clientSock = do
   hdl <- liftIO $ socketToHandle clientSock ReadWriteMode
@@ -69,7 +104,7 @@ dropPrivileges username = do
   setGroupID $ userGroupID user
   setUserID $ userID user
 
--- | Run a gopher application that may cause effects in IO.
+-- | Run a gopher application that may cause effects in 'IO'.
 --   The application function is given the gopher request (path)
 --   and required to produce a GopherResponse.
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
@@ -91,7 +126,7 @@ runGopher cfg f = do
       liftIO . forkIO
         $ (runReaderT . runGopherM) (handleIncoming clientSock) env
 
--- | Run a gopher application that may not cause effects in IO.
+-- | Run a gopher application that may not cause effects in 'IO'.
 runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
 runGopherPure cfg f = runGopher cfg (\x -> pure (f x))
 
