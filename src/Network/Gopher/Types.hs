@@ -49,7 +49,7 @@ data GopherFileType
   | GifFile              -- ^ gif
   | ImageFile            -- ^ image of any format
   | InfoLine             -- ^ menu entry without associated file
-  | HUrl                 -- ^ <https://en.wikipedia.org/wiki/Gopher_%28protocol%29#URL_links link> to other protocols
+  | Html                 -- ^ Special type for HTML, most commonly used for <https://en.wikipedia.org/wiki/Gopher_%28protocol%29#URL_links links to other protocols>
   deriving (Show, Eq, Ord, Enum)
 
 fileTypeToChar :: GopherFileType -> Word8
@@ -70,7 +70,7 @@ fileTypeToChar t = asciiOrd $
     GifFile -> 'g'
     ImageFile -> 'I'
     InfoLine -> 'i'
-    HUrl -> 'h'
+    Html -> 'h'
 
 charToFileType :: Word8 -> GopherFileType
 charToFileType c =
@@ -90,7 +90,7 @@ charToFileType c =
      'g' -> GifFile
      'I' -> ImageFile
      'i' -> InfoLine
-     'h' -> HUrl
+     'h' -> Html
      _   -> InfoLine -- default value
 
 isFile :: GopherFileType -> Bool
