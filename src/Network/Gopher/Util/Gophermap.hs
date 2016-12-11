@@ -1,9 +1,32 @@
+{-|
+Module      : Network.Gopher.Util.Gophermap
+Stability   : experimental
+Portability : POSIX
+
+This module implements a parser for <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap files>.
+
+Example usage:
+
+@
+import Network.Gopher.Util.Gophermap
+import qualified Data.ByteString as B
+import Data.Attoparsec.ByteString
+
+main = do
+  file <- B.readFile "gophermap"
+  print $ parseOnly parseGophermap file
+@
+
+
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
-module Network.Gopher.Util.Gophermap
-  ( gophermapToDirectoryResponse
-  , parseGophermap
+module Network.Gopher.Util.Gophermap (
+    parseGophermap
+  , GophermapEntry (..)
   , Gophermap (..)
-  , GophermapEntry (..)) where
+  , gophermapToDirectoryResponse
+  ) where
 
 import Prelude hiding (take, takeWhile)
 
@@ -14,22 +37,17 @@ import Control.Applicative (many, (<$>), (<|>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString (), append, empty,
-                        pack, singleton, unpack)
+import Data.ByteString (ByteString (), append, empty, pack, singleton, unpack)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import Network.Socket (PortNumber ())
 
--- | gophermapToDirectoryResponse adds the missing values of the
--- parsedGophermap so that it can used to construct a response for
--- the client
+-- | Convert a gophermap to a gopher menu response.
 gophermapToDirectoryResponse :: Gophermap -> GopherResponse
 gophermapToDirectoryResponse entries =
   MenuResponse (map gophermapEntryToMenuItem entries)
 
--- | converts a GophermapEntry to a GopherMenuItem and adds the missing
--- information
 gophermapEntryToMenuItem :: GophermapEntry -> GopherMenuItem
 gophermapEntryToMenuItem (GophermapEntry ft desc path host port) =
   Item ft desc (fromMaybe (uDecode desc) path) host port
@@ -37,17 +55,18 @@ gophermapEntryToMenuItem (GophermapEntry ft desc path host port) =
 fileTypeChars :: [Char]
 fileTypeChars = "0123456789+TgIi"
 
+-- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
   GopherFileType ByteString
-  (Maybe FilePath) (Maybe ByteString) (Maybe PortNumber)
+  (Maybe FilePath) (Maybe ByteString) (Maybe PortNumber) -- ^ file type, description, path, server name, port number
   deriving (Show, Eq)
 
 type Gophermap = [GophermapEntry]
 
+-- | Attoparsec 'Parser' for the <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap file format>
 parseGophermap :: Parser Gophermap
 parseGophermap = many parseGophermapLine
 
--- | inline if version
 if' :: Bool -> a -> a -> a
 if' True  a _ = a
 if' False _ b = b
