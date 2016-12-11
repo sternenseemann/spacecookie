@@ -32,7 +32,7 @@ data GopherResponse
   | ErrorResponse ByteString      -- ^ gopher menu containing a single error with the given 'ByteString'
   deriving (Show, Eq)
 
--- | rfc-defined gopher file types plus info line
+-- | rfc-defined gopher file types plus info line and h-URL
 data GopherFileType
   = File                 -- ^ text file, default type
   | Directory            -- ^ a gopher menu
@@ -49,6 +49,7 @@ data GopherFileType
   | GifFile              -- ^ gif
   | ImageFile            -- ^ image of any format
   | InfoLine             -- ^ menu entry without associated file
+  | HUrl                 -- ^ <https://en.wikipedia.org/wiki/Gopher_%28protocol%29#URL_links link> to other protocols
   deriving (Show, Eq, Ord, Enum)
 
 fileTypeToChar :: GopherFileType -> Word8
@@ -69,6 +70,7 @@ fileTypeToChar t = asciiOrd $
     GifFile -> 'g'
     ImageFile -> 'I'
     InfoLine -> 'i'
+    HUrl -> 'h'
 
 charToFileType :: Word8 -> GopherFileType
 charToFileType c =
@@ -88,6 +90,7 @@ charToFileType c =
      'g' -> GifFile
      'I' -> ImageFile
      'i' -> InfoLine
+     'h' -> HUrl
      _   -> InfoLine -- default value
 
 isFile :: GopherFileType -> Bool

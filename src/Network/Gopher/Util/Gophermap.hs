@@ -53,7 +53,7 @@ gophermapEntryToMenuItem (GophermapEntry ft desc path host port) =
   Item ft desc (fromMaybe (uDecode desc) path) host port
 
 fileTypeChars :: [Char]
-fileTypeChars = "0123456789+TgIi"
+fileTypeChars = "0123456789+TgIih"
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
