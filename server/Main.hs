@@ -6,6 +6,7 @@ import Network.Gopher.Util.Gophermap
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
+import Data.List (isPrefixOf)
 import Control.Applicative ((<|>), (<$>))
 import Control.Monad (unless)
 import Control.Monad.IO.Class (liftIO)
@@ -38,7 +39,9 @@ spacecookie path' = do
   fileType <- gopherFileType path
 
   case fileType of
-    Error -> pure $ ErrorResponse "The requested file does not exist or is not available."
+    Error -> pure $ if "URL:" `isPrefixOf` path'
+                      then ErrorResponse $ "spacecookie does not support proxying HTTP, try using a gopher client that supports the h-type. If you tried to request a file called '" ++ path' ++ "', it does not exist."
+                      else ErrorResponse $ "The requested file '" ++ path' ++ "' does not exist or is not available."
     Directory -> gophermapResponse path -- always use gophermapResponse which falls back
                                         -- to directoryResponse if there is no gophermap file
     _ -> fileResponse path
