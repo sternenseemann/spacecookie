@@ -9,6 +9,7 @@ Helper utilities used within the library and the server which also could be usef
 module Network.Gopher.Util (
   -- * Security
     santinizePath
+  , santinizeIfNotUrl
   -- * String Encoding
   , asciiOrd
   , asciiChr
@@ -21,6 +22,7 @@ module Network.Gopher.Util (
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import Data.Char (ord, chr)
+import Data.List (isPrefixOf)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import System.FilePath.Posix (pathSeparator, normalise, joinPath, splitPath)
@@ -52,3 +54,8 @@ stripNewline s
 -- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
 santinizePath :: FilePath -> FilePath
 santinizePath path = joinPath . filter (\p -> p /= ".." && p /= ".") . splitPath . normalise $ path
+
+santinizeIfNotUrl :: FilePath -> FilePath
+santinizeIfNotUrl path = if "URL:" `isPrefixOf` path
+                           then path
+                           else santinizePath path

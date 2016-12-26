@@ -100,7 +100,7 @@ regularGophermapline = do
     endOfLine'
     return $ GophermapEntry (charToFileType fileTypeChar)
       text
-      (santinizePath . fst . U.decode . unpack <$> pathString)
+      (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
       host
       (byteStringToPort <$> portString)
 
@@ -119,7 +119,7 @@ gophermaplineWithoutFileTypeChar = do
   endOfLine'
   return $ GophermapEntry InfoLine
     text
-    (santinizePath . fst . U.decode . unpack <$> pathString)
+    (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
     host
     (byteStringToPort <$> portString)
 
