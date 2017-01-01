@@ -58,7 +58,7 @@ directoryResponse :: FilePath -> IO GopherResponse
 directoryResponse path = do
   dir <- map (path </>). filter isListable <$> getDirectoryContents path
   fileTypes <- mapM gopherFileType dir
-  pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode f) f) fileTypes (map makeAbsolute dir)
+  pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode (takeFileName f)) f) fileTypes (map makeAbsolute dir)
 
 gophermapResponse :: FilePath -> IO GopherResponse
 gophermapResponse path = do
