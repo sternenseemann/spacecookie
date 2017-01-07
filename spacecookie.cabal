@@ -5,10 +5,19 @@ description:         simple gopher server daemon
 license:             GPL-3
 license-file:        LICENSE
 author:              sternenseemann
-maintainer:          lambda@lukasepple.de
+maintainer:          git@lukasepple.de
 category:            Network
 build-type:          Simple
 cabal-version:       >=1.10
+homepage:            https://github.com/sternenseemann/spacecookie
+bug-reports:         https://github.com/sternenseemann/spacecookie/issues
+extra-source-files:  ChangeLog.md
+                     README.md
+                     etc/spacecookie.json
+                     etc/spacecookie.service
+                     docs/gophermap
+                     docs/gophermap-pygopherd.txt
+                     docs/rfc1436.txt
 
 executable spacecookie
   main-is:             Main.hs
@@ -27,6 +36,7 @@ executable spacecookie
                      , spacecookie
   hs-source-dirs:      server
   default-language:    Haskell2010
+  other-modules:       Config
 
 library
   hs-source-dirs:      src
@@ -47,3 +57,7 @@ library
                      , transformers
                      , attoparsec
                      , hxt-unicode
+
+source-repository head
+  type: git
+  location: git://github.com/sternenseemann/spacecookie.git
