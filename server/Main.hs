@@ -38,13 +38,17 @@ spacecookie path' = do
   let path = "." </> dropDrive (santinizePath path')
   fileType <- gopherFileType path
 
-  case fileType of
-    Error -> pure $ if "URL:" `isPrefixOf` path'
-                      then ErrorResponse $ "spacecookie does not support proxying HTTP, try using a gopher client that supports the h-type. If you tried to request a file called '" ++ path' ++ "', it does not exist."
-                      else ErrorResponse $ "The requested file '" ++ path' ++ "' does not exist or is not available."
-    Directory -> gophermapResponse path -- always use gophermapResponse which falls back
-                                        -- to directoryResponse if there is no gophermap file
-    _ -> fileResponse path
+  if not (isListable path)
+    then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
+    else case fileType of
+           Error -> pure $
+             if "URL:" `isPrefixOf` path'
+               then ErrorResponse $ "spacecookie does not support proxying HTTP, try using a gopher client that supports the h-type. If you tried to request a file called '" ++ path' ++ "', it does not exist."
+               else ErrorResponse $ "The requested file '" ++ path' ++ "' does not exist or is not available."
+           -- always use gophermapResponse which falls back
+           -- to directoryResponse if there is no gophermap file
+           Directory -> gophermapResponse path
+           _ -> fileResponse path
 
 fileResponse :: FilePath -> IO GopherResponse
 fileResponse path = FileResponse <$> B.readFile path
