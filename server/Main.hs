@@ -8,7 +8,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.List (isPrefixOf)
 import Control.Applicative ((<|>), (<$>))
-import Control.Monad (unless)
+import Control.Monad (unless, filterM, sequence, join)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (decode)
 import Data.Attoparsec.ByteString (parseOnly)
@@ -16,7 +16,7 @@ import Data.Char (toLower)
 import Data.Maybe (fromJust)
 import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
 import System.Environment
-import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive)
+import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
 import System.Posix.Directory (changeWorkingDirectory)
 
 main :: IO ()
@@ -37,8 +37,9 @@ spacecookie :: String -> IO GopherResponse
 spacecookie path' = do
   let path = "." </> dropDrive (santinizePath path')
   fileType <- gopherFileType path
+  pathType <- pathType path
 
-  if not (isListable path)
+  if not (isListable pathType path')
     then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
     else case fileType of
            Error -> pure $
@@ -60,7 +61,7 @@ makeAbsolute x = if "./" `isPrefixOf` x
 
 directoryResponse :: FilePath -> IO GopherResponse
 directoryResponse path = do
-  dir <- map (path </>). filter isListable <$> getDirectoryContents path
+  dir <- join (filterM (\x -> ((flip isListable) x) <$> pathType x) . map (path </>) <$> getDirectoryContents path)
   fileTypes <- mapM gopherFileType dir
   pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode (takeFileName f)) f) fileTypes (map makeAbsolute dir)
 
@@ -88,9 +89,14 @@ gopherFileType f = do
   where ioCheck onSuccess check = fmap (boolToMaybe onSuccess) . check $ f
 
 -- | isListable filters out system files for directory listings
-isListable :: FilePath -> Bool
-isListable p
-  | null p = False
+isListable :: PathType -> FilePath -> Bool
+isListable Directory' "" = True -- "" is root
+isListable _ "" = False
+isListable DoesNotExist _ = False
+isListable Directory' p
+  | (head . last . splitDirectories) p == '.' = False
+  | otherwise = True
+isListable File' p
   | head (takeFileName p) == '.' = False
   | otherwise = True
 
@@ -99,3 +105,19 @@ isListable p
 boolToMaybe :: a -> Bool -> Maybe a
 boolToMaybe a True  = Just a
 boolToMaybe _ False = Nothing
+
+data PathType
+  = Directory'
+  | File'
+  | DoesNotExist
+  deriving (Show, Eq)
+
+pathType :: FilePath -> IO PathType
+pathType p = do
+  file <- doesFileExist p
+  dir  <- doesDirectoryExist p
+  if file
+    then pure File'
+    else if dir
+      then pure Directory'
+      else pure DoesNotExist
