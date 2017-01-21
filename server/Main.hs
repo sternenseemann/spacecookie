@@ -7,7 +7,7 @@ import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.List (isPrefixOf)
-import Control.Applicative ((<|>), (<$>))
+import Control.Applicative ((<|>), (<$>), pure)
 import Control.Monad (unless, filterM, sequence, join)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (decode)
