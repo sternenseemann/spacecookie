@@ -9,11 +9,10 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
-import Network.Socket (PortNumber ())
 import Network.Gopher.Util
 
 data Config = Config { serverName    :: ByteString
-                     , serverPort    :: PortNumber
+                     , serverPort    :: Integer
                      , runUserName   :: String
                      , rootDirectory :: FilePath
                      }
@@ -39,13 +38,5 @@ instance FromJSON ByteString where
   parseJSON (String s) = uEncode <$> (parseJSON (String s))
   parseJSON _ = mzero
 
-instance FromJSON PortNumber where
-  parseJSON (Number port) = fromIntegral
-    <$> (parseJSON (Number port) :: Parser Integer)
-  parseJSON _ = mzero
-
 instance ToJSON ByteString where
   toJSON = toJSON . uDecode
-
-instance ToJSON PortNumber where
-  toJSON port = toJSON (fromIntegral port :: Integer)

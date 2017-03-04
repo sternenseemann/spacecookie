@@ -1,5 +1,5 @@
 name:                spacecookie
-version:             0.1.0.0
+version:             0.2.0.0
 synopsis:            gopher server daemon
 description:         simple gopher server daemon
 license:             GPL-3
@@ -22,7 +22,7 @@ extra-source-files:  ChangeLog.md
 executable spacecookie
   main-is:             Main.hs
   build-depends:       base
-                     , network
+                     , socket
                      , unix
                      , directory
                      , filepath
@@ -46,7 +46,7 @@ library
                      , Network.Gopher.Util
   other-modules:       Network.Gopher.Types
   build-depends:       base
-                     , network
+                     , socket
                      , unix
                      , directory
                      , filepath

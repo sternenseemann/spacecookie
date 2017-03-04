@@ -19,11 +19,10 @@ import           Data.Map              (Map (), fromList, lookup)
 import           Data.Maybe            (fromJust, fromMaybe)
 import           Data.Tuple            (swap)
 import           Data.Word             (Word8 ())
-import           Network.Socket        (PortNumber ())
 import           System.FilePath       (splitPath, takeBaseName)
 
 -- | entry in a gopher menu
-data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString) (Maybe PortNumber) -- ^ file type, menu text, filepath (does not need to be a real file), server name (optional), port (optional)
+data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString) (Maybe Integer) -- ^ file type, menu text, filepath (does not need to be a real file), server name (optional), port (optional)
   deriving (Show, Eq)
 
 data GopherResponse
@@ -32,7 +31,7 @@ data GopherResponse
   | ErrorResponse String          -- ^ gopher menu containing a single error with the given 'String' as text
   deriving (Show, Eq)
 
--- | rfc-defined gopher file types plus info line and h-URL
+-- | rfc-defined gopher file types plus info line and HTML
 data GopherFileType
   = File                 -- ^ text file, default type
   | Directory            -- ^ a gopher menu

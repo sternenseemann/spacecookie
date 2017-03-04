@@ -41,7 +41,6 @@ import Data.ByteString (ByteString (), append, empty, pack, singleton, unpack)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import Network.Socket (PortNumber ())
 
 -- | Convert a gophermap to a gopher menu response.
 gophermapToDirectoryResponse :: Gophermap -> GopherResponse
@@ -58,7 +57,7 @@ fileTypeChars = "0123456789+TgIih"
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
   GopherFileType ByteString
-  (Maybe FilePath) (Maybe ByteString) (Maybe PortNumber) -- ^ file type, description, path, server name, port number
+  (Maybe FilePath) (Maybe ByteString) (Maybe Integer) -- ^ file type, description, path, server name, port number
   deriving (Show, Eq)
 
 type Gophermap = [GophermapEntry]
@@ -123,7 +122,7 @@ gophermaplineWithoutFileTypeChar = do
     host
     (byteStringToPort <$> portString)
 
-byteStringToPort :: ByteString -> PortNumber
+byteStringToPort :: ByteString -> Integer
 byteStringToPort s = fromIntegral . read . fst . U.decode . unpack $ s
 
 optionalValue :: Parser (Maybe ByteString)
