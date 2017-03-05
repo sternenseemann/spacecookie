@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-|
 Module      : Network.Gopher
 Stability   : experimental
@@ -47,13 +48,12 @@ module Network.Gopher (
   , Gophermap (..)
   ) where
 
+import Prelude hiding (log)
+
 import Network.Gopher.Types
 import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 
-import Data.ByteString (ByteString ())
-import qualified Data.ByteString as B
-import Data.Maybe (isJust, fromJust, fromMaybe)
 import Control.Applicative ((<$>), (<*>), Applicative (..))
 import Control.Concurrent (forkIO, ThreadId ())
 import Control.Exception (bracket, catch, IOException (..))
@@ -61,8 +61,14 @@ import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
 import Control.Monad.Error.Class (MonadError (..))
+import Data.ByteString (ByteString ())
+import qualified Data.ByteString as B
+import Data.Maybe (isJust, fromJust, fromMaybe)
+import Data.Monoid ((<>))
 import qualified Data.String.UTF8 as U
 import System.IO
+import System.Log.FastLogger
+import System.Log.FastLogger.Date
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
 import System.Socket.Type.Stream
@@ -81,13 +87,31 @@ data Env
         , serverName   :: ByteString
         , serverPort   :: Integer
         , serverFun    :: (String -> IO GopherResponse)
+        , logger       :: (TimedFastLogger, IO ()) -- ^ TimedFastLogger and clean up action
         }
+
+initEnv :: Socket Inet6 Stream TCP -> ByteString -> Integer -> (String -> IO GopherResponse) -> IO Env
+initEnv sock name port fun = do
+  timeCache <- newTimeCache simpleTimeFormat
+  logger <- newTimedFastLogger timeCache (LogStderr 128)
+  pure $ Env sock name port fun logger
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
            , MonadIO, MonadReader Env, MonadError IOException)
 
 gopherM env action = (runReaderT . runGopherM) action env
+
+data LogMessage = LogError String | LogInfo String
+
+instance ToLogStr LogMessage where
+  toLogStr (LogError s) = "[Error] " <> toLogStr s
+  toLogStr (LogInfo s)  = "[Info] " <> toLogStr s
+
+log :: LogMessage -> GopherM ()
+log logMsg = do
+  (logger, _) <- logger <$> ask
+  liftIO $ logger (\t -> "[" <> toLogStr t <> "]" <> (toLogStr logMsg) <> "\n")
 
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
 receiveRequest sock = receiveRequest' sock mempty
@@ -117,35 +141,48 @@ runGopher cfg f = bracket
   (socket :: IO (Socket Inet6 Stream TCP))
   close
   (\sock -> do
-    setSocketOption sock (ReuseAddress True)
-    setSocketOption sock (V6Only False)
-    bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
-    listen sock 5
+    env <- initEnv sock (cServerName cfg) (fromInteger (cServerPort cfg)) f
+    gopherM env $ do
+      liftIO $ setSocketOption sock (ReuseAddress True)
+      liftIO $ setSocketOption sock (V6Only False)
+      liftIO $ bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
+      liftIO $ listen sock 5
+      log. LogInfo $ "Now listening [::]:" ++ show (cServerPort cfg)
 
-    -- Change UID and GID if necessary
-    when (isJust (cRunUserName cfg)) $ dropPrivileges (fromJust (cRunUserName cfg))
+      -- Change UID and GID if necessary
+      if isJust (cRunUserName cfg)
+        then do
+          liftIO (dropPrivileges (fromJust (cRunUserName cfg)))
+          log . LogInfo $ "Dropped privileges to " ++ fromJust (cRunUserName cfg)
+        else log .LogInfo $ "Privileges were not dropped"
 
-    let env = Env sock (cServerName cfg) (fromInteger (cServerPort cfg)) f
-
-    gopherM env $ forever (acceptAndHandle sock))
+      (forever (acceptAndHandle sock) `catchError`
+        (\e -> do
+          log . LogError $ show e
+          snd . logger <$> ask >>= liftIO)))
 
 forkGopherM :: GopherM () -> GopherM ThreadId
 forkGopherM action = ask >>= liftIO . forkIO . (flip gopherM) action
 
-handleIncoming :: Socket Inet6 Stream TCP -> GopherM ()
-handleIncoming clientSock = do
+handleIncoming :: Socket Inet6 Stream TCP -> Inet6Address -> GopherM ()
+handleIncoming clientSock addr = do
   req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
+  log . LogInfo $ "Got request '" ++ req ++ "' from " ++ show addr
 
   fun <- serverFun <$> ask
   res <- liftIO (fun req) >>= response
 
   liftIO $ sendAll clientSock res msgNoSignal
   liftIO $ close clientSock
+  log . LogInfo $ "Closed connection succesfully to " ++ show addr
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
-  (clientSock, _) <- liftIO $ accept sock
-  forkGopherM $ handleIncoming clientSock `catchError` const (liftIO (close clientSock))
+  (clientSock, (SocketAddressInet6 addr _ _ _)) <- liftIO $ accept sock
+  log . LogInfo $ "Accepted Connection from " ++ show addr
+  forkGopherM $ handleIncoming clientSock addr `catchError` (\e -> do
+    liftIO (close clientSock)
+    log . LogError $ "Closed connection to " ++ show addr ++ " after error: " ++ show e)
   return ()
 
 -- | Run a gopher application that may not cause effects in 'IO'.

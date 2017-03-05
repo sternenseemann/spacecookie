@@ -57,6 +57,7 @@ library
                      , transformers
                      , attoparsec
                      , hxt-unicode
+                     , fast-logger >= 2.4.0 && < 2.5
 
 source-repository head
   type: git

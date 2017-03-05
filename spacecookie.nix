@@ -1,6 +1,6 @@
 { mkDerivation, aeson, attoparsec, base, bytestring, containers
-, directory, filepath, hxt-unicode, mtl, socket, stdenv
-, transformers, unix
+, directory, fast-logger, filepath, hxt-unicode, mtl, socket
+, stdenv, transformers, unix
 }:
 mkDerivation {
   pname = "spacecookie";
@@ -9,8 +9,8 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    attoparsec base bytestring containers directory filepath
-    hxt-unicode mtl socket transformers unix
+    attoparsec base bytestring containers directory fast-logger
+    filepath hxt-unicode mtl socket transformers unix
   ];
   executableHaskellDepends = [
     aeson attoparsec base bytestring containers directory filepath mtl
