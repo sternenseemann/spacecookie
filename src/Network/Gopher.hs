@@ -56,10 +56,11 @@ import qualified Data.ByteString as B
 import Data.Maybe (isJust, fromJust, fromMaybe)
 import Control.Applicative ((<$>), (<*>), Applicative (..))
 import Control.Concurrent (forkIO, ThreadId ())
-import Control.Exception (bracket, catch)
+import Control.Exception (bracket, catch, IOException (..))
 import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
+import Control.Monad.Error.Class (MonadError (..))
 import qualified Data.String.UTF8 as U
 import System.IO
 import System.Socket hiding (Error (..))
@@ -84,7 +85,7 @@ data Env
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
-           , MonadIO, MonadReader Env)
+           , MonadIO, MonadReader Env, MonadError IOException)
 
 gopherM env action = (runReaderT . runGopherM) action env
 
@@ -131,17 +132,20 @@ runGopher cfg f = bracket
 forkGopherM :: GopherM () -> GopherM ThreadId
 forkGopherM action = ask >>= liftIO . forkIO . (flip gopherM) action
 
+handleIncoming :: Socket Inet6 Stream TCP -> GopherM ()
+handleIncoming clientSock = do
+  req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
+
+  fun <- serverFun <$> ask
+  res <- liftIO (fun req) >>= response
+
+  liftIO $ sendAll clientSock res msgNoSignal
+  liftIO $ close clientSock
+
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
   (clientSock, _) <- liftIO $ accept sock
-  forkGopherM $ do
-    req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
-
-    fun <- serverFun <$> ask
-    res <- liftIO (fun req) >>= response
-
-    liftIO $ sendAll clientSock res msgNoSignal
-    liftIO $ close clientSock
+  forkGopherM $ handleIncoming clientSock `catchError` const (liftIO (close clientSock))
   return ()
 
 -- | Run a gopher application that may not cause effects in 'IO'.
