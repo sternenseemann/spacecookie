@@ -51,7 +51,7 @@ Please note that you have to move the necessary file in place manually at the mo
 Spacecookie acts as a simple file server, only excluding files that start with a dot.
 It generates gopher menus automatically; however you can use custom ones by adding a gophermap file.
 
-Spacecookie checks for `.gophermap` in every directory it serves and, if present, presents that menu to the user.
+Spacecookie checks for `.gophermap` in every directory it serves and, if present, uses the menu specified in there.
 
 Such a file looks like this:
 
