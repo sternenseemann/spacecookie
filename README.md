@@ -13,18 +13,12 @@
 
 ## What is Spacecookie?
 
-Spacecookie is a gopher server that implements RFC1436. It supports comment lines (i-Type) as 100% compatible protocol extension (which is widely used). Support for the popular gophermap format to denote menus is in place.
+Spacecookie is a gopher server and…
 
-## Spacecookie's features
-
-* Simple unix gopher daemon
-* Simple configuration
-* Support for gophermaps
-* Just works™
-
-## Building
-
-You can either use cabal, stack or nix-shell plus cabal. The necessary files are provided.
+* is RFC1436-compliant
+* supports info-line in menus (compatible protocol extension)
+* supports gophermaps (see below)
+* includes a library for custom gopher applications
 
 ## Configuration
 
@@ -54,9 +48,12 @@ Please note that you have to move the necessary file in place manually at the mo
 
 ## Adding Content
 
-Spacecookie per-default acts as a simple file server of any files that are beneath the root directory excluding files that start with a `.`.
+Spacecookie acts as a simple file server, only excluding files that start with a dot.
+It generates gopher menus automatically; however you can use custom ones by adding a gophermap file.
 
-If you are not happy with the automaticly generated gopher menus you can customize them using the [gophermap](https://en.wikipedia.org/wiki/Gophermap) file format:
+Spacecookie checks for `.gophermap` in every directory it serves and, if present, presents that menu to the user.
+
+Such a file looks like this:
 
 	You can just start writing text that
 	will be displayed by the gopher client
@@ -71,8 +68,8 @@ If you are not happy with the automaticly generated gopher menus you can customi
 
 So what does that all mean? These are the rules for a gophermap file:
 
-* comment lines (called info lines in Spacecookie's code) are just lines of text. They must not contain a tab! They will be displayed as lines of text by the gopher client.
+* comment lines (called info lines in spacecookie's code) are just lines of text. They must not contain a tab! They will be displayed as lines of text by the gopher client.
 * menu entries for files or directories start with a single char which specifies the file type, followed by the text for that file without a space or tab between them! Then the path is added after a tab.
 * "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
 
-The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt) (taken from the pygopherd man page).
+The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt).
