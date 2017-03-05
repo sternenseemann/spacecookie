@@ -55,7 +55,7 @@ import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import Data.Maybe (isJust, fromJust, fromMaybe)
 import Control.Applicative ((<$>), (<*>), Applicative (..))
-import Control.Concurrent (forkIO)
+import Control.Concurrent (forkIO, ThreadId ())
 import Control.Exception (bracket, catch)
 import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
@@ -86,6 +86,8 @@ newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
            , MonadIO, MonadReader Env)
 
+gopherM env action = (runReaderT . runGopherM) action env
+
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
 receiveRequest sock = receiveRequest' sock mempty
   where lengthLimit = 1024
@@ -96,16 +98,6 @@ receiveRequest sock = receiveRequest' sock mempty
             Nothing -> if B.length bs < lengthLimit
                          then return (acc `B.append` bs)
                          else receiveRequest' sock (acc `B.append` bs)
-
-handleIncoming :: Socket Inet6 Stream TCP -> GopherM ()
-handleIncoming clientSock = do
-  req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
-
-  fun <- serverFun <$> ask
-  res <- liftIO (fun req) >>= response
-
-  liftIO $ sendAll clientSock res mempty
-  liftIO $ close clientSock
 
 dropPrivileges :: String -> IO ()
 dropPrivileges username = do
@@ -132,16 +124,25 @@ runGopher cfg f = bracket
     -- Change UID and GID if necessary
     when (isJust (cRunUserName cfg)) $ dropPrivileges (fromJust (cRunUserName cfg))
 
-    forever $ acceptAndHandle cfg f sock
-  )
+    let env = Env sock (cServerName cfg) (fromInteger (cServerPort cfg)) f
 
-acceptAndHandle :: GopherConfig -> (String -> IO GopherResponse) -> Socket Inet6 Stream TCP -> IO ()
-acceptAndHandle cfg f sock = do
-  (clientSock, _) <- accept sock
-  (flip (runReaderT . runGopherM)) (Env sock (cServerName cfg) (fromInteger (cServerPort cfg)) f) $ do
-    env <- ask
-    liftIO . forkIO $ (flip (runReaderT . runGopherM)) env (handleIncoming clientSock)
-    return ()
+    gopherM env $ forever (acceptAndHandle sock))
+
+forkGopherM :: GopherM () -> GopherM ThreadId
+forkGopherM action = ask >>= liftIO . forkIO . (flip gopherM) action
+
+acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
+acceptAndHandle sock = do
+  (clientSock, _) <- liftIO $ accept sock
+  forkGopherM $ do
+    req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
+
+    fun <- serverFun <$> ask
+    res <- liftIO (fun req) >>= response
+
+    liftIO $ sendAll clientSock res msgNoSignal
+    liftIO $ close clientSock
+  return ()
 
 -- | Run a gopher application that may not cause effects in 'IO'.
 runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
