@@ -4,14 +4,14 @@ synopsis:            gopher server daemon
 description:         simple gopher server daemon
 license:             GPL-3
 license-file:        LICENSE
-author:              sternenseemann
+author:              Lukas Epple
 maintainer:          git@lukasepple.de
 category:            Network
 build-type:          Simple
 cabal-version:       >=1.10
 homepage:            https://github.com/sternenseemann/spacecookie
 bug-reports:         https://github.com/sternenseemann/spacecookie/issues
-extra-source-files:  ChangeLog.md
+extra-source-files:  CHANGELOG.md
                      README.md
                      etc/spacecookie.json
                      etc/spacecookie.service
