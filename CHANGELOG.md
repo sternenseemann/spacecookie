@@ -1,5 +1,9 @@
 # Revision history for spacecookie
 
+## 0.2.0.1 Hackage release
+
+Fixed a problem hindering the hackage release.
+
 ## 0.2.0.0 initial release
 
 * First version. Released on an unsuspecting world. Includes:
