@@ -8,6 +8,7 @@ module Systemd
 
 import Control.Concurrent.MVar (newMVar, takeMVar)
 import Control.Exception.Base
+import Network.Gopher (setupGopherSocket, GopherConfig (..))
 import qualified Network.Socket as S
 import System.Exit
 import System.Socket hiding (Error (..))
@@ -22,17 +23,16 @@ data SystemdException = NoStream | IncorrectNum
 
 instance Show SystemdException where
   show NoStream = "SystemdException: Socket is not of type Stream"
-  show IncorrectNum = "SystemdException: Got incorrect number of Sockets"
+  show IncorrectNum = "SystemdException: Only exactly one Socket is supported"
 instance Exception SystemdException
 
-systemdSocket :: IO (Socket Inet6 Stream TCP)
-systemdSocket = getSock
+systemdSocket :: GopherConfig -> IO (Socket Inet6 Stream TCP)
+systemdSocket cfg = getSock
   where sockConvert :: S.Socket -> IO (Socket Inet6 Stream TCP)
         sockConvert s = S.fdSocket s >>= (fmap Socket . newMVar . fromIntegral)
         getSock = getActivatedSockets >>= \sockets ->
           case sockets of
-            Nothing -> do
-              socket
+            Nothing -> setupGopherSocket cfg
             Just [sock] -> do
               t <- S.getSocketType sock
               if t /= S.Stream

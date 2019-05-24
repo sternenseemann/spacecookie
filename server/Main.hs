@@ -33,7 +33,7 @@ main = do
         Just config -> do
           changeWorkingDirectory (rootDirectory config)
           let cfg = GopherConfig (serverName config) (serverPort config) ((Just (runUserName config)))
-          runGopherManual systemdSocket
+          runGopherManual (systemdSocket cfg)
                           (notifyReady >> pure ())
                           (\s -> notifyStopping >> systemdStoreOrClose s)
                           cfg spacecookie

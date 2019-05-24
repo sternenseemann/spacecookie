@@ -42,6 +42,7 @@ module Network.Gopher (
   , defaultConfig
   -- * Helper Functions
   , gophermapToDirectoryResponse
+  , setupGopherSocket
   -- * Representations
   -- ** Responses
   , GopherResponse (..)
@@ -144,18 +145,22 @@ dropPrivileges username = do
   setGroupID $ userGroupID user
   setUserID $ userID user
 
+-- | Auxiliary function that sets up the listening socket for
+--   'runGopherManual' correctly and starts to listen.
+setupGopherSocket :: GopherConfig -> IO (Socket Inet6 Stream TCP)
+setupGopherSocket cfg = do
+  sock <- (socket :: IO (Socket Inet6 Stream TCP))
+  setSocketOption sock (ReuseAddress True)
+  setSocketOption sock (V6Only False)
+  bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
+  listen sock 5
+  pure sock
+
 -- | Run a gopher application that may cause effects in 'IO'.
 --   The application function is given the gopher request (path)
 --   and required to produce a GopherResponse.
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
-runGopher cfg f = runGopherManual setupSocket (pure ()) close cfg f
-  where setupSocket = do
-          sock <- (socket :: IO (Socket Inet6 Stream TCP))
-          setSocketOption sock (ReuseAddress True)
-          setSocketOption sock (V6Only False)
-          bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
-          listen sock 5
-          pure sock
+runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 
 -- | Same as 'runGopher', but allows you to setup the 'Socket' manually
 --   and calls an action of type @IO ()@ as soon as the server is ready
@@ -164,7 +169,7 @@ runGopher cfg f = runGopherManual setupSocket (pure ()) close cfg f
 --
 --   Spacecookie assumes the 'Socket' is properly set up to listen on the
 --   port and host specified in the 'GopherConfig' (i. e. 'bind' and
---   'listen' have been called).
+--   'listen' have been called). This can be achieved using 'setupGopherSocket'.
 --
 --   This is intended for supporting systemd socket activation and storage.
 --   Only use, if you know what you are doing.
