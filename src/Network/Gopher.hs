@@ -28,6 +28,8 @@ There are three possibilities for a 'GopherResponse':
 * 'ErrorResponse': gopher way to show an error (e. g. if a file is not found). A 'ErrorResponse' results in a menu response with a single entry.
 
 If you use 'runGopher', it is the same story like in the example above, but you can do 'IO' effects. To see a more elaborate example, have a look at the server code in this package.
+
+Note: In practice it is probably best to use record update syntax on 'defaultConfig' which won't break your application every time the config record fields are changed.
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -36,6 +38,7 @@ module Network.Gopher (
     runGopher
   , runGopherPure
   , GopherConfig (..)
+  , defaultConfig
   -- * Helper Functions
   , gophermapToDirectoryResponse
   -- * Representations
@@ -82,6 +85,10 @@ data GopherConfig
                  , cRunUserName   :: Maybe String -- ^ user to run the process as
                  }
 
+-- | Default 'GopherConfig' describing a server on @localhost:70@.
+defaultConfig :: GopherConfig
+defaultConfig = GopherConfig "localhost" 70 Nothing
+
 data Env
   = Env { serverSocket :: Socket Inet6 Stream TCP
         , serverName   :: ByteString
@@ -112,6 +119,9 @@ log :: LogMessage -> GopherM ()
 log logMsg = do
   (logger, _) <- logger <$> ask
   liftIO $ logger (\t -> "[" <> toLogStr t <> "]" <> (toLogStr logMsg) <> "\n")
+
+prettyAddr :: SocketAddress Inet6 -> String
+prettyAddr (SocketAddressInet6 addr port _ _) = drop 13 (show addr) <> ":" <> show (fromIntegral port)
 
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
 receiveRequest sock = receiveRequest' sock mempty
@@ -147,7 +157,8 @@ runGopher cfg f = bracket
       liftIO $ setSocketOption sock (V6Only False)
       liftIO $ bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
       liftIO $ listen sock 5
-      log. LogInfo $ "Now listening [::]:" ++ show (cServerPort cfg)
+      addr <- liftIO $ getAddress sock
+      log . LogInfo $ "Now listening on " ++ prettyAddr addr
 
       -- Change UID and GID if necessary
       if isJust (cRunUserName cfg)
@@ -164,25 +175,25 @@ runGopher cfg f = bracket
 forkGopherM :: GopherM () -> GopherM ThreadId
 forkGopherM action = ask >>= liftIO . forkIO . (flip gopherM) action
 
-handleIncoming :: Socket Inet6 Stream TCP -> Inet6Address -> GopherM ()
+handleIncoming :: Socket Inet6 Stream TCP -> SocketAddress Inet6 -> GopherM ()
 handleIncoming clientSock addr = do
   req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
-  log . LogInfo $ "Got request '" ++ req ++ "' from " ++ show addr
+  log . LogInfo $ "Got request '" ++ req ++ "' from " ++ prettyAddr addr
 
   fun <- serverFun <$> ask
   res <- liftIO (fun req) >>= response
 
   liftIO $ sendAll clientSock res msgNoSignal
   liftIO $ close clientSock
-  log . LogInfo $ "Closed connection succesfully to " ++ show addr
+  log . LogInfo $ "Closed connection succesfully to " ++ prettyAddr addr
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
-  (clientSock, (SocketAddressInet6 addr _ _ _)) <- liftIO $ accept sock
-  log . LogInfo $ "Accepted Connection from " ++ show addr
+  (clientSock, addr) <- liftIO $ accept sock
+  log . LogInfo $ "Accepted Connection from " ++ prettyAddr addr
   forkGopherM $ handleIncoming clientSock addr `catchError` (\e -> do
     liftIO (close clientSock)
-    log . LogError $ "Closed connection to " ++ show addr ++ " after error: " ++ show e)
+    log . LogError $ "Closed connection to " ++ prettyAddr addr ++ " after error: " ++ show e)
   return ()
 
 -- | Run a gopher application that may not cause effects in 'IO'.
