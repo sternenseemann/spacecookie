@@ -11,7 +11,7 @@ author:              Lukas Epple
 maintainer:          git@lukasepple.de
 category:            Network
 build-type:          Simple
-cabal-version:       >=1.10
+cabal-version:       >=2.0
 homepage:            https://github.com/sternenseemann/spacecookie
 bug-reports:         https://github.com/sternenseemann/spacecookie/issues
 extra-source-files:  CHANGELOG.md
@@ -37,9 +37,12 @@ executable spacecookie
                      , aeson
                      , attoparsec
                      , spacecookie
+                     , systemd ^>= 1.3.0
+                     , network ^>= 3.1.0.0
   hs-source-dirs:      server
   default-language:    Haskell2010
   other-modules:       Config
+                     , Systemd
 
 library
   hs-source-dirs:      src

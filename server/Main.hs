@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Config
+import Systemd
+
 import Network.Gopher
 import Network.Gopher.Util (santinizePath, uEncode)
 import Network.Gopher.Util.Gophermap
@@ -18,6 +20,7 @@ import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
 import System.Posix.Directory (changeWorkingDirectory)
+import System.Socket (close)
 
 main :: IO ()
 main = do
@@ -29,7 +32,11 @@ main = do
       case config' of
         Just config -> do
           changeWorkingDirectory (rootDirectory config)
-          runGopher (GopherConfig (serverName config) (serverPort config) ((Just (runUserName config)))) spacecookie
+          let cfg = GopherConfig (serverName config) (serverPort config) ((Just (runUserName config)))
+          runGopherManual systemdSocket
+                          (notifyReady >> pure ())
+                          (\s -> notifyStopping >> systemdStoreOrClose s)
+                          cfg spacecookie
         Nothing -> error "failed to parse config"
     _ -> error "config file must be given"
 

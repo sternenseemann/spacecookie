@@ -37,6 +37,7 @@ module Network.Gopher (
   -- * Main API
     runGopher
   , runGopherPure
+  , runGopherManual
   , GopherConfig (..)
   , defaultConfig
   -- * Helper Functions
@@ -147,16 +148,34 @@ dropPrivileges username = do
 --   The application function is given the gopher request (path)
 --   and required to produce a GopherResponse.
 runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
-runGopher cfg f = bracket
-  (socket :: IO (Socket Inet6 Stream TCP))
-  close
+runGopher cfg f = runGopherManual setupSocket (pure ()) close cfg f
+  where setupSocket = do
+          sock <- (socket :: IO (Socket Inet6 Stream TCP))
+          setSocketOption sock (ReuseAddress True)
+          setSocketOption sock (V6Only False)
+          bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
+          listen sock 5
+          pure sock
+
+-- | Same as 'runGopher', but allows you to setup the 'Socket' manually
+--   and calls an action of type @IO ()@ as soon as the server is ready
+--   to accept requests. When the server terminates, it calls the action
+--   of type @Socket Inet6 Stream TCP -> IO ()@ to clean up the socket.
+--
+--   Spacecookie assumes the 'Socket' is properly set up to listen on the
+--   port and host specified in the 'GopherConfig' (i. e. 'bind' and
+--   'listen' have been called).
+--
+--   This is intended for supporting systemd socket activation and storage.
+--   Only use, if you know what you are doing.
+runGopherManual :: IO (Socket Inet6 Stream TCP) -> IO () -> (Socket Inet6 Stream TCP -> IO ())
+                -> GopherConfig -> (String -> IO GopherResponse) -> IO ()
+runGopherManual sock ready term cfg f = bracket
+  sock
+  term
   (\sock -> do
     env <- initEnv sock (cServerName cfg) (fromInteger (cServerPort cfg)) f
     gopherM env $ do
-      liftIO $ setSocketOption sock (ReuseAddress True)
-      liftIO $ setSocketOption sock (V6Only False)
-      liftIO $ bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
-      liftIO $ listen sock 5
       addr <- liftIO $ getAddress sock
       log . LogInfo $ "Now listening on " ++ prettyAddr addr
 
@@ -166,6 +185,8 @@ runGopher cfg f = bracket
           liftIO (dropPrivileges (fromJust (cRunUserName cfg)))
           log . LogInfo $ "Dropped privileges to " ++ fromJust (cRunUserName cfg)
         else log .LogInfo $ "Privileges were not dropped"
+
+      liftIO $ ready
 
       (forever (acceptAndHandle sock) `catchError`
         (\e -> do
