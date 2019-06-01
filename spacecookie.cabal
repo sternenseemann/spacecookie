@@ -1,5 +1,5 @@
 name:                spacecookie
-version:             0.2.0.1
+version:             0.2.1.0
 synopsis:            Gopher Library and Server Daemon
 description:         Simple gopher library that allows writing custom gopher
                      applications and a gopher server that serves a given
@@ -37,7 +37,7 @@ executable spacecookie
                      , aeson
                      , attoparsec
                      , spacecookie
-                     , systemd ^>= 1.3.0
+                     , systemd ^>= 2.0.0
                      , network ^>= 3.1.0.0
   hs-source-dirs:      server
   default-language:    Haskell2010
