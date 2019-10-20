@@ -1,5 +1,15 @@
 # Revision history for spacecookie
 
+## 0.2.1.0 Systemd Support
+
+* Improved systemd support.
+  * Support for the notify service type
+  * Support for socket activation and socket (fd) storage
+  * To make use of these new features you'll have to update your service files
+* Added `defaultConfig` value to prevent future breakage in software using the
+  library when the `GopherConfig` type is extended.
+* Pretty print IPv6 addresses in logging
+
 ## 0.2.0.1 Hackage release
 
 Fixed a problem hindering the hackage release.
