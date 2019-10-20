@@ -37,7 +37,7 @@ executable spacecookie
                      , aeson
                      , attoparsec
                      , spacecookie
-                     , systemd ^>= 2.1.0
+                     , systemd >= 2.1.0
   hs-source-dirs:      server
   default-language:    Haskell2010
   other-modules:       Config
