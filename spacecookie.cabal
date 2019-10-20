@@ -2,9 +2,8 @@ name:                spacecookie
 version:             0.2.1.0
 synopsis:            Gopher Library and Server Daemon
 description:         Simple gopher library that allows writing custom gopher
-                     applications and a gopher server that serves a given
-                     directory with included support for gophermaps built on top
-                     of it.
+                     applications. Also includes a fully-featured gopher server
+                     daemon complete with gophermap-support built on top of it.
 license:             GPL-3
 license-file:        LICENSE
 author:              Lukas Epple

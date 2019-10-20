@@ -1,5 +1,5 @@
-	 ____                                       _    _      
-	/ ___| _ __   __ _  ___ ___  ___ ___   ___ | | _(_) ___ 
+	 ____                                       _    _
+	/ ___| _ __   __ _  ___ ___  ___ ___   ___ | | _(_) ___
 	\___ \| '_ \ / _` |/ __/ _ \/ __/ _ \ / _ \| |/ / |/ _ \
 	 ___) | |_) | (_| | (_|  __/ (_| (_) | (_) |   <| |  __/
 	|____/| .__/ \__,_|\___\___|\___\___/ \___/|_|\_\_|\___|
@@ -18,7 +18,8 @@ Spacecookie is a gopher server and…
 * is RFC1436-compliant
 * supports info-line in menus (compatible protocol extension)
 * supports gophermaps (see below)
-* includes a library for custom gopher applications
+* provides a library for custom gopher applications ([see documentation](http://hackage.haskell.org/package/spacecookie/docs/Network-Gopher.html))
+* can integrate with systemd using socket activation
 
 ## Configuration
 
@@ -26,7 +27,7 @@ In order to run your new gopher server, you got to configure it first. The examp
 
 Let's have a quick look at the options:
 
-option     | meaning                                                 
+option     | meaning
 -----------|--------------------------------------------------------------------------------------------------------
 `hostname` | The hostname your spacecookie will be reachable through.
 `user`     | The user that just run spacecookie. It is used to drop root priveleges after binding the server socket.
@@ -39,12 +40,33 @@ After you've created your config file just start spacecookie like this:
 
 	spacecookie /path/to/spacecookie.json
 
-Of course it is more convenient to run it as a system wide demon. For that reason a systemd `spacecookie.service` is provided. You can use it like this:
+Spacecookie runs as a simple process and doesn't fork or write a PID file.
+Therefore you'll need to use a supervisor to run it as a proper daemon.
 
-	systemctl enable spacecookie.service
-	systemctl start  spacecookie.service
+### With systemd
 
-Please note that you have to move the necessary file in place manually at the moment.
+Spacecookie supports systemd socket activation. To set it up you'll need
+to install `spacecookie.service` and `spacecookie.socket` like so:
+
+	cp ./etc/spacecookie.{service,socket} /etc/systemd/system/
+	systemctl daemon-reload
+	systemctl enable spacecookie.socket
+	systemctl start  spacecookie.socket
+	systemctl start  spacecookie.service # optional, started by the socket automatically if needed
+
+Don't forget to change the paths in the systemd files and match the user name in
+`spacecookie.socket` with the one in `spacecookie.json`!
+
+### Without systemd
+
+Spacecookie does **not** require systemd nor depend on it. Since socket
+activation only uses an environment variable and a type unix socket, it
+is very lightweight and can be utilized without using a systemd library
+or dbus.
+
+Spacecookie currently fully supports any GNU/Linux. It should be pretty
+easy to, for example, write a [runit](http://smarden.org/runit/) service
+file.
 
 ## Adding Content
 
@@ -73,3 +95,10 @@ So what does that all mean? These are the rules for a gophermap file:
 * "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
 
 The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt).
+
+## HTTP Support?
+
+Spacecookie will never support HTTP to keep the code simple and clean. You can
+however use an HTTP to Gopher Proxy with Spacecookie just fine. Any proxy
+supporting RFC1436 should work, my own [gopher-proxy](https://github.com/sternenseemann/gopher-proxy)
+might work for you.
