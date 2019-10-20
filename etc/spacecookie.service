@@ -1,10 +1,13 @@
 [Unit]
 Description=Spacecookie Gopher Daemon
-After=network.target
+Requires=spacecookie.socket
 
 [Service]
-Type=simple
-ExecStart=/usr/local/bin/spacecookie /usr/local/etc/spacecookie.json
+Type=notify
+ExecStart=/path/to/spacecookie /path/to/spacecookie.json
+FileDescriptorStoreMax=1
+NotifyAccess=main
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
