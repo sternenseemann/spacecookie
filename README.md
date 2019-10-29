@@ -64,9 +64,8 @@ activation only uses an environment variable and a type unix socket, it
 is very lightweight and can be utilized without using a systemd library
 or dbus.
 
-Spacecookie currently fully supports any GNU/Linux. It should be pretty
-easy to, for example, write a [runit](http://smarden.org/runit/) service
-file.
+For example, it should be pretty easy to write a [runit](http://smarden.org/runit/)
+service file.
 
 ## Adding Content
 
@@ -95,6 +94,17 @@ So what does that all mean? These are the rules for a gophermap file:
 * "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
 
 The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt).
+
+## Portability
+
+Spacecookie's portability is mostly limited by [haskell-socket](https://github.com/lpeterse/haskell-socket),
+since it does not require systemd or anything else to run. haskell-socket should run
+on any POSIX-compliant Operating system and Windows, so Spacecookie should support
+those OS as well.
+
+I personally however have only tested Spacecookie on GNU/Linux (with and without
+systemd) so far. Feel free to send me an email or generate a [build report](http://hackage.haskell.org/package/spacecookie/reports/)
+if you've built (or failed to do so) on another platform!
 
 ## HTTP Support?
 
