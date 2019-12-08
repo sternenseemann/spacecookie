@@ -1,6 +1,6 @@
 {
   "hostname" : "localhost",
-  "user" : "lukas",
   "port" : 7070,
-  "root" : "./tmp"
+  "user" : null,
+  "root" : "/srv/gopher"
 }

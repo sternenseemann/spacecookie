@@ -32,7 +32,7 @@ main = do
       case config' of
         Just config -> do
           changeWorkingDirectory (rootDirectory config)
-          let cfg = GopherConfig (serverName config) (serverPort config) ((Just (runUserName config)))
+          let cfg = GopherConfig (serverName config) (serverPort config) (runUserName config)
           runGopherManual (systemdSocket cfg)
                           (notifyReady >> pure ())
                           (\s -> notifyStopping >> systemdStoreOrClose s)
