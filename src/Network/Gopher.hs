@@ -136,14 +136,16 @@ receiveRequest sock = receiveRequest' sock mempty
                          then return (acc `B.append` bs)
                          else receiveRequest' sock (acc `B.append` bs)
 
-dropPrivileges :: String -> IO ()
+dropPrivileges :: String -> IO Bool
 dropPrivileges username = do
   uid <- getRealUserID
-  when (uid /= 0) $ return ()
-
-  user <- getUserEntryForName username
-  setGroupID $ userGroupID user
-  setUserID $ userID user
+  if (uid /= 0)
+     then return False
+     else do
+       user <- getUserEntryForName username
+       setGroupID $ userGroupID user
+       setUserID $ userID user
+       return True
 
 -- | Auxiliary function that sets up the listening socket for
 --   'runGopherManual' correctly and starts to listen.
@@ -185,11 +187,11 @@ runGopherManual sock ready term cfg f = bracket
       log . LogInfo $ "Now listening on " ++ prettyAddr addr
 
       -- Change UID and GID if necessary
-      if isJust (cRunUserName cfg)
-        then do
-          liftIO (dropPrivileges (fromJust (cRunUserName cfg)))
-          log . LogInfo $ "Dropped privileges to " ++ fromJust (cRunUserName cfg)
-        else log .LogInfo $ "Privileges were not dropped"
+      when (isJust (cRunUserName cfg)) $ do
+        success <- liftIO (dropPrivileges (fromJust (cRunUserName cfg)))
+        if success
+           then log . LogInfo  $ "Changed to user " ++ fromJust (cRunUserName cfg)
+           else log . LogError $ "Could not change UID: not started as root!"
 
       liftIO $ ready
 
