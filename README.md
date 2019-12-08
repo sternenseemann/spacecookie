@@ -29,7 +29,7 @@ Let's have a quick look at the options:
 
 option     | meaning
 -----------|--------------------------------------------------------------------------------------------------------
-`hostname` | The hostname your spacecookie will be reachable through.
+`hostname` | The hostname your spacecookie will be reachable through. This should be accurate as gopher clients use it for their subsequent requests.
 `user`     | The user that just run spacecookie. It is used to drop root priveleges after binding the server socket.
 `port`     | The port spacecookie should listen on. The well-known port for gopher is 70.
 `root`     | The directory which the files to serve via gopher are located in.
