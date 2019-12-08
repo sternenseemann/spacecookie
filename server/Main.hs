@@ -3,6 +3,7 @@ import Config
 import Systemd
 
 import Network.Gopher
+import Network.Gopher.Log
 import Network.Gopher.Util (santinizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import Data.ByteString (ByteString ())
@@ -32,7 +33,7 @@ main = do
       case config' of
         Just config -> do
           changeWorkingDirectory (rootDirectory config)
-          let cfg = GopherConfig (serverName config) (serverPort config) (runUserName config)
+          let cfg = GopherConfig (serverName config) (serverPort config) (runUserName config) (Just defaultLogConfig)
           runGopherManual (systemdSocket cfg)
                           (notifyReady >> pure ())
                           (\s -> notifyStopping >> systemdStoreOrClose s)

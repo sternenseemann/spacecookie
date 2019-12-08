@@ -49,6 +49,7 @@ library
   exposed-modules:     Network.Gopher
                      , Network.Gopher.Util.Gophermap
                      , Network.Gopher.Util
+                     , Network.Gopher.Log
   other-modules:       Network.Gopher.Types
   build-depends:       base >= 4.9.0 && <5
                      , socket
