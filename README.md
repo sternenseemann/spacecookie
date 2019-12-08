@@ -97,14 +97,16 @@ The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rf
 
 ## Portability
 
-Spacecookie's portability is mostly limited by [haskell-socket](https://github.com/lpeterse/haskell-socket),
-since it does not require systemd or anything else to run. haskell-socket should run
-on any POSIX-compliant Operating system and Windows, so Spacecookie should support
-those OS as well.
+Spacecookie's portability is mostly limited by [haskell-socket](https://github.com/lpeterse/haskell-socket).
+`haskell-socket` should work on any POSIX-compliant Operating system,  so Spacecookie should support those
+platforms as well.
 
-I personally however have only tested Spacecookie on GNU/Linux (with and without
+However I personally have only tested Spacecookie on GNU/Linux (with and without
 systemd) so far. Feel free to send me an email or generate a [build report](http://hackage.haskell.org/package/spacecookie/reports/)
-if you've built (or failed to do so) on another platform!
+if you've built spacecookie (or failed to do so) on another platform!
+
+Windows is currently not supported as we use some Unix-specific features, but there is probably
+little demand for it as well.
 
 ## HTTP Support?
 
