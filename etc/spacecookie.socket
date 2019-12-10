@@ -5,5 +5,6 @@ Description=Socket for the Spacecookie Gopher Daemon
 BindIPv6Only=both
 SocketGroup=spacecookie
 SocketUser=spacecookie
+SocketMode=0660
 
 ListenStream=[::]:70

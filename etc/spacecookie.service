@@ -8,6 +8,8 @@ ExecStart=/path/to/spacecookie /path/to/spacecookie.json
 FileDescriptorStoreMax=1
 NotifyAccess=main
 StandardError=journal
+User=spacecookie
+Group=spacecookie
 
 [Install]
 WantedBy=multi-user.target

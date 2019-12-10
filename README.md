@@ -54,8 +54,8 @@ to install `spacecookie.service` and `spacecookie.socket` like so:
 	systemctl start  spacecookie.socket
 	systemctl start  spacecookie.service # optional, started by the socket automatically if needed
 
-Don't forget to change the paths in the systemd files and match the user name in
-`spacecookie.socket` with the one in `spacecookie.json`!
+You'll have to ensure that the paths are correct and the user and group specified
+in `spacecookie.socket` and `spacecookie.service` exist.
 
 ### Without systemd
 
