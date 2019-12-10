@@ -1,6 +1,6 @@
 cabal-version:       >= 2.0
 name:                spacecookie
-version:             0.2.1.0
+version:             0.2.1.1
 synopsis:            Gopher Library and Server Daemon
 description:         Simple gopher library that allows writing custom gopher
                      applications. Also includes a fully-featured gopher server
