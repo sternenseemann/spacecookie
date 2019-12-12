@@ -24,7 +24,7 @@ This server just returns the request string as a file.
 There are three possibilities for a 'GopherResponse':
 
 * 'FileResponse': file type agnostic file response, takes a 'ByteString' to support both text and binary files
-* 'MenuResponse': a gopher menu (“directory listning”) consisting of a list of 'GopherMenuItem's
+* 'MenuResponse': a gopher menu (“directory listing”) consisting of a list of 'GopherMenuItem's
 * 'ErrorResponse': gopher way to show an error (e. g. if a file is not found). A 'ErrorResponse' results in a menu response with a single entry.
 
 If you use 'runGopher', it is the same story like in the example above, but you can do 'IO' effects. To see a more elaborate example, have a look at the server code in this package.
@@ -213,7 +213,7 @@ handleIncoming clientSock addr = do
 
   liftIO $ sendAll clientSock res msgNoSignal
   liftIO $ close clientSock
-  log . LogInfo $ "Closed connection succesfully to " ++ prettyAddr addr
+  log . LogInfo $ "Closed connection successfully to " ++ prettyAddr addr
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
