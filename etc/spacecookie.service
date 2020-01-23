@@ -6,10 +6,7 @@ Requires=spacecookie.socket
 Type=notify
 ExecStart=/path/to/spacecookie /path/to/spacecookie.json
 FileDescriptorStoreMax=1
-NotifyAccess=main
-StandardError=journal
-User=spacecookie
-Group=spacecookie
+DynamicUser=true
 
 [Install]
 WantedBy=multi-user.target

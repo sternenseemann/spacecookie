@@ -17,22 +17,27 @@ Spacecookie is a gopher server and…
 
 * is RFC1436-compliant
 * supports info-line in menus (compatible protocol extension)
-* supports gophermaps (see below)
+* supports gophermaps (see [below](#adding-content))
 * provides a library for custom gopher applications ([see documentation](http://hackage.haskell.org/package/spacecookie/docs/Network-Gopher.html))
 * can integrate with systemd using socket activation
 
+## Installation
+
+* Nix(OS): [`pkgs.haskellPackages.spacecookie`](https://nixos.org/nixos/packages.html?channel=nixos-unstable&query=spacecookie) (see also [below](#on-nixos))
+* Cabal: `cabal v2-install spacecookie` (see also [hackage package](http://hackage.haskell.org/package/spacecookie))
+
+[Nix](https://nixos.org/nix/) is probably the most hassle-free way to install spacecookie at the moment.
+
 ## Configuration
 
-In order to run your new gopher server, you got to configure it first. The example configuration file is `./etc/spacecookie.json`.
+In order to run your new gopher server, you have to configure it first. You can find an example configuration file in `./etc/spacecookie.json`. JSON is mostly used due to legacy reason, it's not ideal, but alright for such a small configuration file.
 
 Let's have a quick look at the options:
 
-option     | meaning
------------|--------------------------------------------------------------------------------------------------------
-`hostname` | The hostname your spacecookie will be reachable through. This should be accurate as gopher clients use it for their subsequent requests.
-`user`     | The user that just run spacecookie. It is used to drop root priveleges after binding the server socket. Can be omitted or set to `null`, if root privileges are not needed (e. g. if systemd socket activation or a non well-known port is used).
-`port`     | The port spacecookie should listen on. The well-known port for gopher is 70.
-`root`     | The directory which the files to serve via gopher are located in.
+* `hostname`: The hostname your spacecookie will be reachable through. This should be accurate as gopher clients use it for their subsequent requests.
+* `user`: The user that is used to run spacecookie. If given, spacecookie will switch to this user after setting up its socket. Can be omitted or set to `null`, if root privileges are not needed (e. g. if systemd socket activation or a non well-known port is used).
+* `port`: The port spacecookie should listen on. The well-known port for gopher is 70.
+* `root`: The directory which the files to serve via gopher are located in.
 
 ## Running
 
@@ -40,8 +45,7 @@ After you've created your config file just start spacecookie like this:
 
 	spacecookie /path/to/spacecookie.json
 
-Spacecookie runs as a simple process and doesn't fork or write a PID file.
-Therefore you'll need to use a supervisor to run it as a proper daemon.
+Spacecookie runs as a simple process and doesn't fork or write a PID file. Therefore it is very simple to use a supervisor to run it as a proper daemon. 
 
 ### With systemd
 
@@ -54,18 +58,22 @@ to install `spacecookie.service` and `spacecookie.socket` like so:
 	systemctl start  spacecookie.socket
 	systemctl start  spacecookie.service # optional, started by the socket automatically if needed
 
-You'll have to ensure that the paths are correct and the user and group specified
-in `spacecookie.socket` and `spacecookie.service` exist.
+Of course make sure that all the used paths are correct!
 
 ### Without systemd
 
-Spacecookie does **not** require systemd nor depend on it. Since socket
-activation only uses an environment variable and a type unix socket, it
-is very lightweight and can be utilized without using a systemd library
-or dbus.
+Spacecookie does not require systemd nor depend on it. Since socket activation only uses an environment variable and a type unix socket, it is very lightweight and can be utilized without using a systemd library or dbus.
 
-For example, it should be pretty easy to write a [runit](http://smarden.org/runit/)
-service file.
+For example, it should be pretty easy to write a [runit](http://smarden.org/runit/) service file.
+
+### On NixOS
+
+On [NixOS](https://nixos.org/nixos/) it is best to use the service module [`services.spacecookie`](https://github.com/NixOS/nixpkgs/blob/master/nixos/modules/services/networking/spacecookie.nix). Setting up Spacecookie is as simple as adding the following lines to your `configuration.nix`:
+
+	services.spacecookie.enable = true;
+	services.spacecookie.hostname = "localhost";
+
+Of course you should replace `localhost` with the domain name or IP address your server is reachable through. Additionally you can specify the directory from which Spacecookie serves content using `services.spacecookie.root`, default is `/srv/gopher`.
 
 ## Adding Content
 
@@ -101,8 +109,7 @@ Spacecookie's portability is mostly limited by [haskell-socket](https://github.c
 `haskell-socket` should work on any POSIX-compliant Operating system,  so Spacecookie should support those
 platforms as well.
 
-However I personally have only tested Spacecookie on GNU/Linux (with and without
-systemd) so far. Feel free to send me an email or generate a [build report](http://hackage.haskell.org/package/spacecookie/reports/)
+However I personally have only tested Spacecookie on GNU/Linux (with and without systemd) so far. Feel free to send me an email or generate a [build report](http://hackage.haskell.org/package/spacecookie/reports/)
 if you've built spacecookie (or failed to do so) on another platform!
 
 Windows is currently not supported as we use some Unix-specific features, but there is probably
