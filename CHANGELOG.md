@@ -1,5 +1,9 @@
 # Revision history for spacecookie
 
+## 0.2.1.2 Bump fast-logger
+
+* Bump fast-logger dependency, fix build
+
 ## 0.2.1.1 Fixed Privilege Dropping
 
 * Server
