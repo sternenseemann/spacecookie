@@ -239,7 +239,5 @@ response (MenuResponse items) = do
               B.empty items
 
 response (FileResponse str) = pure str
-response (ErrorResponse reason) = do
-  env <- ask
-  pure $ fileTypeToChar Error `B.cons`
-    B.concat [uEncode reason, uEncode $  "\tErr\t", serverName env, uEncode "\t", uEncode . show $ serverPort env, uEncode "\r\n"]
+response (ErrorResponse reason) = response . MenuResponse $
+    [ Item Error (uEncode reason) "Err" Nothing Nothing ]
