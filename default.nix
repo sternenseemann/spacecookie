@@ -7,4 +7,9 @@ let pkgs = import <nixpkgs> {};
       };
     };
     drv = profiled.callPackage ./spacecookie.nix { };
-in if pkgs.lib.inNixShell then drv.env else drv
+in
+if !pkgs.lib.inNixShell
+then drv
+else drv.env.overrideAttrs (old: {
+  nativeBuildInputs = old.nativeBuildInputs ++ [ profiled.policeman ];
+})

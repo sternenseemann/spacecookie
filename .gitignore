@@ -21,6 +21,8 @@ cabal.project.local
 cabal.project.local~
 .HTF/
 .ghc.environment.*
+/.policeman-evidence
+/.hie
 
 # nix
 result*
