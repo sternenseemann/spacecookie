@@ -3,7 +3,7 @@ import Config
 import Systemd
 
 import Network.Gopher
-import Network.Gopher.Log
+import Network.Gopher.Log (GopherLogConfig (..), filterMessageLevel, defaultLogHandler, privacyLogHandler)
 import Network.Gopher.Util (santinizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
@@ -36,7 +36,7 @@ main = do
                 , cListenAddr = listenAddr config
                 , cServerPort = serverPort config
                 , cRunUserName = runUserName config
-                , cLogConfig = Just defaultLogConfig
+                , cLogConfig = gopherLogConfigFor config
                 }
           runGopherManual (systemdSocket cfg)
                           (notifyReady >> pure ())

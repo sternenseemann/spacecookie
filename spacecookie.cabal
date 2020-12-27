@@ -44,6 +44,7 @@ executable spacecookie
   build-depends:       spacecookie
                      , aeson
                      , systemd >= 2.1.0
+                     , text
   hs-source-dirs:      server
   other-modules:       Config
                      , Systemd
