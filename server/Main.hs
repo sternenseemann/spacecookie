@@ -51,7 +51,7 @@ spacecookie path' = do
   ft <- gopherFileType path
   pt <- pathType path
 
-  if not (isListable pt path')
+  if not (isListable pt path') && pt /= DoesNotExist
     then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
     else case ft of
            Error -> pure $
