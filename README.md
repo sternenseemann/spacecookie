@@ -90,7 +90,7 @@ Such a file looks like this:
 	also possible.
 
 	1Menu Entry for a directory full of funny stuff	/funny
-	iFunny Image	/funy.jpg
+	IFunny Image	/funny.jpg
 	gcat gif	/cat.gif
 	0about me	/about.txt
 	1Floodgap's gopher server	/	gopher.floodgap.com	70
