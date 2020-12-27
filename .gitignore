@@ -23,5 +23,4 @@ cabal.project.local~
 .ghc.environment.*
 
 # nix
-result
-*.nix # local testing
+result*
