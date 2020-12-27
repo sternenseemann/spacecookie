@@ -20,7 +20,7 @@ instance FromJSON Config where
   parseJSON (Object v) = Config <$>
     v .: "hostname" <*>
     (v .:? "listen" >>= fmap join . traverse (.:? "addr")) <*>
-    ((v .: "listen" >>= (.: "port")) <|> v .: "port") <*>
+    ((v .: "listen" >>= (.: "port")) <|> v .:? "port" .!= 70) <*>
     v .:? "user" <*>
     v .: "root"
   parseJSON _ = mzero
