@@ -3,13 +3,9 @@ module Config
   ( Config (..)
   ) where
 
-import Control.Applicative ((<$>), (<*>))
 import Control.Monad (mzero)
 import Data.Aeson
-import Data.Aeson.Types
 import Data.ByteString (ByteString ())
-import qualified Data.ByteString as B
-import Data.Maybe
 import Network.Gopher.Util
 
 data Config = Config { serverName    :: ByteString

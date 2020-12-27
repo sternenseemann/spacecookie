@@ -24,7 +24,7 @@ main = do
 module Network.Gopher.Util.Gophermap (
     parseGophermap
   , GophermapEntry (..)
-  , Gophermap (..)
+  , Gophermap
   , gophermapToDirectoryResponse
   ) where
 
@@ -33,11 +33,9 @@ import Prelude hiding (take, takeWhile)
 import Network.Gopher.Types
 import Network.Gopher.Util
 
-import Control.Applicative (many, (<$>), (<|>))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Applicative (many, (<|>))
 import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString (), append, empty, pack, singleton, unpack)
+import Data.ByteString (ByteString (), pack, unpack)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
@@ -65,10 +63,6 @@ type Gophermap = [GophermapEntry]
 -- | Attoparsec 'Parser' for the <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap file format>
 parseGophermap :: Parser Gophermap
 parseGophermap = many parseGophermapLine
-
-if' :: Bool -> a -> a -> a
-if' True  a _ = a
-if' False _ b = b
 
 gopherFileTypeChar :: Parser Word8
 gopherFileTypeChar = satisfy (inClass fileTypeChars)
@@ -123,11 +117,11 @@ gophermaplineWithoutFileTypeChar = do
     (byteStringToPort <$> portString)
 
 byteStringToPort :: ByteString -> Integer
-byteStringToPort s = fromIntegral . read . fst . U.decode . unpack $ s
+byteStringToPort s = read . fst . U.decode . unpack $ s
 
 optionalValue :: Parser (Maybe ByteString)
 optionalValue = option Nothing $ do
-  satisfy (inClass "\t")
+  _ <- satisfy (inClass "\t")
   Just <$> itemValue
 
 itemValue :: Parser ByteString

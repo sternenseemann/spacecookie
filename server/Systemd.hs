@@ -12,7 +12,6 @@ import Control.Monad (when, void)
 import Foreign.C.Types (CInt (..))
 import GHC.Conc (closeFdWith)
 import Network.Gopher (setupGopherSocket, GopherConfig (..))
-import System.Exit
 import System.Posix.Types (Fd (..))
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6

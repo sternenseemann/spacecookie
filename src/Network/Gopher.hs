@@ -49,8 +49,7 @@ module Network.Gopher (
   , GopherMenuItem (..)
   , GopherFileType (..)
   -- ** Gophermaps
-  , GophermapEntry (..)
-  , Gophermap (..)
+  , Gophermap
   ) where
 
 import Prelude hiding (log)
@@ -60,9 +59,8 @@ import Network.Gopher.Types
 import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 
-import Control.Applicative ((<$>), (<*>), Applicative (..))
 import Control.Concurrent (forkIO, ThreadId ())
-import Control.Exception (bracket, catch, IOException (..))
+import Control.Exception (bracket, IOException ())
 import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
@@ -70,11 +68,7 @@ import Control.Monad.Error.Class (MonadError (..))
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import Data.Maybe (isJust, fromJust, fromMaybe)
-import Data.Monoid ((<>))
-import qualified Data.String.UTF8 as U
-import System.IO
 import System.Log.FastLogger
-import System.Log.FastLogger.Date
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
 import System.Socket.Type.Stream
@@ -96,27 +90,24 @@ defaultConfig = GopherConfig "localhost" 70 Nothing (Just defaultLogConfig)
 
 data Env
   = Env { serverConfig :: GopherConfig
-        , serverSocket :: Socket Inet6 Stream TCP
         , serverFun    :: (String -> IO GopherResponse)
         , logger       :: Maybe (TimedFastLogger, IO ()) -- ^ TimedFastLogger and clean up action
         }
 
--- aliases for old accessors
-serverName = cServerName . serverConfig
-serverPort = cServerPort . serverConfig
-
-initEnv :: Socket Inet6 Stream TCP -> (String -> IO GopherResponse) -> GopherConfig -> IO Env
-initEnv sock fun cfg = do
+initEnv :: (String -> IO GopherResponse) -> GopherConfig -> IO Env
+initEnv fun cfg = do
   timeCache <- newTimeCache simpleTimeFormat
-  logger <- if isJust (cLogConfig cfg)
-               then Just <$> newTimedFastLogger timeCache (LogStderr 128)
-               else pure Nothing
-  pure $ Env cfg sock fun logger
+  maybeLogger <-
+    if isJust (cLogConfig cfg)
+      then Just <$> newTimedFastLogger timeCache (LogStderr 128)
+      else pure Nothing
+  pure $ Env cfg fun maybeLogger
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
   deriving ( Functor, Applicative, Monad
            , MonadIO, MonadReader Env, MonadError IOException)
 
+gopherM :: Env -> GopherM a -> IO a
 gopherM env action = (runReaderT . runGopherM) action env
 
 -- This action has become a bit obfuscated. Essentially
@@ -145,15 +136,15 @@ log logMsg = do
             in tStr <> renderedMsg <> "\n")
 
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
-receiveRequest sock = receiveRequest' sock mempty
+receiveRequest sock = receiveRequest' mempty
   where lengthLimit = 1024
-        receiveRequest' sock acc = do
+        receiveRequest' acc = do
           bs <- liftIO $ receive sock lengthLimit mempty
           case (B.elemIndex (asciiOrd '\n') bs) of
             Just i -> return (acc `B.append` (B.take (i + 1) bs))
             Nothing -> if B.length bs < lengthLimit
                          then return (acc `B.append` bs)
-                         else receiveRequest' sock (acc `B.append` bs)
+                         else receiveRequest' (acc `B.append` bs)
 
 dropPrivileges :: String -> IO Bool
 dropPrivileges username = do
@@ -193,14 +184,14 @@ runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 --   'listen' have been called). This can be achieved using 'setupGopherSocket'.
 --
 --   This is intended for supporting systemd socket activation and storage.
---   Only use, if you know what you are doing.
+--   Only use if you know what you are doing.
 runGopherManual :: IO (Socket Inet6 Stream TCP) -> IO () -> (Socket Inet6 Stream TCP -> IO ())
                 -> GopherConfig -> (String -> IO GopherResponse) -> IO ()
-runGopherManual sock ready term cfg f = bracket
-  sock
+runGopherManual sockAction ready term cfg f = bracket
+  sockAction
   term
   (\sock -> do
-    env <- initEnv sock f cfg
+    env <- initEnv f cfg
     gopherM env $ do
       addr <- liftIO $ getAddress sock
       log $ LogInfoListeningOn addr
@@ -230,7 +221,7 @@ handleIncoming clientSock addr = do
   fun <- serverFun <$> ask
   res <- liftIO (fun req) >>= response
 
-  liftIO $ sendAll clientSock res msgNoSignal
+  _ <- liftIO $ sendAll clientSock res msgNoSignal
   liftIO $ close clientSock
   log $ LogInfoClosedConnection addr
 
@@ -238,7 +229,7 @@ acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
   (clientSock, addr) <- liftIO $ accept sock
   log $ LogInfoNewConnection addr
-  forkGopherM $ handleIncoming clientSock addr `catchError` (\e -> do
+  _ <- forkGopherM $ handleIncoming clientSock addr `catchError` (\e -> do
     liftIO (close clientSock `catchError` const (pure ()))
     log $ LogErrorClosedConnection addr e)
   return ()
@@ -253,8 +244,8 @@ response (MenuResponse items) = do
   pure $ foldl (\acc (Item fileType title path host port) ->
                  B.append acc $
                    fileTypeToChar fileType `B.cons`
-                     B.concat [ title, uEncode "\t", uEncode path, uEncode "\t", fromMaybe (serverName env) host,
-                                uEncode "\t", uEncode . show $ fromMaybe (serverPort env) port, uEncode "\r\n" ])
+                     B.concat [ title, uEncode "\t", uEncode path, uEncode "\t", fromMaybe (cServerName (serverConfig env)) host,
+                                uEncode "\t", uEncode . show $ fromMaybe (cServerPort (serverConfig env)) port, uEncode "\r\n" ])
               B.empty items
 
 response (FileResponse str) = pure str

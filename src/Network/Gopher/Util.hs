@@ -25,7 +25,7 @@ import Data.Char (ord, chr)
 import Data.List (isPrefixOf)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix (pathSeparator, normalise, joinPath, splitPath)
+import System.FilePath.Posix (normalise, joinPath, splitPath)
 
 -- | 'chr' a 'Word8'
 asciiChr :: Word8 -> Char

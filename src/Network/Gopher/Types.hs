@@ -8,18 +8,12 @@ module Network.Gopher.Types
   )
   where
 
-import           Prelude               hiding (lookup)
+import Prelude hiding (lookup)
 
-import           Network.Gopher.Util
+import Network.Gopher.Util
 
-import           Data.ByteString (ByteString, pack, unpack)
-import qualified Data.ByteString as B
-import           Data.Char             (ord, chr)
-import           Data.Map              (Map (), fromList, lookup)
-import           Data.Maybe            (fromJust, fromMaybe)
-import           Data.Tuple            (swap)
-import           Data.Word             (Word8 ())
-import           System.FilePath       (splitPath, takeBaseName)
+import Data.ByteString (ByteString ())
+import Data.Word (Word8 ())
 
 -- | entry in a gopher menu
 data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString) (Maybe Integer) -- ^ file type, menu text, filepath (does not need to be a real file), server name (optional), port (optional)

@@ -6,13 +6,11 @@ import Network.Gopher
 import Network.Gopher.Log
 import Network.Gopher.Util (santinizePath, uEncode)
 import Network.Gopher.Util.Gophermap
-import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.List (isPrefixOf)
-import Control.Applicative ((<|>), (<$>), pure)
-import Control.Monad (unless, filterM, sequence, join)
-import Control.Monad.IO.Class (liftIO)
+import Control.Applicative ((<|>))
+import Control.Monad (unless, filterM, join)
 import Data.Aeson (decode)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Char (toLower)
@@ -21,7 +19,6 @@ import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
 import System.Posix.Directory (changeWorkingDirectory)
-import System.Socket (close)
 
 main :: IO ()
 main = do
@@ -44,12 +41,12 @@ main = do
 spacecookie :: String -> IO GopherResponse
 spacecookie path' = do
   let path = "." </> dropDrive (santinizePath path')
-  fileType <- gopherFileType path
-  pathType <- pathType path
+  ft <- gopherFileType path
+  pt <- pathType path
 
-  if not (isListable pathType path')
+  if not (isListable pt path')
     then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
-    else case fileType of
+    else case ft of
            Error -> pure $
              if "URL:" `isPrefixOf` path'
                then ErrorResponse $ "spacecookie does not support proxying HTTP, try using a gopher client that supports the h-type. If you tried to request a file called '" ++ path' ++ "', it does not exist."
