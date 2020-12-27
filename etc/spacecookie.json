@@ -2,7 +2,7 @@
   "hostname" : "localhost",
   "listen" : {
     "addr" : "::",
-    "port" : 7070
+    "port" : 70
   },
   "user" : null,
   "root" : "/srv/gopher",
