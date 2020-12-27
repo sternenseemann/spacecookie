@@ -5,5 +5,11 @@
     "port" : 7070
   },
   "user" : null,
-  "root" : "/srv/gopher"
+  "root" : "/srv/gopher",
+  "log" : {
+    "enable" : true,
+    "hide-ips" : true,
+    "hide-time" : false,
+    "level" : "info"
+  }
 }
