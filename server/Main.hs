@@ -19,18 +19,25 @@ import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
 import System.Posix.Directory (changeWorkingDirectory)
+import System.Exit
 
 main :: IO ()
 main = do
   args <- getArgs
   case args of
     [ configFile ] -> do
-      doesFileExist configFile >>= (flip unless) (error "could not open config file")
+      doesFileExist configFile >>= (flip unless) (die "could not open config file")
       config' <- decode <$> BL.readFile configFile
       case config' of
         Just config -> do
           changeWorkingDirectory (rootDirectory config)
-          let cfg = GopherConfig (serverName config) (serverPort config) (runUserName config) (Just defaultLogConfig)
+          let cfg = GopherConfig
+                { cServerName = serverName config
+                , cListenAddr = listenAddr config
+                , cServerPort = serverPort config
+                , cRunUserName = runUserName config
+                , cLogConfig = Just defaultLogConfig
+                }
           runGopherManual (systemdSocket cfg)
                           (notifyReady >> pure ())
                           (\s -> notifyStopping >> systemdStoreOrClose s)

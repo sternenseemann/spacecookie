@@ -60,7 +60,7 @@ import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 
 import Control.Concurrent (forkIO, ThreadId ())
-import Control.Exception (bracket, IOException ())
+import Control.Exception (throw, bracket, IOException ())
 import Control.Monad (forever, when)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
@@ -78,6 +78,8 @@ import System.Posix.User
 -- | necessary information to handle gopher requests
 data GopherConfig
   = GopherConfig { cServerName    :: ByteString            -- ^ “name” of the server (either ip address or dns name)
+                 , cListenAddr    :: Maybe ByteString      -- ^ Address or hostname to listen on (resolved by @getaddrinfo@).
+                                                           --   If 'Nothing', listen on all addresses.
                  , cServerPort    :: Integer               -- ^ port to listen on
                  , cRunUserName   :: Maybe String          -- ^ user to run the process as
                  , cLogConfig     :: Maybe GopherLogConfig -- ^ Can be used to customize the log output.
@@ -86,7 +88,7 @@ data GopherConfig
 
 -- | Default 'GopherConfig' describing a server on @localhost:70@ with logging enabled.
 defaultConfig :: GopherConfig
-defaultConfig = GopherConfig "localhost" 70 Nothing (Just defaultLogConfig)
+defaultConfig = GopherConfig "localhost" Nothing 70 Nothing (Just defaultLogConfig)
 
 data Env
   = Env { serverConfig :: GopherConfig
@@ -164,7 +166,20 @@ setupGopherSocket cfg = do
   sock <- (socket :: IO (Socket Inet6 Stream TCP))
   setSocketOption sock (ReuseAddress True)
   setSocketOption sock (V6Only False)
-  bind sock (SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0)
+  addr <-
+    case cListenAddr cfg of
+      Nothing -> pure
+        $ SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0
+      Just a -> do
+        let port = uEncode . show $ cServerPort cfg
+        let flags = aiV4Mapped <> aiNumericService
+        addrs <- (getAddressInfo (Just a) (Just port) flags :: IO [AddressInfo Inet6 Stream TCP])
+
+        -- should be done by getAddressInfo already
+        when (null addrs) $ throw eaiNoName
+
+        pure . socketAddress $ head addrs
+  bind sock addr
   listen sock 5
   pure sock
 
