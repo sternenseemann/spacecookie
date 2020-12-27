@@ -45,6 +45,16 @@ main = do
         Nothing -> error "failed to parse config"
     _ -> error "config file must be given"
 
+gopherLogConfigFor :: Config -> Maybe GopherLogConfig
+gopherLogConfigFor c =
+  if logEnable lc
+    then Just $ GopherLogConfig
+      { glcLogHandler = handler, glcLogTimed = not (logHideTime lc) }
+    else Nothing
+  where lc = logConfig c
+        handler m = filterMessageLevel (logLevel lc) m >>=
+          if logHideIps lc then privacyLogHandler else defaultLogHandler
+
 spacecookie :: String -> IO GopherResponse
 spacecookie path' = do
   let path = "." </> dropDrive (santinizePath path')
