@@ -1,11 +1,11 @@
-cabal-version:       2.0
+cabal-version:       3.0
 name:                spacecookie
 version:             0.2.1.2
 synopsis:            Gopher Library and Server Daemon
 description:         Simple gopher library that allows writing custom gopher
                      applications. Also includes a fully-featured gopher server
                      daemon complete with gophermap-support built on top of it.
-license:             GPL-3
+license:             GPL-3.0-only
 license-file:        LICENSE
 author:              Lukas Epple
 maintainer:          git@lukasepple.de
@@ -22,47 +22,41 @@ extra-source-files:  CHANGELOG.md
                      docs/gophermap-pygopherd.txt
                      docs/rfc1436.txt
 
-executable spacecookie
-  main-is:             Main.hs
-  build-depends:       base >= 4.9.0.0 && <5
-                     , socket
+common build-settings
+  ghc-options:         -Wall -Wno-orphans
+  default-language:    Haskell2010
+
+common dependencies
+  build-depends:       base >=4.9 && <5
                      , unix
-                     , directory
+                     , socket
                      , filepath
+                     , directory
                      , containers
                      , bytestring
-                     , filepath
                      , mtl
                      , transformers
-                     , aeson
                      , attoparsec
-                     , spacecookie
+
+executable spacecookie
+  import:              build-settings, dependencies
+  main-is:             Main.hs
+  build-depends:       spacecookie
+                     , aeson
                      , systemd >= 2.1.0
   hs-source-dirs:      server
-  default-language:    Haskell2010
   other-modules:       Config
                      , Systemd
 
 library
+  import:              build-settings, dependencies
   hs-source-dirs:      src
-  default-language:    Haskell2010
   exposed-modules:     Network.Gopher
                      , Network.Gopher.Util.Gophermap
                      , Network.Gopher.Util
                      , Network.Gopher.Log
   other-modules:       Network.Gopher.Types
-  build-depends:       base >= 4.9.0 && <5
-                     , socket
-                     , unix
-                     , directory
-                     , filepath
-                     , containers
-                     , bytestring
-                     , filepath
-                     , mtl
-                     , transformers
-                     , attoparsec
-                     , hxt-unicode
+  build-depends:       hxt-unicode
                      , fast-logger >= 2.4.0 && < 3.1
 
 source-repository head
