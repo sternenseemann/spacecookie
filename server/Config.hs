@@ -3,12 +3,14 @@ module Config
   ( Config (..)
   ) where
 
-import Control.Monad (mzero)
+import Control.Monad (mzero, join)
+import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.ByteString (ByteString ())
 import Network.Gopher.Util
 
 data Config = Config { serverName    :: ByteString
+                     , listenAddr    :: Maybe ByteString
                      , serverPort    :: Integer
                      , runUserName   :: Maybe String
                      , rootDirectory :: FilePath
@@ -17,18 +19,20 @@ data Config = Config { serverName    :: ByteString
 instance FromJSON Config where
   parseJSON (Object v) = Config <$>
     v .: "hostname" <*>
-    v .: "port" <*>
+    (v .:? "listen" >>= fmap join . traverse (.:? "addr")) <*>
+    ((v .: "listen" >>= (.: "port")) <|> v .: "port") <*>
     v .:? "user" <*>
     v .: "root"
   parseJSON _ = mzero
 
 instance ToJSON Config where
-  toJSON (Config host port user root) = object $
+  toJSON (Config host addr port user root) = object $
     [ "hostname" .= host
-    , "port" .= port
+    , "listen" .= listenObj
     , "root" .= root
-    ] ++
-    maybe [] ((:[]) . ("user" .=)) user
+    ] ++ maybeBind "user" user
+    where listenObj = object $ maybeBind "addr" addr ++ [ "port" .= port ]
+          maybeBind n v = maybe [] ((:[]) . (n .=)) v
 
 -- auxiliary instances for types that have no default instance
 instance FromJSON ByteString where
