@@ -135,7 +135,10 @@ log logMsg = do
     renderedMsg <- glcLogHandler cfg logMsg
     pure . tlogger $ (\t ->
           let tStr = if glcLogTimed cfg then "[" <> toLogStr t <> "]" else ""
-            in tStr <> renderedMsg <> "\n")
+              lStr = case logLevel logMsg of
+                       LogLevelInfo  -> "[info] "
+                       LogLevelError -> "[err ] "
+           in tStr <> lStr <> renderedMsg <> "\n")
 
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
 receiveRequest sock = receiveRequest' mempty
