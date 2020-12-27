@@ -75,6 +75,33 @@ an object of the following form.
 `listen` may be omitted altogether in which case the default values
 described before are used.
 
+### `log`
+
+Configure log output. The option expects an object of the following
+format:
+
+```json
+{
+  "enable": true,
+  "hide-ips": true,
+  "hide-time": false,
+  "level": "info"
+}
+```
+
+* The `enable` field determines whether to enable logging. Must be given
+  if `log` is given.
+* The `hide-ips` field determines whether IP addresses should show up in
+  the log. This is an optional setting which defaults to `true` in order
+  to avoid leaking user related data to the log output.
+* The `hide-time` field can be set to `true` to disable timestamps in the
+  log output, e. g. if you are using systemd. Defaults to `false`.
+* The `level` field can either be set to `"info"` or `"error"`. Default
+  value is `"info"`.
+
+If `log` is not given, it defaults to enabled with the default values for
+all optional settings.
+
 ### `port`
 
 Legacy option for backwards compatibility, use `listen` instead.
