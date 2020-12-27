@@ -6,6 +6,12 @@ module Network.Gopher.Log
     LogMessage (..)
   , GopherLogConfig (..)
   , defaultLogConfig
+  -- ** Log handlers
+  , defaultLogHandler
+  , privacyLogHandler
+  , filterMessageLevel
+  , LogLevel (..)
+  , logLevel
   -- * Re-Exports from 'System.Log.FastLogger'
   , ToLogStr (..)
   , LogStr ()
@@ -40,6 +46,42 @@ data LogMessage
   | LogInfoClosedConnection (SocketAddress Inet6)
   -- | Received given request from a given address.
   | LogInfoRequest String (SocketAddress Inet6)
+
+data LogLevel = LogLevelInfo | LogLevelError
+  deriving (Show, Eq, Ord)
+
+logLevelBelow :: LogLevel -> LogLevel -> Bool
+logLevelBelow _             LogLevelInfo  = True
+logLevelBelow LogLevelError LogLevelError = True
+logLevelBelow LogLevelInfo  LogLevelError = False
+
+logLevel :: LogMessage -> LogLevel
+logLevel m =
+  case m of
+    LogErrorCantChangeUid _ -> LogLevelError
+    LogErrorAccept _ -> LogLevelError
+    LogErrorClosedConnection _ _ -> LogLevelError
+    LogInfoChangedUser _ -> LogLevelInfo
+    LogInfoListeningOn _ -> LogLevelInfo
+    LogInfoNewConnection _ -> LogLevelInfo
+    LogInfoClosedConnection _ -> LogLevelInfo
+    LogInfoRequest _ _ -> LogLevelInfo
+
+-- | Filter log messages based on 'LogLevel'. All messages
+--   below the given 'LogLevel' are returned as 'Just',
+--   everything else yields 'Nothing'.
+--
+--   Together with the 'Maybe' monad this can be used to
+--   make custom handlers:
+--
+--   @
+--   myHandler m = filterMessageLevel LogLevelError m >>= privacyHandler
+--   @
+filterMessageLevel :: LogLevel -> LogMessage -> Maybe LogMessage
+filterMessageLevel lvl msg =
+  if logLevel msg `logLevelBelow` lvl
+    then Just msg
+    else Nothing
 
 instance ToLogStr (SocketAddress Inet6) where
   -- TODO shorten address if possible
@@ -85,4 +127,19 @@ data GopherLogConfig
     }
 
 defaultLogConfig :: GopherLogConfig
-defaultLogConfig = GopherLogConfig (fmap Just toLogStr) True
+defaultLogConfig = GopherLogConfig defaultLogHandler True
+
+-- | Default log handler used for 'glcLogHandler'
+defaultLogHandler :: LogMessage -> Maybe LogStr
+defaultLogHandler = fmap Just toLogStr
+
+-- | Handler for 'glcLogHandler' which doesn't output any user
+--   related data, i. e. IP addresses.
+privacyLogHandler :: LogMessage -> Maybe LogStr
+privacyLogHandler (LogErrorClosedConnection _ e) =
+  Just $ "[err ] Closing connection with error: " <> toLogStr (show e)
+privacyLogHandler (LogInfoRequest r _) =
+  Just $ "[info] Received Request \"" <> toLogStr r <> "\""
+privacyLogHandler (LogInfoNewConnection _) = Nothing
+privacyLogHandler (LogInfoClosedConnection _) = Nothing
+privacyLogHandler m = Just $ toLogStr m
