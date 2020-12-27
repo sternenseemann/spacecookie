@@ -50,6 +50,7 @@ module Network.Gopher (
   , GopherFileType (..)
   -- ** Gophermaps
   , Gophermap
+  , GophermapEntry (..)
   ) where
 
 import Prelude hiding (log)
