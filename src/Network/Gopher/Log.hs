@@ -102,14 +102,14 @@ instance ToLogStr (SocketAddress Inet6) where
 instance ToLogStr LogMessage where
   toLogStr msg =
     case msg of
-      LogErrorCantChangeUid u -> "[err ] Can't change to user " <> toLogStr u
-      LogErrorAccept e -> "[err ] Error while accepting a new connection: " <> toLogStr (show e)
-      LogErrorClosedConnection a e -> "[err ] Closed connection to " <> toLogStr a <> " with error: " <> toLogStr (show e)
-      LogInfoChangedUser u -> "[info] Changed to user " <> toLogStr u
-      LogInfoListeningOn a -> "[info] Listening on " <> toLogStr a
-      LogInfoNewConnection a -> "[info] New connection from " <> toLogStr a
-      LogInfoClosedConnection a -> "[info] Closed connection to " <> toLogStr a
-      LogInfoRequest r a -> "[info] Request \"" <> toLogStr r <> "\" from " <> toLogStr a
+      LogErrorCantChangeUid u -> "Can't change to user " <> toLogStr u
+      LogErrorAccept e -> "Error while accepting a new connection: " <> toLogStr (show e)
+      LogErrorClosedConnection a e -> "Closed connection to " <> toLogStr a <> " with error: " <> toLogStr (show e)
+      LogInfoChangedUser u -> "Changed to user " <> toLogStr u
+      LogInfoListeningOn a -> "Listening on " <> toLogStr a
+      LogInfoNewConnection a -> "New connection from " <> toLogStr a
+      LogInfoClosedConnection a -> "Closed connection to " <> toLogStr a
+      LogInfoRequest r a -> "Request \"" <> toLogStr r <> "\" from " <> toLogStr a
 
 -- | Configures logging behavior of 'Network.Gopher.runGopher' variants.
 data GopherLogConfig
@@ -137,9 +137,9 @@ defaultLogHandler = fmap Just toLogStr
 --   related data, i. e. IP addresses.
 privacyLogHandler :: LogMessage -> Maybe LogStr
 privacyLogHandler (LogErrorClosedConnection _ e) =
-  Just $ "[err ] Closing connection with error: " <> toLogStr (show e)
+  Just $ "Closing connection with error: " <> toLogStr (show e)
 privacyLogHandler (LogInfoRequest r _) =
-  Just $ "[info] Received Request \"" <> toLogStr r <> "\""
+  Just $ "Received Request \"" <> toLogStr r <> "\""
 privacyLogHandler (LogInfoNewConnection _) = Nothing
 privacyLogHandler (LogInfoClosedConnection _) = Nothing
 privacyLogHandler m = Just $ toLogStr m
