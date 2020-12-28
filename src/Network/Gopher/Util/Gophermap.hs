@@ -33,7 +33,7 @@ import Prelude hiding (take, takeWhile)
 import Network.Gopher.Types
 import Network.Gopher.Util
 
-import Control.Applicative (many, (<|>))
+import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
 import Data.ByteString (ByteString (), pack, unpack)
 import Data.Maybe (fromMaybe)
@@ -62,7 +62,7 @@ type Gophermap = [GophermapEntry]
 
 -- | Attoparsec 'Parser' for the <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap file format>
 parseGophermap :: Parser Gophermap
-parseGophermap = many parseGophermapLine
+parseGophermap = many1 parseGophermapLine <* endOfInput
 
 gopherFileTypeChar :: Parser Word8
 gopherFileTypeChar = satisfy (inClass fileTypeChars)
@@ -75,8 +75,8 @@ parseGophermapLine = emptyGophermapline <|>
 
 infoGophermapline :: Parser GophermapEntry
 infoGophermapline = do
-  text <- takeWhile (notInClass "\t\r\n")
-  endOfLine'
+  text <- takeWhile1 (notInClass "\t\r\n")
+  endOfLineOrInput
   return $ GophermapEntry InfoLine
     text
     Nothing
@@ -85,17 +85,17 @@ infoGophermapline = do
 
 regularGophermapline :: Parser GophermapEntry
 regularGophermapline = do
-    fileTypeChar <- gopherFileTypeChar
-    text <- itemValue
-    pathString <- optionalValue
-    host <- optionalValue
-    portString <- optionalValue
-    endOfLine'
-    return $ GophermapEntry (charToFileType fileTypeChar)
-      text
-      (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
-      host
-      (byteStringToPort <$> portString)
+  fileTypeChar <- gopherFileTypeChar
+  text <- itemValue
+  pathString <- optionalValue
+  host <- optionalValue
+  portString <- optionalValue
+  endOfLineOrInput
+  return $ GophermapEntry (charToFileType fileTypeChar)
+    text
+    (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
+    host
+    (byteStringToPort <$> portString)
 
 emptyGophermapline :: Parser GophermapEntry
 emptyGophermapline = do
@@ -109,7 +109,7 @@ gophermaplineWithoutFileTypeChar = do
   pathString <- optionalValue
   host <- optionalValue
   portString <- optionalValue
-  endOfLine'
+  endOfLineOrInput
   return $ GophermapEntry InfoLine
     text
     (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
@@ -125,7 +125,10 @@ optionalValue = option Nothing $ do
   Just <$> itemValue
 
 itemValue :: Parser ByteString
-itemValue = takeTill (inClass "\t\r\n")
+itemValue = takeWhile1 (notInClass "\t\r\n")
 
 endOfLine' :: Parser ()
 endOfLine' = (word8 10 >> return ()) <|> (string "\r\n" >> return ())
+
+endOfLineOrInput :: Parser ()
+endOfLineOrInput = endOfInput <|> endOfLine'
