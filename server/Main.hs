@@ -77,9 +77,11 @@ fileResponse :: FilePath -> IO GopherResponse
 fileResponse path = FileResponse <$> B.readFile path
 
 makeAbsolute :: FilePath -> FilePath
-makeAbsolute x = if "./" `isPrefixOf` x
-                   then tail x
-                   else x
+makeAbsolute x =
+  case x of
+    ('.':'/':_) -> tail x
+    "." -> "/"
+    _ -> x
 
 directoryResponse :: FilePath -> IO GopherResponse
 directoryResponse path = do
