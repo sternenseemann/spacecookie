@@ -54,6 +54,7 @@ gophermapEntryToMenuItem dir (GophermapEntry ft desc path host port) =
           case p of
             GophermapAbsolute p' -> p'
             GophermapRelative p' -> dir </> p'
+            GophermapUrl u       -> u
 
 fileTypeChars :: [Char]
 fileTypeChars = "0123456789+TgIih"
@@ -63,22 +64,27 @@ fileTypeChars = "0123456789+TgIih"
 data GophermapFilePath
   = GophermapAbsolute FilePath
   | GophermapRelative FilePath
+  | GophermapUrl String
   deriving (Show, Eq)
 
 -- | Take 'ByteString' from gophermap, decode it,
 --   sanitize and determine path type.
 --
---   Gophermap paths that don't start with a slash are
---   considered to be relative.
+--   * Gophermap paths that start with a slash are
+--     considered to be absolute.
+--   * Gophermap paths that start with "URL:" are
+--     considered as an external URL and left as-is.
+--   * everything else is considered a relative path
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b =
-  pathType . santinizeIfNotUrl . fst . U.decode $ bytes
-  where bytes = unpack b
-        pathType =
-          case bytes of
-            -- starts with '/'
-            (47:_) -> GophermapAbsolute
-            _ -> GophermapRelative
+  case bytes of
+    -- starts with "URL:"
+    (85:82:76:58:_) -> GophermapUrl . fst $ U.decode bytes
+    -- starts with '/'
+    (47:_) -> GophermapAbsolute $ processPath bytes
+    _      -> GophermapRelative $ processPath bytes
+  where processPath = santinizePath . fst . U.decode
+        bytes = unpack b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
