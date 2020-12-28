@@ -39,23 +39,51 @@ import Data.ByteString (ByteString (), pack, unpack)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
+import System.FilePath.Posix ((</>))
 
--- | Convert a gophermap to a gopher menu response.
-gophermapToDirectoryResponse :: Gophermap -> GopherResponse
-gophermapToDirectoryResponse entries =
-  MenuResponse (map gophermapEntryToMenuItem entries)
+-- | Given a directory and a Gophermap contained within it,
+--   return the corresponding gopher menu response.
+gophermapToDirectoryResponse :: FilePath -> Gophermap -> GopherResponse
+gophermapToDirectoryResponse dir entries =
+  MenuResponse (map (gophermapEntryToMenuItem dir) entries)
 
-gophermapEntryToMenuItem :: GophermapEntry -> GopherMenuItem
-gophermapEntryToMenuItem (GophermapEntry ft desc path host port) =
-  Item ft desc (fromMaybe (uDecode desc) path) host port
+gophermapEntryToMenuItem :: FilePath -> GophermapEntry -> GopherMenuItem
+gophermapEntryToMenuItem dir (GophermapEntry ft desc path host port) =
+  Item ft desc (fromMaybe (uDecode desc) (realPath <$> path)) host port
+  where realPath p =
+          case p of
+            GophermapAbsolute p' -> p'
+            GophermapRelative p' -> dir </> p'
 
 fileTypeChars :: [Char]
 fileTypeChars = "0123456789+TgIih"
 
+-- | Wrapper around 'FilePath' to indicate whether it is
+--   relative or absolute.
+data GophermapFilePath
+  = GophermapAbsolute FilePath
+  | GophermapRelative FilePath
+  deriving (Show, Eq)
+
+-- | Take 'ByteString' from gophermap, decode it,
+--   sanitize and determine path type.
+--
+--   Gophermap paths that don't start with a slash are
+--   considered to be relative.
+makeGophermapFilePath :: ByteString -> GophermapFilePath
+makeGophermapFilePath b =
+  pathType . santinizeIfNotUrl . fst . U.decode $ bytes
+  where bytes = unpack b
+        pathType =
+          case bytes of
+            -- starts with '/'
+            (47:_) -> GophermapAbsolute
+            _ -> GophermapRelative
+
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
   GopherFileType ByteString
-  (Maybe FilePath) (Maybe ByteString) (Maybe Integer) -- ^ file type, description, path, server name, port number
+  (Maybe GophermapFilePath) (Maybe ByteString) (Maybe Integer) -- ^ file type, description, path, server name, port number
   deriving (Show, Eq)
 
 type Gophermap = [GophermapEntry]
@@ -93,7 +121,7 @@ regularGophermapline = do
   endOfLineOrInput
   return $ GophermapEntry (charToFileType fileTypeChar)
     text
-    (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
+    (makeGophermapFilePath <$> pathString)
     host
     (byteStringToPort <$> portString)
 
@@ -112,7 +140,7 @@ gophermaplineWithoutFileTypeChar = do
   endOfLineOrInput
   return $ GophermapEntry InfoLine
     text
-    (santinizeIfNotUrl . fst . U.decode . unpack <$> pathString)
+    (makeGophermapFilePath <$> pathString)
     host
     (byteStringToPort <$> portString)
 

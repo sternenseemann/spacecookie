@@ -98,7 +98,7 @@ gophermapResponse path = do
               else pure $ Left "Gophermap file does not exist"
   case parsed of
     Left _ -> directoryResponse path
-    Right right -> pure $ gophermapToDirectoryResponse right
+    Right right -> pure $ gophermapToDirectoryResponse (makeAbsolute path) right
 
 -- | calculates the file type identifier used in the Gopher protocol
 -- for a given file
