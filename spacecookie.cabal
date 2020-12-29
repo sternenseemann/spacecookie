@@ -46,7 +46,7 @@ executable spacecookie
   other-modules:       Config
                      , Systemd
                      , Paths_spacecookie
-  ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts="-I10" -threaded
+  ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 
 library
   import:              common-settings
