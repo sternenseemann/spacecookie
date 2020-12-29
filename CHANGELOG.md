@@ -37,6 +37,9 @@ Consider this one a late christmas present.
 * Fix the file not found error message erroneously stating that access of that
   file was not permitted.
 * Clarify error message when an URL: selector is sent to spacecookie.
+* Print version when `--version` is given
+* Print simple usage instructions when `--help` is given or the command line
+  can't be parsed.
 
 Log parsing should be backwards compatible. Please open a bug report if
 you experience any problems with that or any constellation of the new

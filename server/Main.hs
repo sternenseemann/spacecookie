@@ -2,6 +2,8 @@
 import Config
 import Systemd
 
+import Paths_spacecookie (version)
+
 import Network.Gopher
 import Network.Gopher.Log (GopherLogConfig (..), filterMessageLevel, defaultLogHandler, privacyLogHandler)
 import Network.Gopher.Util (santinizePath, uEncode)
@@ -15,6 +17,7 @@ import Data.Aeson (decode)
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Char (toLower)
 import Data.Maybe (fromJust)
+import Data.Version (showVersion)
 import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
@@ -25,6 +28,8 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
+    [ "--version" ] -> putStrLn $ showVersion version
+    [ "--help" ] -> printUsage
     [ configFile ] -> do
       doesFileExist configFile >>= (flip unless) (die "could not open config file")
       config' <- decode <$> BL.readFile configFile
@@ -43,7 +48,13 @@ main = do
                           (\s -> notifyStopping >> systemdStoreOrClose s)
                           cfg spacecookie
         Nothing -> error "failed to parse config"
-    _ -> error "config file must be given"
+    _ -> printUsage >> die "\nmissing config file"
+
+printUsage :: IO ()
+printUsage = do
+  n <- getProgName
+  putStrLn $ mconcat
+    [ "Usage: ", n, " CONFIG" ]
 
 gopherLogConfigFor :: Config -> Maybe GopherLogConfig
 gopherLogConfigFor c =
