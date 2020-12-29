@@ -22,11 +22,8 @@ extra-source-files:  CHANGELOG.md
                      docs/gophermap-pygopherd.txt
                      docs/rfc1436.txt
 
-common build-settings
-  ghc-options:         -Wall -Wno-orphans -rtsopts
+common common-settings
   default-language:    Haskell2010
-
-common dependencies
   build-depends:       base >=4.9 && <5
                      , unix
                      , socket
@@ -39,7 +36,7 @@ common dependencies
                      , attoparsec
 
 executable spacecookie
-  import:              build-settings, dependencies
+  import:              common-settings
   main-is:             Main.hs
   build-depends:       spacecookie
                      , aeson
@@ -49,9 +46,10 @@ executable spacecookie
   other-modules:       Config
                      , Systemd
                      , Paths_spacecookie
+  ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts="-I10" -threaded
 
 library
-  import:              build-settings, dependencies
+  import:              common-settings
   hs-source-dirs:      src
   exposed-modules:     Network.Gopher
                      , Network.Gopher.Util.Gophermap
@@ -60,6 +58,7 @@ library
   other-modules:       Network.Gopher.Types
   build-depends:       hxt-unicode
                      , fast-logger >= 2.4.0 && < 3.1
+  ghc-options:         -Wall -Wno-orphans
 
 source-repository head
   type: git
