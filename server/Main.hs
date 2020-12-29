@@ -9,52 +9,67 @@ import Network.Gopher.Log (GopherLogConfig (..), filterMessageLevel, defaultLogH
 import Network.Gopher.Util (santinizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
 import Data.List (isPrefixOf)
 import Control.Applicative ((<|>))
 import Control.Monad (unless, filterM, join)
-import Data.Aeson (decode)
+import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Char (toLower)
 import Data.Maybe (fromJust)
 import Data.Version (showVersion)
+import System.Console.GetOpt
 import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Exit
 
+data Flags = Version | Usage
+
+options :: [OptDescr Flags]
+options =
+  [ Option "h" [ "help", "usage" ] (NoArg Usage)   "Print usage information"
+  , Option []  [ "version" ]       (NoArg Version) "Show used version of spacecookie"
+  ]
+
 main :: IO ()
 main = do
   args <- getArgs
-  case args of
-    [ "--version" ] -> putStrLn $ showVersion version
-    [ "--help" ] -> printUsage
-    [ configFile ] -> do
-      doesFileExist configFile >>= (flip unless) (die "could not open config file")
-      config' <- decode <$> BL.readFile configFile
-      case config' of
-        Just config -> do
-          changeWorkingDirectory (rootDirectory config)
-          let cfg = GopherConfig
-                { cServerName = serverName config
-                , cListenAddr = listenAddr config
-                , cServerPort = serverPort config
-                , cRunUserName = runUserName config
-                , cLogConfig = gopherLogConfigFor config
-                }
-          runGopherManual (systemdSocket cfg)
-                          (notifyReady >> pure ())
-                          (\s -> notifyStopping >> systemdStoreOrClose s)
-                          cfg spacecookie
-        Nothing -> error "failed to parse config"
-    _ -> printUsage >> die "\nmissing config file"
+  case getOpt Permute options args of
+    ([], [configFile], []) -> runServer configFile
+    -- this works because we only have two flags atm
+    ([Version], _, []) -> putStrLn $ showVersion version
+    (_, _, []) -> printUsage
+    (_, _, es) -> die . mconcat $
+      "errors occurred while parsing options:\n":es
+
+runServer :: FilePath -> IO ()
+runServer configFile = do
+  doesFileExist configFile >>=
+    (flip unless) (die "could not open config file")
+  config' <- eitherDecodeFileStrict' configFile
+  case config' of
+    Right config -> do
+      changeWorkingDirectory (rootDirectory config)
+      let cfg = GopherConfig
+            { cServerName = serverName config
+            , cListenAddr = listenAddr config
+            , cServerPort = serverPort config
+            , cRunUserName = runUserName config
+            , cLogConfig = gopherLogConfigFor config
+            }
+      runGopherManual
+        (systemdSocket cfg)
+        (notifyReady >> pure ())
+        (\s -> notifyStopping >> systemdStoreOrClose s)
+        cfg spacecookie
+    Left err -> die $ "failed to parse config: " ++ err
 
 printUsage :: IO ()
 printUsage = do
   n <- getProgName
-  putStrLn $ mconcat
-    [ "Usage: ", n, " CONFIG" ]
+  putStrLn . flip usageInfo options $
+    mconcat [ "Usage: ", n, " CONFIG\n" ]
 
 gopherLogConfigFor :: Config -> Maybe GopherLogConfig
 gopherLogConfigFor c =
