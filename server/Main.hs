@@ -6,7 +6,7 @@ import Paths_spacecookie (version)
 
 import Network.Gopher
 import Network.Gopher.Log (GopherLogConfig (..), filterMessageLevel, defaultLogHandler, privacyLogHandler)
-import Network.Gopher.Util (santinizePath, uEncode)
+import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
@@ -83,7 +83,7 @@ gopherLogConfigFor c =
 
 spacecookie :: String -> IO GopherResponse
 spacecookie path' = do
-  let path = "." </> dropDrive (santinizePath path')
+  let path = "." </> dropDrive (sanitizePath path')
   ft <- gopherFileType path
   pt <- pathType path
 

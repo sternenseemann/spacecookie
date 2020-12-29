@@ -8,8 +8,8 @@ Helper utilities used within the library and the server which also could be usef
 {-# LANGUAGE OverloadedStrings #-}
 module Network.Gopher.Util (
   -- * Security
-    santinizePath
-  , santinizeIfNotUrl
+    sanitizePath
+  , sanitizeIfNotUrl
   -- * String Encoding
   , asciiOrd
   , asciiChr
@@ -52,10 +52,13 @@ stripNewline s
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
 -- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
-santinizePath :: FilePath -> FilePath
-santinizePath path = joinPath . filter (\p -> p /= ".." && p /= ".") . splitPath . normalise $ path
+sanitizePath :: FilePath -> FilePath
+sanitizePath = joinPath
+  . filter (\p -> p /= ".." && p /= ".")
+  . splitPath . normalise
 
-santinizeIfNotUrl :: FilePath -> FilePath
-santinizeIfNotUrl path = if "URL:" `isPrefixOf` path
-                           then path
-                           else santinizePath path
+sanitizeIfNotUrl :: FilePath -> FilePath
+sanitizeIfNotUrl path =
+  if "URL:" `isPrefixOf` path
+    then path
+    else sanitizePath path

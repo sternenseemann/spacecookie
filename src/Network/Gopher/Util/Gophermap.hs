@@ -83,7 +83,7 @@ makeGophermapFilePath b =
     -- starts with '/'
     (47:_) -> GophermapAbsolute $ processPath bytes
     _      -> GophermapRelative $ processPath bytes
-  where processPath = santinizePath . fst . U.decode
+  where processPath = sanitizePath . fst . U.decode
         bytes = unpack b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.

@@ -81,6 +81,9 @@ settings.
     * `gophermapToDirectoryResponse` takes an additional parameter describing
       the directory the gophermap is located in to resolve relative to absolute
       selectors.
+* `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
+  and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
+  interface of `Network.Gopher.Util`.
 
 ## 0.2.1.2 Bump fast-logger
 
