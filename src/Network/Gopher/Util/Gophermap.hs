@@ -24,6 +24,7 @@ main = do
 module Network.Gopher.Util.Gophermap (
     parseGophermap
   , GophermapEntry (..)
+  , GophermapFilePath (..)
   , Gophermap
   , gophermapToDirectoryResponse
   ) where
@@ -62,9 +63,9 @@ fileTypeChars = "0123456789+TgIih"
 -- | Wrapper around 'FilePath' to indicate whether it is
 --   relative or absolute.
 data GophermapFilePath
-  = GophermapAbsolute FilePath
-  | GophermapRelative FilePath
-  | GophermapUrl String
+  = GophermapAbsolute FilePath -- ^ Absolute path starting with @/@
+  | GophermapRelative FilePath -- ^ Relative path
+  | GophermapUrl String        -- ^ URL to another protocol starting with @URL:@
   deriving (Show, Eq)
 
 -- | Take 'ByteString' from gophermap, decode it,
