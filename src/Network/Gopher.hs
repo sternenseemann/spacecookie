@@ -12,11 +12,17 @@ For a small tutorial an example of a trivial pure gopher application:
 
 @
 {-# LANGUAGE OverloadedStrings #-}
-import Network.Gopher
-import Network.Gopher.Util
+import "Network.Gopher"
+import "Network.Gopher.Util"
 
-main = do
-  'runGopherPure' ('GopherConfig' "localhost" 7000 Nothing) (\\req -> 'FileResponse' ('uEncode' req))
+cfg :: 'GopherConfig'
+cfg = 'defaultConfig'
+  { cServerName = "localhost"
+  , cServerPort = 7000
+  }
+
+main :: IO ()
+main = 'runGopherPure' cfg (\\req -> 'FileResponse' ('uEncode' req))
 @
 
 This server just returns the request string as a file.
@@ -28,8 +34,6 @@ There are three possibilities for a 'GopherResponse':
 * 'ErrorResponse': gopher way to show an error (e. g. if a file is not found). A 'ErrorResponse' results in a menu response with a single entry.
 
 If you use 'runGopher', it is the same story like in the example above, but you can do 'IO' effects. To see a more elaborate example, have a look at the server code in this package.
-
-Note: In practice it is probably best to use record update syntax on 'defaultConfig' which won't break your application every time the config record fields are changed.
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
