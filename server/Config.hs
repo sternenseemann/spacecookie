@@ -45,7 +45,7 @@ defaultLogConfig = LogConfig True True False LogLevelInfo
 
 instance FromJSON LogConfig where
   parseJSON (Object v) = LogConfig
-    <$> v .:  "enable"
+    <$> v .:?  "enable"   .!= logEnable defaultLogConfig
     <*> v .:? "hide-ips"  .!= logHideIps defaultLogConfig
     <*> v .:? "hide-time" .!= logHideTime defaultLogConfig
     <*> v .:? "level"     .!= logLevel defaultLogConfig
