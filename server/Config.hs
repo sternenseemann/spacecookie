@@ -7,8 +7,9 @@ module Config
 import Control.Monad (mzero, join)
 import Control.Applicative ((<|>))
 import Data.Aeson
+import Data.Aeson.Types (Parser ())
 import Data.ByteString (ByteString ())
-import Data.Text (toLower)
+import Data.Text (toLower, Text ())
 import Network.Gopher.Log (LogLevel (..))
 import Network.Gopher.Util
 
@@ -22,15 +23,29 @@ data Config
   , logConfig     :: LogConfig
   }
 
+maybePath :: FromJSON a => [Text] -> Object -> Parser (Maybe a)
+maybePath []     _ = fail "got empty path"
+maybePath [x]    v = v .:? x
+maybePath (x:xs) v = v .:? x >>= fmap join . traverse (maybePath xs)
+
 instance FromJSON Config where
   parseJSON (Object v) = Config
     <$> v .: "hostname"
-    <*> (v .:? "listen" >>= fmap join . traverse (.:? "addr"))
-    <*> ((v .: "listen" >>= (.: "port")) <|> v .:? "port" .!= 70)
+    <*> maybePath [ "listen", "addr" ] v
+    <*> parseListenPort v .!= 70
     <*> v .:? "user"
     <*> v .: "root"
     <*> v .:? "log" .!= defaultLogConfig
   parseJSON _ = mzero
+
+-- Use '(<|>)' over the 'Maybe's in the parser rather
+-- to only fallback on 'Nothing' and not on @empty@.
+-- This way a parse error in listen → port doesn't get
+-- promoted to just 'Nothing'.
+parseListenPort :: Object -> Parser (Maybe Integer)
+parseListenPort v = (<|>)
+  <$> maybePath [ "listen", "port" ] v
+  <*> (v .:? "port")
 
 data LogConfig
   = LogConfig
