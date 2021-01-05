@@ -89,8 +89,8 @@ format:
 }
 ```
 
-* The `enable` field determines whether to enable logging. Must be given
-  if `log` is given.
+* The `enable` field determines whether to enable logging. Defaults to
+  `true`.
 * The `hide-ips` field determines whether IP addresses should show up in
   the log. This is an optional setting which defaults to `true` in order
   to avoid leaking user related data to the log output.
