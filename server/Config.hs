@@ -10,7 +10,7 @@ import Data.Aeson
 import Data.Aeson.Types (Parser ())
 import Data.ByteString (ByteString ())
 import Data.Text (toLower, Text ())
-import Network.Gopher.Log (LogLevel (..))
+import Network.Gopher (GopherLogLevel (..))
 import Network.Gopher.Util
 
 data Config
@@ -52,11 +52,11 @@ data LogConfig
   { logEnable   :: Bool
   , logHideIps  :: Bool
   , logHideTime :: Bool
-  , logLevel    :: LogLevel
+  , logLevel    :: GopherLogLevel
   }
 
 defaultLogConfig :: LogConfig
-defaultLogConfig = LogConfig True True False LogLevelInfo
+defaultLogConfig = LogConfig True True False GopherLogLevelInfo
 
 instance FromJSON LogConfig where
   parseJSON (Object v) = LogConfig
@@ -67,11 +67,11 @@ instance FromJSON LogConfig where
   parseJSON _ = mzero
 
 -- auxiliary instances for types that have no default instance
-instance FromJSON LogLevel where
+instance FromJSON GopherLogLevel where
   parseJSON (String s) =
     case toLower s of
-      "info"  -> pure LogLevelInfo
-      "error" -> pure LogLevelError
+      "info"  -> pure GopherLogLevelInfo
+      "error" -> pure GopherLogLevelError
       _ -> mzero
   parseJSON _ = mzero
 

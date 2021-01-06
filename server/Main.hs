@@ -5,22 +5,24 @@ import Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Log (GopherLogConfig (..), filterMessageLevel, defaultLogHandler, privacyLogHandler)
 import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
 import Control.Applicative ((<|>))
-import Control.Monad (unless, filterM, join)
+import Control.Monad (when, unless, filterM, join)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
+import Data.Bifunctor (first)
+import Data.ByteString.Builder (Builder ())
 import Data.Char (toLower)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Version (showVersion)
 import System.Console.GetOpt
 import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
 import System.Environment
 import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
+import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Exit
 
@@ -51,17 +53,22 @@ runServer configFile = do
   case config' of
     Right config -> do
       changeWorkingDirectory (rootDirectory config)
+      (logHandler, logStopAction) <- fromMaybe (Nothing, pure ())
+        . fmap (first Just) <$> makeLogHandler (logConfig config)
       let cfg = GopherConfig
             { cServerName = serverName config
             , cListenAddr = listenAddr config
             , cServerPort = serverPort config
             , cRunUserName = runUserName config
-            , cLogConfig = gopherLogConfigFor config
+            , cLogHandler = logHandler
             }
       runGopherManual
         (systemdSocket cfg)
         (notifyReady >> pure ())
-        (\s -> notifyStopping >> systemdStoreOrClose s)
+        (\s -> do
+          _ <- notifyStopping
+          logStopAction
+          systemdStoreOrClose s)
         cfg spacecookie
     Left err -> die $ "failed to parse config: " ++ err
 
@@ -71,15 +78,33 @@ printUsage = do
   putStrLn . flip usageInfo options $
     mconcat [ "Usage: ", n, " CONFIG\n" ]
 
-gopherLogConfigFor :: Config -> Maybe GopherLogConfig
-gopherLogConfigFor c =
-  if logEnable lc
-    then Just $ GopherLogConfig
-      { glcLogHandler = handler, glcLogTimed = not (logHideTime lc) }
-    else Nothing
-  where lc = logConfig c
-        handler m = filterMessageLevel (logLevel lc) m >>=
-          if logHideIps lc then privacyLogHandler else defaultLogHandler
+makeLogHandler :: LogConfig -> IO (Maybe (GopherLogHandler, IO ()))
+makeLogHandler lc =
+  let wrapTimedLogger :: FL.TimedFastLogger -> FL.FastLogger
+      wrapTimedLogger logger str = logger $ (\t ->
+        "[" <> FL.toLogStr t <> "]" <> str)
+      formatLevel lvl =
+        case lvl of
+          GopherLogLevelInfo  -> "[info] "
+          GopherLogLevelError -> "[err ] "
+      processMsg =
+        if logHideIps lc
+          then hideSensitive
+          else id
+      logHandler :: FL.FastLogger -> GopherLogLevel -> GopherLogStr -> IO ()
+      logHandler logger lvl msg = when (lvl <= logLevel lc) . logger
+        $  formatLevel lvl
+        <> ((FL.toLogStr :: Builder -> FL.LogStr) . fromGopherLogStr . processMsg $ msg)
+        <> "\n"
+      logType = FL.LogStderr FL.defaultBufSize
+   in sequenceA . (flip boolToMaybe) (logEnable lc) $ do
+     (logger, cleanup) <-
+       if logHideTime lc
+         then FL.newFastLogger logType
+         else first wrapTimedLogger <$> do
+           timeCache <- FL.newTimeCache FL.simpleTimeFormat
+           FL.newTimedFastLogger timeCache logType
+     pure (logHandler logger, cleanup)
 
 spacecookie :: String -> IO GopherResponse
 spacecookie path' = do
