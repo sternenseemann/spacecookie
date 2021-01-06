@@ -83,18 +83,25 @@ import System.Socket.Type.Stream
 import System.Socket.Protocol.TCP
 import System.Posix.User
 
--- | necessary information to handle gopher requests
+-- | Necessary information to handle gopher requests
 data GopherConfig
-  = GopherConfig { cServerName    :: ByteString             -- ^ “name” of the server (either ip address or dns name)
-                 , cListenAddr    :: Maybe ByteString       -- ^ Address or hostname to listen on (resolved by @getaddrinfo@).
-                                                            --   If 'Nothing', listen on all addresses.
-                 , cServerPort    :: Integer                -- ^ port to listen on
-                 , cRunUserName   :: Maybe String           -- ^ user to run the process as
-                 , cLogHandler    :: Maybe GopherLogHandler -- ^ 'IO' action spacecookie will call to output its log messages.
-                                                            --   If it is 'Nothing', logging is disabled. See
-                                                            --   [the logging section](#logging) for an overview on how to implement
-                                                            --   a log handler.
-                 }
+  = GopherConfig
+  { cServerName    :: ByteString
+  -- ^ Public name of the server (either ip address or dns name).
+  --   Gopher clients will use this name to fetch any resources
+  --   listed in gopher menus located on the same server.
+  , cListenAddr    :: Maybe ByteString
+  -- ^ Address or hostname to listen on (resolved by @getaddrinfo@).
+  --   If 'Nothing', listen on all addresses.
+  , cServerPort    :: Integer
+  -- ^ Port to listen on
+  , cRunUserName   :: Maybe String
+  -- ^ User to run the process as
+  , cLogHandler    :: Maybe GopherLogHandler
+  -- ^ 'IO' action spacecookie will call to output its log messages.
+  --   If it is 'Nothing', logging is disabled. See [the logging section](#logging)
+  --   for an overview on how to implement a log handler.
+  }
 
 -- | Default 'GopherConfig' describing a server on @localhost:70@ with
 --   no registered log handler.
