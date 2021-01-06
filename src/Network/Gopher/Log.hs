@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+-- | This module is completely exposed by 'Network.Gopher'
 module Network.Gopher.Log
   ( GopherLogStr ()
   , makeSensitive
@@ -23,11 +24,25 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import System.Socket.Family.Inet6
 
+-- | Indicates the log level of a 'GopherLogStr' to a
+--   'Network.Gopher.GopherLogHandler'. If you want to
+--   filter by log level you can use either the 'Ord'
+--   or 'Enum' instance of 'GopherLogLevel' as the following
+--   holds:
+--
+-- @
+-- 'GopherLogLevelError' < 'GopherLogLevelInfo'
+-- @
 data GopherLogLevel
   = GopherLogLevelError
   | GopherLogLevelInfo
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
+-- | UTF-8 encoded string which may have parts of it marked as
+--   sensitive (see 'makeSensitive'). Use its 'ToGopherLogStr',
+--   'Semigroup' and 'IsString' instances to construct
+--   'GopherLogStr's and 'FromGopherLogStr' to convert to the
+--   commonly used Haskell string types.
 newtype GopherLogStr
   = GopherLogStr { unGopherLogStr :: S.Seq GopherLogStrChunk }
 
@@ -49,11 +64,23 @@ data GopherLogStrChunk
   , glscBuilder   :: Builder
   }
 
+-- | Mark a 'GopherLogStr' as sensitive. This is used by this
+--   library mostly to mark IP addresses of connecting clients.
+--   By using 'hideSensitive' on a 'GopherLogStr' sensitive
+--   parts will be hidden from the string — even if the sensitive
+--   string was concatenated to other strings.
 makeSensitive :: GopherLogStr -> GopherLogStr
 makeSensitive = GopherLogStr
   . fmap (\c -> c { glscSensitive = True })
   . unGopherLogStr
 
+-- | Replaces all chunks of the 'GopherLogStr' that have been
+--   marked as sensitive by 'makeSensitive' with @[redacted]@.
+--   Note that the chunking is dependent on the way the string
+--   was assembled by the user and the internal implementation
+--   of 'GopherLogStr' which can lead to multiple consecutive
+--   @[redacted]@ being returned unexpectedly. This may be
+--   improved in the future.
 hideSensitive :: GopherLogStr -> GopherLogStr
 hideSensitive = GopherLogStr
   . fmap (\c -> GopherLogStrChunk False $
@@ -62,6 +89,9 @@ hideSensitive = GopherLogStr
         else glscBuilder c)
   . unGopherLogStr
 
+-- | Convert 'GopherLogStr's to other string types. Since it is used
+--   internally by 'GopherLogStr', it is best to use the 'Builder'
+--   instance for performance if possible.
 class FromGopherLogStr a where
   fromGopherLogStr :: GopherLogStr -> a
 
@@ -86,6 +116,10 @@ instance FromGopherLogStr TL.Text where
 instance FromGopherLogStr [Char] where
   fromGopherLogStr = uDecode . fromGopherLogStr
 
+-- | Convert something to a 'GopherLogStr'. In terms of
+--   performance it is best to implement a 'Builder' for
+--   the type you are trying to render to 'GopherLogStr'
+--   and then reuse its 'ToGopherLogStr' instance.
 class ToGopherLogStr a where
   toGopherLogStr :: a -> GopherLogStr
 
