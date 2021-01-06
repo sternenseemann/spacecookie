@@ -2,7 +2,7 @@
 
 ## 0.3.0.0 (UNRELEASED)
 
-Consider this one a late christmas present.
+What a way to start your year.
 
 ### Server
 
@@ -47,26 +47,62 @@ settings.
 
 ### Library
 
-* The built-in logging is now configurable.
-  See [#10](https://github.com/sternenseemann/spacecookie/issues/10) and
-  [#20](https://github.com/sternenseemann/spacecookie/pull/20).
-  * A custom handler can be installed to filter and format log messages
-  * All log messages are now part of a `LogMessage` sum type which describes
-    their type and attached data.
-  * This is a **breaking change** if you use the `GopherConfig` constructor,
-    as it changed to have one more field, namely `cGopherLogConfig`.
-  * Logging related API is documented and implemented in `Network.Gopher.Log`.
-* Allow specifying an address to listen on.
-  See [#13](https://github.com/sternenseemann/spacecookie/issues/13) and
-  [#19](https://github.com/sternenseemann/spacecookie/pull/19).
-  * `GopherConfig` now has an additional field `cListenAddr` which can be used
-    to specify another listening address than `::` to listen on. The given
-    address or hostname is resolved using `getaddrinfo`.
-  * The config option is ignored if `runGopherManual` is used. The old behaviour
-    is used if `cListenAddr` is `Nothing` (which is the case for
-    `defaultGopherConfig`).
-  * This is a **breaking change** if you use the `GopherConfig` constructor
-    directly.
+#### Logging
+
+The built-in logging support has been removed in favor of a log handler the
+user can specify in `GopherConfig`. This is a **breaking change** in two ways:
+
+* The type of `GopherConfig` changed as it has a new field called
+  `cLogHandler`.
+* By default (`defaultGopherConfig`) the spacecookie library no longer
+  has logging enabled.
+
+The motivation for this was to enable the library user to influence the log
+output more. More specifically the following abilities were to be made
+possible for the bundled server daemon:
+
+* It should be possible to hide timestamps in the log output: If you are
+  using systemd for example, the journal will take care of those.
+* There should be the ability to hide sensitive information from the log
+  output: Unless necessary client IP addresses shouldn't be logged to
+  disk.
+* The log output should be filterable by log level.
+* It should be easy for server implementation to also output log messages
+  via the same system as the `spacecookie` library.
+
+The best solution to guarantee these properties (and virtually any you could
+want) is to let the library user implement logging. This allows any target
+output, any kind of logging, any kind of clock interaction to generate
+timestamps (or not) etc. This is why the spacecookie library no longer
+implements logging. Instead it lets you configure a `GopherLogHandler`
+which also can be used by the user application as it is a simple `IO`
+action. This additionally scales well: In the simplest case this could
+be a trivial wrapper around `putStrLn`.
+
+The second part to the solution is `GopherLogStr` which is the string type
+given to the handler. Internally this is currently implemented as a `Seq`
+containing chunks of `Builder`s which are coupled with meta data. This
+should allow decent performance in building and rendering of `GopherLogStr`s.
+The latter of which is relatively convenient using `FromGopherLogStr`.
+
+The tagged chunks are used to allow a clean implementation of hiding sensitive
+data: `makeSensitive` can be used to tag all chunks of a `GopherLogStr` which
+will then be picked up by `hideSensitive` which replaces all those chunks
+with `[redacted]`. This way sensitive information can be contained inline in
+strings and users can choose at any given point whether it should remain there
+or be hidden.
+
+The new logging mechanism was implemented in
+[#29](https://github.com/sternenseemann/spacecookie/pull/29).
+
+Previously it was attempted to make built-in logging more configurable
+(see [#13](https://github.com/sternenseemann/spacecookie/issues/13) and
+[#19](https://github.com/sternenseemann/spacecookie/pull/19)), but this
+was overly complicated and not as flexible as the new solution as well
+as more hassle for the library user except in very specific cases.
+
+#### Other changes
+
 * Changes for `Network.Gopher.Util.Gophermap`:
   * Fix the last line being ignored in `parseGophermap` if it ended with an
     `EOF` rather than a newline.
