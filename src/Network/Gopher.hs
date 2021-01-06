@@ -99,6 +99,11 @@ data GopherConfig
 defaultConfig :: GopherConfig
 defaultConfig = GopherConfig "localhost" Nothing 70 Nothing Nothing
 
+-- | Type for an user defined 'IO' action which handles logging a
+--   given 'GopherLogStr' of a given 'GopherLogLevel'. It may
+--   process the string and format in any way desired, but it must
+--   be thread safe and should not block (too long) since it
+--   is called syncronously.
 type GopherLogHandler = GopherLogLevel -> GopherLogStr -> IO ()
 
 data Env
