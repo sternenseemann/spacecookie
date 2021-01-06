@@ -62,7 +62,7 @@ an object of the following form.
 ```json
 {
   "addr": "::1",
-  "port": 70,
+  "port": 70
 }
 ```
 
