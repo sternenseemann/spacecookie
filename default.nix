@@ -4,12 +4,22 @@ let pkgs = import <nixpkgs> {};
         mkDerivation = args: super.mkDerivation (args // {
           enableLibraryProfiling = true;
         });
+
+        spacecookie = pkgs.haskell.lib.overrideSrc
+          (self.callPackage ./spacecookie.nix { }) {
+            version = "unstable";
+            src = builtins.path {
+              name = "spacecookie-source";
+              path = ./.;
+              filter = pkgs.nix-gitignore.gitignoreFilter "" ./.gitignore;
+            };
+          };
       };
     };
-    drv = profiled.callPackage ./spacecookie.nix { };
 in
+
 if !pkgs.lib.inNixShell
-then drv
-else drv.env.overrideAttrs (old: {
+then profiled.spacecookie
+else profiled.spacecookie.env.overrideAttrs (old: {
   nativeBuildInputs = old.nativeBuildInputs ++ [ profiled.policeman ];
 })
