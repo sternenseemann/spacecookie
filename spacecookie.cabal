@@ -34,6 +34,7 @@ common common-settings
                      , mtl
                      , transformers
                      , attoparsec
+                     , text ^>= 1.2
 
 executable spacecookie
   import:              common-settings
@@ -41,7 +42,7 @@ executable spacecookie
   build-depends:       spacecookie
                      , aeson
                      , systemd >= 2.1.0
-                     , text
+                     , fast-logger >= 2.4.0 && < 3.1
   hs-source-dirs:      server
   other-modules:       Config
                      , Systemd
@@ -54,10 +55,9 @@ library
   exposed-modules:     Network.Gopher
                      , Network.Gopher.Util.Gophermap
                      , Network.Gopher.Util
-                     , Network.Gopher.Log
   other-modules:       Network.Gopher.Types
+                     , Network.Gopher.Log
   build-depends:       hxt-unicode
-                     , fast-logger >= 2.4.0 && < 3.1
   ghc-options:         -Wall -Wno-orphans
 
 source-repository head
