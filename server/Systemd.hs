@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Systemd
   ( systemdSocket
   , notifyReady
@@ -9,9 +10,10 @@ module Systemd
 import Control.Concurrent.MVar (newMVar, takeMVar, mkWeakMVar)
 import Control.Exception.Base
 import Control.Monad (when, void)
+import Data.Maybe (fromMaybe)
 import Foreign.C.Types (CInt (..))
 import GHC.Conc (closeFdWith)
-import Network.Gopher (setupGopherSocket, GopherConfig (..))
+import Network.Gopher
 import System.Posix.Types (Fd (..))
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
@@ -37,7 +39,9 @@ systemdSocket :: GopherConfig -> IO (Socket Inet6 Stream TCP)
 systemdSocket cfg = getActivatedSockets >>= \sockets ->
   case sockets of
     Nothing -> setupGopherSocket cfg
-    Just [fd] -> toSocket fd
+    Just [fd] -> do
+      listenWarning
+      toSocket fd
     Just _ -> throwIO IncorrectNum
   where toSocket :: Fd -> IO (Socket Inet6 Stream TCP)
         toSocket fd = do
@@ -46,6 +50,18 @@ systemdSocket cfg = getActivatedSockets >>= \sockets ->
           let s = Socket mfd
           _ <- mkWeakMVar mfd (close s)
           pure s
+        -- logs a warning that a listen addr which
+        -- may differ from the listen addr of the
+        -- systemd socket is specified if it is
+        -- necessary and possible
+        listenWarning = fromMaybe (pure ()) $ do
+          logAction <- cLogHandler cfg
+          addr <- cListenAddr cfg
+          pure . logAction GopherLogLevelWarn
+            $ mconcat
+            [ "Listen address ", toGopherLogStr addr
+            , " specified, but started with systemd socket."
+            , " Using systemd, listen address may differ." ]
 
 systemdStoreOrClose :: Socket Inet6 Stream TCP -> IO ()
 systemdStoreOrClose s = do
