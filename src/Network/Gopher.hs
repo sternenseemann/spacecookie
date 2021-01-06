@@ -50,6 +50,7 @@ module Network.Gopher (
   , GopherFileType (..)
   -- * Helper Functions
   -- ** Logging
+  -- $loggingDoc
   , GopherLogHandler
   , module Network.Gopher.Log
   -- ** Networking
@@ -91,7 +92,8 @@ data GopherConfig
                  , cRunUserName   :: Maybe String           -- ^ user to run the process as
                  , cLogHandler    :: Maybe GopherLogHandler -- ^ 'IO' action spacecookie will call to output its log messages.
                                                             --   If it is 'Nothing', logging is disabled. See
-                                                            --   "Network.Gopher.Log" for helpers to implement a log handler.
+                                                            --   [the logging section](#logging) for an overview on how to implement
+                                                            --   a log handler.
                  }
 
 -- | Default 'GopherConfig' describing a server on @localhost:70@ with
@@ -105,6 +107,41 @@ defaultConfig = GopherConfig "localhost" Nothing 70 Nothing Nothing
 --   be thread safe and should not block (too long) since it
 --   is called syncronously.
 type GopherLogHandler = GopherLogLevel -> GopherLogStr -> IO ()
+
+-- $loggingDoc
+-- #logging#
+-- Logging may be enabled by providing 'GopherConfig' with an optional
+-- 'GopherLogHandler' which implements processing, formatting and
+-- outputting of log messages. While this requires extra work for the
+-- library user it also allows the maximum freedom in used logging
+-- mechanisms.
+--
+-- A trivial log handler could look like this:
+--
+-- @
+-- logHandler :: 'GopherLogHandler'
+-- logHandler level str = do
+--   putStr $ show level ++ \": \"
+--   putStrLn $ 'fromGopherLogStr' str
+-- @
+--
+-- If you only want to log errors you can use the 'Ord' instance of
+-- 'GopherLogLevel':
+--
+-- @
+-- logHandler' :: 'GopherLogHandler'
+-- logHandler' level str = when (level <= 'GopherLogLevelError')
+--   $ logHandler level str
+-- @
+--
+-- The library marks parts of 'GopherLogStr' which contain user
+-- related data like IP addresses as sensitive using 'makeSensitive'.
+-- If you don't want to e. g. write personal information to disk in
+-- plain text, you can use 'hideSensitive' to transparently remove
+-- that information. Here's a quick example in GHCi:
+--
+-- >>> hideSensitive $ "Look at my " <> makeSensitive "secret"
+-- "Look at my [redacted]"
 
 data Env
   = Env
