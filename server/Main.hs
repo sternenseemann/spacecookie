@@ -86,6 +86,7 @@ makeLogHandler lc =
       formatLevel lvl =
         case lvl of
           GopherLogLevelInfo  -> "[info] "
+          GopherLogLevelWarn  -> "[warn] "
           GopherLogLevelError -> "[err ] "
       processMsg =
         if logHideIps lc

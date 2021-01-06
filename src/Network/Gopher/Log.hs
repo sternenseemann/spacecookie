@@ -35,6 +35,7 @@ import System.Socket.Family.Inet6
 -- @
 data GopherLogLevel
   = GopherLogLevelError
+  | GopherLogLevelWarn
   | GopherLogLevelInfo
   deriving (Show, Eq, Ord, Enum)
 
@@ -147,6 +148,7 @@ instance ToGopherLogStr GopherLogLevel where
   toGopherLogStr l =
     case l of
       GopherLogLevelInfo  -> toGopherLogStr ("info"  :: B.ByteString)
+      GopherLogLevelWarn  -> toGopherLogStr ("warn"  :: B.ByteString)
       GopherLogLevelError -> toGopherLogStr ("error" :: B.ByteString)
 
 instance ToGopherLogStr (SocketAddress Inet6) where
