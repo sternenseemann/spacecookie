@@ -18,26 +18,28 @@ extra-source-files:  CHANGELOG.md
                      etc/spacecookie.json
                      etc/spacecookie.service
                      etc/spacecookie.socket
-                     docs/gophermap
-                     docs/gophermap-pygopherd.txt
                      docs/rfc1436.txt
+                     test/data/pygopherd.gophermap
+                     test/data/bucktooth.gophermap
 
 common common-settings
   default-language:    Haskell2010
   build-depends:       base >=4.9 && <5
-                     , unix
+                     , bytestring
+                     , attoparsec
+
+common gopher-dependencies
+  build-depends:       unix
                      , socket
                      , filepath
                      , directory
                      , containers
-                     , bytestring
                      , mtl
                      , transformers
-                     , attoparsec
                      , text ^>= 1.2
 
 executable spacecookie
-  import:              common-settings
+  import:              common-settings, gopher-dependencies
   main-is:             Main.hs
   build-depends:       spacecookie
                      , aeson
@@ -50,7 +52,7 @@ executable spacecookie
   ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 
 library
-  import:              common-settings
+  import:              common-settings, gopher-dependencies
   hs-source-dirs:      src
   exposed-modules:     Network.Gopher
                      , Network.Gopher.Util.Gophermap
@@ -61,14 +63,15 @@ library
   ghc-options:         -Wall -Wno-orphans
 
 test-suite test
+  import:              common-settings
   type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-
   main-is:             Main.hs
-  build-depends:       base >=4.9 && <5
-                     , tasty >=1.2 && < 1.5
+  hs-source-dirs:      test
+  other-modules:       Test.Gophermap
+  build-depends:       tasty >=1.2 && < 1.5
+                     , tasty-hunit ^>=0.10
+                     , spacecookie
   ghc-options:         -Wall -Wno-orphans
-  default-language:    Haskell2010
 
 source-repository head
   type: git
