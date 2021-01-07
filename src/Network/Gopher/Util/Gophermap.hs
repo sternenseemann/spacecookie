@@ -3,7 +3,7 @@ Module      : Network.Gopher.Util.Gophermap
 Stability   : experimental
 Portability : POSIX
 
-This module implements a parser for <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap files>.
+This module implements a parser for gophermap files.
 
 Example usage:
 
@@ -95,7 +95,7 @@ data GophermapEntry = GophermapEntry
 
 type Gophermap = [GophermapEntry]
 
--- | Attoparsec 'Parser' for the <https://raw.githubusercontent.com/sternenseemann/spacecookie/master/docs/gophermap-pygopherd.txt gophermap file format>
+-- | Attoparsec 'Parser' for the gophermap file format
 parseGophermap :: Parser Gophermap
 parseGophermap = many1 parseGophermapLine <* endOfInput
 
