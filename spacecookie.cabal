@@ -19,6 +19,7 @@ extra-source-files:  CHANGELOG.md
                      etc/spacecookie.service
                      etc/spacecookie.socket
                      docs/rfc1436.txt
+                     docs/man/spacecookie-gophermap.5
                      test/data/pygopherd.gophermap
                      test/data/bucktooth.gophermap
 

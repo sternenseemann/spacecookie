@@ -1,0 +1,155 @@
+.Dd $Mdocdate$
+.Dt SPACECOOKIE-GOPHERMAP 5
+.Os
+.Sh NAME
+.Nm spacecookie-gophermap
+.Nd gophermap file format supported by spacecookie
+.Sh DESCRIPTION
+A gophermap file allows to describe a gopher menu without the need to include redundant information.
+The format supported by
+.Xr spacecookie 1
+has originally been introduced by Bucktooth and is supported by most popular gopher server daemons like for example
+.Xr pygopherd 8 .
+.Pp
+A gophermap file stored as
+.Ql .gophermap
+in a directory under the gopher root of
+.Xr spacecookie 1
+is parsed and used as a gopher menu instead of the automatically generated default variant.
+This allows users to customize the directory listings by specifying informational text,
+links to files, (other) directories, gopher servers or protocols themselves.
+.Sh FORMAT
+The format is plain text and line based. Both Unix and DOS style line endings are allowed.
+.Xr spacecookie 1
+distinguishes between two, technically three types of lines:
+.Bl -tag -width 4n
+.It Sy info lines
+Info lines are lines of text in a gophermap which don't have any special
+format requirements except that they may not contain any tab characters.
+.Pp
+.Dl Any text which may contain anything but tabs.
+.Pp
+They are also rendered als plain text without any associated links to gopher
+clients which support them. Info lines are technically not part of the gopher
+protocol nor mentioned in RFC1436, but this protocol extension is
+widely supported and generally used.
+.Pp
+The usual purpose is to display additional text, headings and decorative elements
+which are not directly related to other resources served via gopher:
+.Bd -literal -offset indent
++------------------------------+
+| Welcome to my Gopher Server! |
++------------------------------+
+
+Below you can find a collection of files I deemed
+interesting or useful enough to publish them.
+.Ed
+.Pp
+Empty lines are interpreted as info lines which have no content.
+.It Sy menu entries
+Lines describing menu entries are of the following form.
+All spaces are for readability only and must not be present in the actual format.
+Everything in brackets may be omitted, the semantics of which are explained below.
+.Pp
+.Dl gopherfiletypeNAME\\\\t Op SELECTOR Op \\\\tSERVER Op \\\\tPORT
+.Bl -tag -width 1n
+.It Em gopherfiletype
+File type character indicating the file type of the linked resource to the client.
+See
+.Lk https://tools.ietf.org/html/rfc1436#page-14 RFC1436
+for a list of valid file types.
+Additionally,
+.Xr spacecookie 1
+supports
+.Ql i
+which indicates an info line and
+.Ql h
+which indicates an HTML document.
+.It Em NAME
+Name of the linked resource which will show up as the text of the menu entry.
+May contain any characters except newlines and tabs.
+.Em NAME
+must always be terminated by a tab.
+.It Em SELECTOR
+Gopher selector the entry should link to.
+Same restrictions in terms of characters apply as for
+.Em NAME ,
+but there should only be a tab character afterwards if another field is specified.
+If it is omitted, the value of
+.Em NAME
+is used.
+If the
+.Em SELECTOR
+starts with
+.Ql / ,
+it is interpreted as an absolute path and given to the client as-is.
+If it starts with
+.Ql URL: ,
+it is assumed that it is a link to another protocol and passed to the
+client without modification (see below). In all other cases,
+it is assumed that the selector is a relative path and is converted to
+an absolute path before serving the menu to a client.
+.Pp
+You can read more about
+.Ql URL:
+links which are another common gopher protocol extension in
+.Lk http://gopher.quux.org:70/Archives/Mailing%20Lists/gopher/gopher.2002-02%7C/MBOX-MESSAGE/34 this email from John Goerzen.
+.It Em SERVER
+Describes the server
+.Em SELECTOR
+should be retrieved from.
+Same character restrictions apply and it must come after a tab character as well.
+If it is omitted, the hostname of the server generating the menu is used.
+.It Em PORT
+Describes the port
+.Em SERVER
+is running on.
+Must come after a tab and is terminated by the end of the line or file.
+If this field is left out, the server generating the menu uses its own port.
+.El
+.El
+
+A gophermap file may contain any number of menu and info lines.
+They are then converted to actual gopher protocol menu entries clients
+understand line by line as described above.
+.Sh EXAMPLE
+Tabs are marked with
+.Ql ^I
+for clarity.
+.Bd -literal -offset indent
+spacecookie
+===========
+
+Welcome to spacecookie's gopher page!
+
+Get a copy either by downloading the latest
+stable release or cloning the development version:
+
+hGitHub page^I	URL:https://github.com/sternenseemann/spacecookie/
+9latest tarball^I	/software/releases/spacecookie-0.3.0.0.tar.gz
+
+The following documentation resources should get you started:
+
+0README^I	README.md
+1man pages^I	manpages/
+
+Other gopher server daemons (the first link only works
+if this server is running on port 70):
+
+1pygopherd^I	/devel/gopher/pygopherd^I	gopher.quux.org
+1Bucktooth^I	/buck^I	gopher.floodgap.com^I	70
+.El
+.Sh SEE ALSO
+.Xr pygopherd 8 ,
+.Lk gopher://gopher.floodgap.com/0/buck/dbrowse?faquse%201a Bucktooth's gophermap documentation
+and
+.Lk https://tools.ietf.org/html/rfc1436#page-14 the file type list from RFC1436 .
+.Pp
+.Xr spacecookie 1 ,
+.Xr spacecookie.json 5
+.Sh AUTHORS
+The
+.Nm
+documentation has been written by
+.An sternenseemann ,
+.Mt sterni-spacecookie@systemli.org .
