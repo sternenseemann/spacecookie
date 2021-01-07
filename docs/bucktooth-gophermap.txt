@@ -1,0 +1,128 @@
+Bucktooth: Serving files and directories, the gophermap file and gophertags
+---------------------------------------------------------------------------
+
+The gophermap file is responsible for the look of a gopher menu.
+
+Unlike the UMN gopherd-style map files, which are somewhat cumbersome and
+can get rather large, Bucktooth encourages a slimline approach, or you can
+have none at all. This is not too secure since it will happily serve any and
+every file in its mountpoint to a greedy user, but if that's really what you
+want, congratulations. You can stop reading this now, since that's exactly
+what it will do when you install it with no gophermap files. Only gophermap,
+., and .. are not served to the user. If you are using Bucktooth 0.2 and
+you turn on sorting, then the directory listing is alpha-sorted for you too.
+
+What if you want to give your files some sort of proper description instead of
+just their name? If you have Bucktooth 0.2 on and you enable smart linking,
+then you can make a symlink to the file with a nice long proper name, and both
+that and the original file will both point to the same place (the original
+file). Thus, you can make a proper menu out of any filesystem: any symbolic
+links in that directory will be automatically dereferenced for you into a
+consistent relative selector -- meaning that the name of the symlink will
+be used as the display string, but the selector will be what it *points to*,
+relative to the server's mountpoint. This lets you give your files some sort
+sort of meaningful descriptive text both in the filesystem and in gopherspace
+and yet still have the relationships between symlinks and their target files
+explicitly maintained. Smart linking is automatic and other than turning it
+on, you don't need to do anything else. This might be all some sites need for
+menus.
+
+--- DIVERSION, SKIP IF YOU DON'T CARE ---
+(Why have a feature like this? Smart linking allows you to have lots of
+symbolic links to directories in your mountpoint, but have the actual
+selectors remain consistent so that bots and smart clients traversing your
+content will Do The Right Thing(tm) and treat the symlinks as one resource
+instead of handling the symlinks as individual unique selectors unnecessarily,
+repetitively and separately. However, this feature is also smart enough to
+know that links outside of Bucktooth's mountpoint should be left alone or else
+the client won't be able to get to it. Because it doesn't restrict symlinks
+pointing outside of the server's mountpoint, you should not assume that smart
+linking is the equivalent of chroot()ing Bucktooth; running Bucktooth inside
+of a chroot()ed environment is considered beyond the scope of this manual.
+Smart linking doesn't mean "genius linking" either: if your file really
+points to a symlink of a symlink, or a symlink's symlink's symlink, etc., or
+resides in a directory tree that may be made up of symlinks to other
+directories, these kinds of indirect linkages are not resolved to cut down
+on execution time and complexity. This should be considered a feature; if
+explicitly stating this is important, forge an entry in the gophermap. Smart
+linking, however, is so socially advantageous in general for intelligent
+clients and users that it is the default.)
+--- END DIVERSION ---
+
+However, even smart linking isn't enough for many sites and it doesn't handle
+external links. This is where Bucktooth's gophermap files come in. Create or
+edit the gophermap file (one per directory) with any text editor and follow a
+few simple rules to gopher goodness. (A sample file is in stuff/ for your
+enjoyment.)
+
+Bucktooth sends any RFC-1436 compliant line to the client. In other words,
+
+1gopher.floodgap.com home<TAB><TAB>gopher.floodgap.com<TAB>70
+
+where <TAB>, is of course, the tab (CTRL-I, 0x09) character, generates a
+link to "null" selector on gopher.floodgap.com 70 with an itemtype of 1 and
+a display string of "gopher.floodgap.com home". You don't even have to enter
+valid selectors, although this will not endear you much to your users.
+(Null selector is the same as the root of the mountpoint, by the way.)
+
+If you are not well-versed in RFC-1436, it breaks down to the first character
+being the itemtype (0 = text, 1 = gopher menu, 5 = zip file, 9 = generic
+binary, 7 = search server, I = generic image, g = gif image, h = HTML; others
+are also supported by some clients), then the string shown by the client up to
+the first tab ("display string"); then the full path to the resource
+("selector"); the hostname of the server; and the port.
+
+Since it would be a major drag to always have to type things out in full,
+Bucktooth allows the following shortcuts:
+
+* If you don't specify a port, Bucktooth provides the one your server is
+  using (almost always 70).
+
+* If you don't specify a host, Bucktooth provides your server's hostname.
+
+* If you only specify a relative selector and not an absolute path, Bucktooth
+  sticks on the path they're browsing.
+
+So, if your server is gopher.somenetwork.com and your server's port is 7070,
+and this gophermap is inside of /lotsa, then
+
+1Lots of stuff<TAB>stuff
+
+is expanded out to
+
+1Lots of stuff<TAB>/lotsa/stuff<TAB>gopher.somenetwork.com<TAB>7070
+
+If you don't specify a selector, two things can happen. Putting a <TAB> at
+the end, like
+
+1src<TAB>
+
+explicitly tells Bucktooth you aren't specifying a selector, so Bucktooth
+uses your display string as the selector, adds on the host and port, and
+gives the client that. (If you have Bucktooth 0.2 or higher and you enable
+gopher globbing, then this **specific** type of gophermap entry is subject to
+wildcard expansion, which is highly useful. See the separate section on that.)
+
+If you enable gopher tagging, supported in Bucktooth 0.2.8 and higher, and
+the resource is a directory with a "gophertag" file, then the contents of
+that file are used as the display string instead, and the "display string"
+becomes the selector. This is useful for centralized resource naming.
+
+Otherwise, any lines without any <TAB> characters in them are interpreted
+as free text descriptions and Bucktooth will give them an i itemtype to
+instruct the client to display them as non-interactive text. This allows you
+to add text descriptions to your menus (look at gopher.floodgap.com for an
+example). However, don't use the <TAB> character anywhere in your text
+description or Bucktooth will try to interpret it as an RFC-1436 resource,
+which will yield possibly hilarious and definitely erroneous results.
+
+If you are running Bucktooth 0.2 or higher, and you make your gophermap file
+executable by the uid running Bucktooth, it will be treated as if it were a
+mole. This allows completely dynamic behaviour. See the section on moles for
+how executables are handled in Bucktooth.
+
+One last warning: keep display strings at 67 characters or less -- some
+clients may abnormally wrap them or display them in a way you didn't intend.
+
+
+.
