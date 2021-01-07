@@ -103,10 +103,9 @@ gopherFileTypeChar :: Parser Word8
 gopherFileTypeChar = satisfy (inClass fileTypeChars)
 
 parseGophermapLine :: Parser GophermapEntry
-parseGophermapLine = emptyGophermapline <|>
-                     regularGophermapline <|>
-                     infoGophermapline <|>
-                     gophermaplineWithoutFileTypeChar
+parseGophermapLine = emptyGophermapline
+  <|> regularGophermapline
+  <|> infoGophermapline
 
 infoGophermapline :: Parser GophermapEntry
 infoGophermapline = do
@@ -138,19 +137,6 @@ emptyGophermapline = do
   endOfLine'
   return emptyInfoLine
     where emptyInfoLine = GophermapEntry InfoLine (pack []) Nothing Nothing Nothing
-
-gophermaplineWithoutFileTypeChar :: Parser GophermapEntry
-gophermaplineWithoutFileTypeChar = do
-  text <- itemValue
-  pathString <- optionalValue
-  host <- optionalValue
-  portString <- optionalValue
-  endOfLineOrInput
-  return $ GophermapEntry InfoLine
-    text
-    (makeGophermapFilePath <$> pathString)
-    host
-    (byteStringToPort <$> portString)
 
 byteStringToPort :: ByteString -> Integer
 byteStringToPort s = read . fst . U.decode . unpack $ s
