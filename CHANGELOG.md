@@ -101,22 +101,51 @@ Previously it was attempted to make built-in logging more configurable
 was overly complicated and not as flexible as the new solution as well
 as more hassle for the library user except in very specific cases.
 
-#### Other changes
+#### Changes to `Network.Gopher.Util.Gophermap`
 
-* Changes for `Network.Gopher.Util.Gophermap`:
-  * Fix the last line being ignored in `parseGophermap` if it ended with an
-    `EOF` rather than a newline.
-  * Potentially **breaking change**: `parseGophermap` now consumes the end of
-    input.
-  * **Breaking change**: Support relative paths in gophermaps by wrapping the
-    `FilePath` in `GophermapFilePath` signifying if the selector is relative,
-    absolute or an URL.
-    See [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
-    [#23](https://github.com/sternenseemann/spacecookie/pull/23).
-    * `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
-    * `gophermapToDirectoryResponse` takes an additional parameter describing
-      the directory the gophermap is located in to resolve relative to absolute
-      selectors.
+There have been quite a few, partly breaking changes to gophermap parsing in
+the library in an effort to fully support the format used in pygopherd and
+bucktooth. Instances where spacecookie's parsing deviated from the established
+format have been resolved and we now ship a test suite which checks compliance
+against sample files from bucktooth and pygopherd.
+
+We now support relative paths correctly: If a selector in a gophermap doesn't
+start with `/` or `URL:` it is interpreted as a relative path and prefixed
+with the gophermap's directory in `gophermapToDirectoryResponse` which should
+make writing gophermaps much more convenient, as it isn't necessary anymore
+to enter absolute selectors. However, absolute selectors not starting with `/`
+are broken by this. The specific **breaking changes** are:
+
+* `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
+  which may either be `GophermapAbsolute`, `GophermapRelative` or `GophermapUrl`.
+* `gophermapToDirectoryResponse` takes an additional parameter describing
+  the directory the gophermap is located in to resolve relative to absolute
+  selectors.
+
+See also [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
+[#23](https://github.com/sternenseemann/spacecookie/pull/23).
+
+Menu lines which only contain a file type and name are now required to be
+terminated by a tab before the newline. This also reflects the behavior
+of bucktooth and pygopherd (although the latter's documentation on this
+is a bit misleading). Although this **breaks** entries like `0/file`,
+info lines which start with a valid file type character like
+`1. foo bar baz` no longer get mistaken for normal menu entries.
+See [#34](https://github.com/sternenseemann/spacecookie/pull/34).
+
+The remaining, less significant changes are:
+
+* The `gophermaplineWithoutFileTypeChar` line type which mapped menu entries
+  with incompatible file type characters to info lines has been removed. Such
+  lines now result in a parse error. This is a **breaking change** if you
+  relied on this behavior.
+* Fix the last line being ignored in `parseGophermap` if it ended with an
+  `EOF` rather than a newline.
+* Potentially **breaking change**: `parseGophermap` now consumes the end of
+  input.
+
+#### Other Changes
+
 * `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
   and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
   interface of `Network.Gopher.Util`.
