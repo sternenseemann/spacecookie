@@ -175,7 +175,8 @@ So what does that all mean? These are the rules for a gophermap file:
   port must be added (tab-separated).
 
 The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10).
-Detailed documentation on the gophermap format [can be found here](./docs/bucktooth-gophermap.txt).
+Detailed documentation on the gophermap format can be found in the `spacecookie-gophermap(5)`
+man page (in `docs/man/`) and the [original description from Bucktooth](./docs/bucktooth-gophermap.txt).
 
 ## Portability
 
