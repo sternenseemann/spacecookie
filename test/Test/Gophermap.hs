@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Gophermap (gophermapTests) where
 
+import Control.Monad (forM_)
 import Data.Attoparsec.ByteString (parseOnly)
 import qualified Data.ByteString as B
 import Data.Either
 import Network.Gopher (GopherFileType (..))
+import Network.Gopher.Util (stripNewline)
 import Network.Gopher.Util.Gophermap
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -16,6 +18,7 @@ gophermapTests :: TestTree
 gophermapTests = testGroup "gophermap tests"
   [ withFileContents "test/data/pygopherd.gophermap" checkPygopherd
   , withFileContents "test/data/bucktooth.gophermap" checkBucktooth
+  , generalGophermapParsing
   ]
 
 checkPygopherd :: IO B.ByteString -> TestTree
@@ -64,3 +67,33 @@ checkBucktooth file = testCase "bucktooth example gophermap" $ do
 expectedOverbiteEntry :: GophermapEntry
 expectedOverbiteEntry =
   GophermapEntry Directory "/overbite" Nothing Nothing Nothing
+
+generalGophermapParsing :: TestTree
+generalGophermapParsing = testGroup "gophermap entry test cases" $
+  let lineEqual :: B.ByteString -> GophermapEntry -> Assertion
+      lineEqual b e = assertEqual (show b) (Right [e]) $
+        parseOnly parseGophermap b
+      infoLines =
+        [ "1. beginning with valid file type\n"
+        , "just some usual text.\n"
+        , "ends with end of input"
+        , "i'm blue"
+        , "0"
+        , "empty ones need to be terminated by a new line\n"
+        , "\n"
+        , "otherwise parsing doesn't make sense anymore"
+        , "DOS-style newlines are also allowed\r\n"
+        ]
+      menuEntry t name path =
+        GophermapEntry t name (Just path) Nothing Nothing
+      menuLines =
+        [ ("1/somedir\t", GophermapEntry Directory "/somedir" Nothing Nothing Nothing)
+        , ("0file\tfile.txt\n", menuEntry File "file" (GophermapRelative "file.txt"))
+        , ("ggif\t/pic.gif", menuEntry GifFile "gif" (GophermapAbsolute "/pic.gif"))
+        , ("hcode\tURL:https://code.sterni.lv\n", menuEntry Html "code" (GophermapUrl "URL:https://code.sterni.lv"))
+        , ("1foo\tfoo\tsterni.lv", GophermapEntry Directory "foo" (Just $ GophermapRelative "foo") (Just "sterni.lv") Nothing)
+        , ("Ibar\t/bar.png\tsterni.lv\t7070\n", GophermapEntry ImageFile "bar" (Just $ GophermapAbsolute "/bar.png") (Just "sterni.lv") (Just 7070))
+        , ("imanual info line\t", infoLine "manual info line")
+        ]
+   in [ testCase "info lines" $ forM_ infoLines (\l -> lineEqual l $ infoLine (stripNewline l))
+      , testCase "menu entries" $ forM_ menuLines (uncurry lineEqual) ]
