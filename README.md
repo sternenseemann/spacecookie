@@ -166,11 +166,16 @@ Such a file looks like this:
 
 So what does that all mean? These are the rules for a gophermap file:
 
-* comment lines (called info lines in spacecookie's code) are just lines of text. They must not contain a tab! They will be displayed as lines of text by the gopher client.
-* menu entries for files or directories start with a single char which specifies the file type, followed by the text for that file without a space or tab between them! Then the path is added after a tab.
-* "Links" to other servers are like file/directory menu entries but the server's hostname and its port must be added (tab-separated).
+* comment lines (called info lines in spacecookie's code) are just lines of text.
+  They must not contain a tab! They will be displayed as lines of text by the gopher client.
+* menu entries for files or directories start with a single char which specifies the file type,
+  followed by the text for that file without a space or tab between them! Then the path is added
+  after a tab.
+* "Links" to other servers are like file/directory menu entries but the server's hostname and its
+  port must be added (tab-separated).
 
-The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10). Detailed documentation on the gophermap format [can be found here](./docs/gophermap-pygopherd.txt).
+The file type characters are defined in [RFC1436](https://tools.ietf.org/html/rfc1436#page-10).
+Detailed documentation on the gophermap format [can be found here](./docs/bucktooth-gophermap.txt).
 
 ## Portability
 
