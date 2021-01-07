@@ -122,7 +122,8 @@ regularGophermapline :: Parser GophermapEntry
 regularGophermapline = do
   fileTypeChar <- gopherFileTypeChar
   text <- itemValue
-  pathString <- optionalValue
+  _ <- satisfy (inClass "\t")
+  pathString <- option Nothing $ Just <$> itemValue
   host <- optionalValue
   portString <- optionalValue
   endOfLineOrInput
