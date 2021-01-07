@@ -6,6 +6,30 @@ What a way to start your year.
 
 ### Server
 
+#### Gophermap parsing
+
+These changes may result to broken links in menus after upgrading, but
+on the plus side, spacecookie now fully supports pygopherd and bucktooth
+style gophermaps.
+
+* Gophermaps now support relative paths.
+  See [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
+  [#23](https://github.com/sternenseemann/spacecookie/pull/23).
+  * Selectors in gophermaps that start with a `/` are still interpreted
+    like before, as well as URLs starting with `URL:`.
+  * Selectors to which neither of those conditions apply are treated as
+    relative and processed accordingly before sent to gopher clients.
+* Info lines are no longer misinterpreted as menu entries if they start
+  with a valid gopher file type character. This in turn requires that
+  menu entries without a path field are terminated with a tab. Info
+  lines may contain no tab characters.
+* Fixed parsing of gophermap files whose last line ends in an `EOF`.
+
+See the [library changelog](#gophermap) for a detailed explanation of
+the changes.
+
+#### Configuration
+
 * Add new `listen` field to configuration allowing to specify the
   listening address and port. It expects an object with the fields
   `port` and `addr`. The top level `port` option has been *deprecated*
@@ -13,14 +37,6 @@ What a way to start your year.
   `::1` only without listening on public addresses.
   See [#13](https://github.com/sternenseemann/spacecookie/issues/13) and
   [#19](https://github.com/sternenseemann/spacecookie/pull/19).
-* Gophermaps now support relative paths like pygopherd does.
-  See [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
-  [#23](https://github.com/sternenseemann/spacecookie/pull/23).
-  * Selectors in gophermaps that start with a `/` are still interpreted
-    like before, as well as URLs starting with `URL:`.
-  * Selectors to which neither of those conditions apply are treated as
-    relative and processed accordingly before sent to gopher clients.
-* Fixed parsing of gophermap files whose last line ends in an `EOF`.
 * Log output is now configurable via the new `log` field in the
   configuration. Like `listen` it expects an object which supports the
   following fields.
@@ -33,17 +49,21 @@ What a way to start your year.
     takes care of that.
   * `level` allows to switch between `error` and `info` log level.
 * Make `port` and `listen` → `port` settings optional, defaulting to 70.
-* GHC RTS options are now enabled by default
+
+Config parsing should be backwards compatible. Please open a bug report if
+you experience any problems with that or any constellation of the new
+settings.
+
+#### Other changes
+
+* GHC RTS options are now enabled and the default option `-I10` is passed to
+  spacecookie.
 * Fix the file not found error message erroneously stating that access of that
   file was not permitted.
 * Clarify error message when an URL: selector is sent to spacecookie.
 * Print version when `--version` is given
 * Print simple usage instructions when `--help` is given or the command line
   can't be parsed.
-
-Log parsing should be backwards compatible. Please open a bug report if
-you experience any problems with that or any constellation of the new
-settings.
 
 ### Library
 
@@ -102,6 +122,8 @@ was overly complicated and not as flexible as the new solution as well
 as more hassle for the library user except in very specific cases.
 
 #### Changes to `Network.Gopher.Util.Gophermap`
+
+<a name="gophermap"></a>
 
 There have been quite a few, partly breaking changes to gophermap parsing in
 the library in an effort to fully support the format used in pygopherd and
