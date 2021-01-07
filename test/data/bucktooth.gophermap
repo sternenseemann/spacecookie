@@ -1,0 +1,95 @@
+Welcome to Floodgap Systems' official gopher server.
+Floodgap has served the gopher community since 1999
+(formerly gopher.ptloma.edu). ** OVER A DECADE OF SERVICE! **
+
+We run Bucktooth 0.2.8 on xinetd as our server system.
+gopher.floodgap.com is an IBM Power 520 Express with a 2-way
+4.2GHz POWER6 CPU and 8GB of RAM, running AIX 6.1 TL6.
+Send gopher@floodgap.com your questions and suggestions.
+
+THIS IS A NEW SERVER -- bugs are to be expected.
+E-mail weird behaviour to us. 4/2011
+
+***********************************************************
+**       CELEBRATING GOPHER'S 20 YEAR ANNIVERSARY!       **
+**               Plain text is beautiful!                **
+***********************************************************
+
+0Does this gopher menu look correct?	/gopher/proxy
+(plus using the Floodgap Public Gopher Proxy)
+1Super-Dimensional Fortress: SDF Gopherspace		sdf.org	70
+Get your own Gopherspace and shell account!
+
+--- Getting started with Gopher -----------------------------------
+1Getting started with gopher, software, more	/gopher
+(what is Gopherspace? We tell you! And find out how
+to create your own Gopher world!)
+
+0Using web browsers in Gopherspace	/gopher/wbgopher
+(READ IT! LEARN IT! LOVE IT!)
+(useful tips for gopher newbies, updated 11 November 2010)
+
+1/overbite	
+(download gopher add-ons for Mozilla Firefox, Google Chrome,
+mobile clients for Android and more! Put Gopherspace on
+your mobile phone or desktop computer!)
+1Other Gopher clients for various platforms	/gopher/clients
+
+--- Find and search for other Gopher sites on the Internet --------
+1Search Gopherspace with Veronica-2 and VISHNU	/v2
+or search all known titles in Gopherspace with Veronica-2 here:
+7Search Veronica-2	/v2/vs
+
+1All the gopher servers in the world (that we know of)	/world
+(updated with robot updates)
+1New Gopher servers since 1999	/new
+(updated 25 April 2011)
+
+--- Get news, weather and more through Gopherspace ----------------
+1Weather maps and forecasts via Floodgap Groundhog	/groundhog
+(updates occur throughout the day)
+1News and headline feeds via Flood Feeds	/feeds
+(updates occur daily/regularly)
+1Most current Floodgap news feeds	/feeds/latest
+(today's most updated news and headlines)
+0United States Geological Survey earthquake list	/quakes
+(up to date USGS earthquake information for all states w/AK, HI, PR
+ and selected international locations)
+(updated on access)
+0Caltrans California highway conditions	/calroads
+(hourly updates on California highway conditions)
+(updated on access)
+
+--- File archives and downloads -----------------------------------
+1Floodgap File Archives and Mirrors	/archive
+(includes external archives and historical files,
+Walnut Creek CP/M-Osborne-Commodore-Beehive archives,
+Info-Mac, classic Mac software and more)
+
+--- Fun, games, and other neat things -----------------------------
+1Floodgap Gopher Fun and Games	/fun
+(with xkcd, Hitori Dake no Renga, the Gopher Figlet gateway
+and Twitpher, the Twitter->gopher interface)
+1Floodgap users and staff gopher pages	/users
+(the usual gang of idiots)
+1The New GopherVR: A Virtual Reality View of Gopherspace	/gophervr
+(version 0.4.1 released 10 September 2010)
+
+--- Server software behind the scenes -----------------------------
+1The Bucktooth gopher server	/buck
+(version 0.2.8 released 23 June 2010)
+
+--- Gopherspace advocacy and activism -----------------------------
+1Floodgap Gopher Statistics Project	/gstats
+(monthly traffic analysis of the Floodgap Public Gopher Proxy
+for community advocacy purposes; updates monthly)
+
+1The Floodgap Free Software License	/ffsl
+0Where's Floodgap? (not for hatemail ;-)	/whereis
+0"/usr/bin/tail" our gopher server log	/recent
+0RIP, Master gopher at University of Minnesota	umngone
+hFloodgap.com (Web pages)	URL:http://www.floodgap.com/
+
+Please note that this gopher is now an independent
+entity and is no longer affiliated with Point Loma
+Nazarene University.
