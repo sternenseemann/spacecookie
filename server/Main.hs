@@ -69,7 +69,7 @@ runServer configFile = do
           _ <- notifyStopping
           logStopAction
           systemdStoreOrClose s)
-        cfg spacecookie
+        cfg $ spacecookie (fromMaybe noLog logHandler)
     Left err -> die $ "failed to parse config: " ++ err
 
 printUsage :: IO ()
@@ -107,8 +107,11 @@ makeLogHandler lc =
            FL.newTimedFastLogger timeCache logType
      pure (logHandler logger, cleanup)
 
-spacecookie :: String -> IO GopherResponse
-spacecookie path' = do
+noLog :: GopherLogHandler
+noLog = const . const $ pure ()
+
+spacecookie :: GopherLogHandler -> String -> IO GopherResponse
+spacecookie logger path' = do
   let path = "." </> dropDrive (sanitizePath path')
   ft <- gopherFileType path
   pt <- pathType path
@@ -126,11 +129,11 @@ spacecookie path' = do
                else ErrorResponse $ "The requested file '" ++ path' ++ "' does not exist or is not available."
            -- always use gophermapResponse which falls back
            -- to directoryResponse if there is no gophermap file
-           Directory -> gophermapResponse path
-           _ -> fileResponse path
+           Directory -> gophermapResponse logger path
+           _ -> fileResponse logger path
 
-fileResponse :: FilePath -> IO GopherResponse
-fileResponse path = FileResponse <$> B.readFile path
+fileResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
+fileResponse _ path = FileResponse <$> B.readFile path
 
 makeAbsolute :: FilePath -> FilePath
 makeAbsolute x =
@@ -139,21 +142,26 @@ makeAbsolute x =
     "." -> "/"
     _ -> x
 
-directoryResponse :: FilePath -> IO GopherResponse
-directoryResponse path = do
+directoryResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
+directoryResponse _ path = do
   dir <- join (filterM (\x -> ((flip isListable) x) <$> pathType x) . map (path </>) <$> getDirectoryContents path)
   fileTypes <- mapM gopherFileType dir
   pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode (takeFileName f)) f) fileTypes (map makeAbsolute dir)
 
-gophermapResponse :: FilePath -> IO GopherResponse
-gophermapResponse path = do
+gophermapResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
+gophermapResponse logger path = do
   let gophermap = path </> ".gophermap"
   exists <- doesFileExist gophermap
-  parsed <- if exists
-              then parseOnly parseGophermap <$> B.readFile gophermap
-              else pure $ Left "Gophermap file does not exist"
+  parsed <-
+    if exists
+      then parseOnly parseGophermap <$> B.readFile gophermap
+      else pure $ Left "Gophermap file does not exist"
   case parsed of
-    Left _ -> directoryResponse path
+    Left err -> do
+      when exists . logger GopherLogLevelWarn
+        $  "Could not parse gophermap at " <> toGopherLogStr gophermap
+        <> ": " <> toGopherLogStr err
+      directoryResponse logger path
     Right right -> pure $ gophermapToDirectoryResponse (makeAbsolute path) right
 
 -- | calculates the file type identifier used in the Gopher protocol
