@@ -179,11 +179,15 @@ gopherFileType f = do
   isDir  <- ioCheck Directory doesDirectoryExist
   isFile <- ioCheck File doesFileExist
   let isGif = boolToMaybe GifFile $ takeExtension f == "gif"
-  let isImage = boolToMaybe ImageFile $ map toLower (takeExtension f)
-        `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
+  let isImage = boolToMaybe ImageFile
+        $ map toLower (takeExtension f) `elem` imageExtensions
   return . fromJust $
     isDir <|> isGif <|> isImage <|>  isFile <|> Just Error
   where ioCheck onSuccess check = fmap (boolToMaybe onSuccess) . check $ f
+        imageExtensions =
+          [ "png", "jpg", "jpeg", "raw", "cr2", "nef", "tiff", "tif"
+          , "bmp", "webp", "apng", "mng", "heif", ".heifs", ".heic"
+          , ".heics", ".avci", ".avcs", ".avif", ".avifs" ]
 
 -- | isListable filters out system files for directory listings
 isListable :: FilePath -> PathType -> Bool
