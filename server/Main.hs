@@ -10,7 +10,7 @@ import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
 import Control.Applicative ((<|>))
-import Control.Monad (when, unless, filterM, join)
+import Control.Monad (when, unless, filterM)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Bifunctor (first)
@@ -116,7 +116,7 @@ spacecookie logger path' = do
   ft <- gopherFileType path
   pt <- pathType path
 
-  if not (isListable pt path') && pt /= DoesNotExist
+  if not (isListable path' pt) && pt /= DoesNotExist
     then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
     else case ft of
            Error -> pure $
@@ -126,7 +126,8 @@ spacecookie logger path' = do
                  , "try using a gopher client that supports URL: selectors. "
                  , "If you tried to request a file called '"
                  , path', "', it does not exist." ]
-               else ErrorResponse $ "The requested file '" ++ path' ++ "' does not exist or is not available."
+               else ErrorResponse $ "The requested file '" ++ path'
+                 ++ "' does not exist or is not available."
            -- always use gophermapResponse which falls back
            -- to directoryResponse if there is no gophermap file
            Directory -> gophermapResponse logger path
@@ -143,10 +144,16 @@ makeAbsolute x =
     _ -> x
 
 directoryResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
-directoryResponse _ path = do
-  dir <- join (filterM (\x -> ((flip isListable) x) <$> pathType x) . map (path </>) <$> getDirectoryContents path)
+directoryResponse _ path =
+  let makeItem t f =
+        Item t (uEncode (takeFileName f)) f Nothing Nothing
+      isListable' p = isListable p <$> pathType p
+   in do
+  dir <- getDirectoryContents path
+    >>= filterM isListable' . map (path </>)
   fileTypes <- mapM gopherFileType dir
-  pure . MenuResponse . map (\f -> f Nothing Nothing) $ zipWith (\t f -> Item t (uEncode (takeFileName f)) f) fileTypes (map makeAbsolute dir)
+  pure . MenuResponse
+    $ zipWith makeItem fileTypes (map makeAbsolute dir)
 
 gophermapResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
 gophermapResponse logger path = do
@@ -162,7 +169,8 @@ gophermapResponse logger path = do
         $  "Could not parse gophermap at " <> toGopherLogStr gophermap
         <> ": " <> toGopherLogStr err
       directoryResponse logger path
-    Right right -> pure $ gophermapToDirectoryResponse (makeAbsolute path) right
+    Right right -> pure
+      $ gophermapToDirectoryResponse (makeAbsolute path) right
 
 -- | calculates the file type identifier used in the Gopher protocol
 -- for a given file
@@ -171,20 +179,21 @@ gopherFileType f = do
   isDir  <- ioCheck Directory doesDirectoryExist
   isFile <- ioCheck File doesFileExist
   let isGif = boolToMaybe GifFile $ takeExtension f == "gif"
-  let isImage = boolToMaybe ImageFile $ map toLower (takeExtension f) `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
+  let isImage = boolToMaybe ImageFile $ map toLower (takeExtension f)
+        `elem` ["png", "jpg", "jpeg", "raw", "cr2", "nef"]
   return . fromJust $
     isDir <|> isGif <|> isImage <|>  isFile <|> Just Error
   where ioCheck onSuccess check = fmap (boolToMaybe onSuccess) . check $ f
 
 -- | isListable filters out system files for directory listings
-isListable :: PathType -> FilePath -> Bool
-isListable Directory' "" = True -- "" is root
-isListable _ "" = False
-isListable DoesNotExist _ = False
-isListable Directory' p
+isListable :: FilePath -> PathType -> Bool
+isListable "" Directory' = True -- "" is root
+isListable "" _ = False
+isListable _ DoesNotExist = False
+isListable p Directory'
   | (head . last . splitDirectories) p == '.' = False
   | otherwise = True
-isListable File' p
+isListable p File'
   | head (takeFileName p) == '.' = False
   | otherwise = True
 
