@@ -28,13 +28,13 @@ common common-settings
   build-depends:       base >=4.9 && <5
                      , bytestring
                      , attoparsec
+                     , directory
+                     , filepath
+                     , containers
 
 common gopher-dependencies
   build-depends:       unix
                      , socket
-                     , filepath
-                     , directory
-                     , containers
                      , mtl
                      , transformers
                      , text ^>= 1.2
@@ -68,8 +68,10 @@ test-suite test
   import:              common-settings
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
-  hs-source-dirs:      test
+  hs-source-dirs:      test, server
   other-modules:       Test.Gophermap
+                     , Test.FileTypeDetection
+                     , Network.Spacecookie.FileType
   build-depends:       tasty >=1.2 && < 1.5
                      , tasty-hunit ^>=0.10
                      , spacecookie

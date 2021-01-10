@@ -1,6 +1,8 @@
 module Network.Spacecookie.FileType
   ( PathError (..)
   , gopherFileType
+  -- exposed for tests
+  , lookupSuffix
   ) where
 
 import Data.Char (toLower)
