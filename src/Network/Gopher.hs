@@ -255,18 +255,28 @@ runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
 runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 
 -- | Same as 'runGopher', but allows you to setup the 'Socket' manually
---   and calls an action of type @IO ()@ as soon as the server is ready
---   to accept requests. When the server terminates, it calls the action
---   of type @Socket Inet6 Stream TCP -> IO ()@ to clean up the socket.
+--   and calls an user provided action soon as the server is ready
+--   to accept requests. When the server terminates, it calls the given
+--   clean up action which must close the socket and may perform other
+--   shutdown tasks (like notifying a supervisor it is stopping).
 --
 --   Spacecookie assumes the 'Socket' is properly set up to listen on the
 --   port and host specified in the 'GopherConfig' (i. e. 'bind' and
 --   'listen' have been called). This can be achieved using 'setupGopherSocket'.
+--   Especially note that spacecookie does *not* check if the listening
+--   address and port of the given socket match 'cListenAddr' and
+--   'cServerPort'.
 --
---   This is intended for supporting systemd socket activation and storage.
---   Only use if you know what you are doing.
-runGopherManual :: IO (Socket Inet6 Stream TCP) -> IO () -> (Socket Inet6 Stream TCP -> IO ())
-                -> GopherConfig -> (String -> IO GopherResponse) -> IO ()
+--   This is intended for supporting systemd socket activation and storage,
+--   but may also be used to support other use cases were more control is
+--   necessary. Always use 'runGopher' if possible, as it offers less ways
+--   of messing things up.
+runGopherManual :: IO (Socket Inet6 Stream TCP)       -- ^ action to set up listening socket
+                -> IO ()                              -- ^ ready action called after startup
+                -> (Socket Inet6 Stream TCP -> IO ()) -- ^ socket clean up action
+                -> GopherConfig                       -- ^ server config
+                -> (String -> IO GopherResponse)      -- ^ request handler
+                -> IO ()
 runGopherManual sockAction ready term cfg f = bracket
   sockAction
   term
