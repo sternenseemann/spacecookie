@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Config
-import FileType
-import Systemd
+import Network.Spacecookie.Config
+import Network.Spacecookie.FileType
+import Network.Spacecookie.Systemd
 
 import Paths_spacecookie (version)
 

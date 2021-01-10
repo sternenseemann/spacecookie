@@ -1,4 +1,4 @@
-module FileType
+module Network.Spacecookie.FileType
   ( PathError (..)
   , gopherFileType
   ) where

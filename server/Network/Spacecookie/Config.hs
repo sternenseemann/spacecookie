@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Config
+module Network.Spacecookie.Config
   ( Config (..)
   , LogConfig (..)
   ) where

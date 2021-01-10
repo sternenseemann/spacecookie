@@ -1,6 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Systemd
+module Network.Spacecookie.Systemd
   ( systemdSocket
   , notifyReady
   , notifyStopping

@@ -47,9 +47,9 @@ executable spacecookie
                      , systemd >= 2.1.0
                      , fast-logger >= 2.4.0 && < 3.1
   hs-source-dirs:      server
-  other-modules:       Config
-                     , Systemd
-                     , FileType
+  other-modules:       Network.Spacecookie.Config
+                     , Network.Spacecookie.Systemd
+                     , Network.Spacecookie.FileType
                      , Paths_spacecookie
   ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 
