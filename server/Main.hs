@@ -10,6 +10,7 @@ import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
+import Control.Exception (catch, SomeException ())
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
@@ -51,6 +52,7 @@ runServer configFile = do
     (flip unless) (die "could not open config file")
   config' <- eitherDecodeFileStrict' configFile
   case config' of
+    Left err -> die $ "failed to parse config: " ++ err
     Right config -> do
       changeWorkingDirectory (rootDirectory config)
       (logHandler, logStopAction) <- fromMaybe (Nothing, pure ())
@@ -62,7 +64,16 @@ runServer configFile = do
             , cRunUserName = runUserName config
             , cLogHandler = logHandler
             }
-      runGopherManual
+
+      let catchSetupFailure a =
+            catch a $ \e -> do
+              (fromMaybe noLog logHandler) GopherLogLevelError
+                $  "Exception occurred in setup step: "
+                <> toGopherLogStr (show (e :: SomeException))
+              logStopAction
+              exitFailure
+
+      catchSetupFailure $ runGopherManual
         (systemdSocket cfg)
         (notifyReady >> pure ())
         (\s -> do
@@ -70,7 +81,6 @@ runServer configFile = do
           logStopAction
           systemdStoreOrClose s)
         cfg $ spacecookie (fromMaybe noLog logHandler)
-    Left err -> die $ "failed to parse config: " ++ err
 
 printUsage :: IO ()
 printUsage = do
