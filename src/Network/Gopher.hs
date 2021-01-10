@@ -39,6 +39,7 @@ If you use 'runGopher', it is the same story like in the example above, but you 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Network.Gopher (
   -- * Main API
+  -- $runGopherVariants
     runGopher
   , runGopherPure
   , runGopherManual
@@ -69,11 +70,10 @@ import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 
 import Control.Concurrent (forkIO, ThreadId ())
-import Control.Exception (throw, bracket, IOException ())
-import Control.Monad (forever, when)
+import Control.Exception (bracket, catch, handle, throw, SomeException (), Exception ())
+import Control.Monad (forever, when, void)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
-import Control.Monad.Error.Class (MonadError (..))
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import Data.Maybe (fromMaybe)
@@ -157,8 +157,7 @@ data Env
   }
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
-  deriving ( Functor, Applicative, Monad
-           , MonadIO, MonadReader Env, MonadError IOException)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Env)
 
 gopherM :: Env -> GopherM a -> IO a
 gopherM env action = (runReaderT . runGopherM) action env
@@ -178,6 +177,10 @@ log l m = do
   h <- cLogHandler . serverConfig <$> ask
   liftIO $ logIO h l m
 
+logException :: Exception e => Maybe GopherLogHandler -> GopherLogStr -> e -> IO ()
+logException logger msg e =
+  logIO logger GopherLogLevelError $ msg <> toGopherLogStr (show e)
+
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
 receiveRequest sock = receiveRequest' mempty
   where lengthLimit = 1024
@@ -190,18 +193,19 @@ receiveRequest sock = receiveRequest' mempty
                          else receiveRequest' (acc `B.append` bs)
 
 dropPrivileges :: String -> IO Bool
-dropPrivileges username = do
-  uid <- getRealUserID
-  if (uid /= 0)
-     then return False
-     else do
-       user <- getUserEntryForName username
-       setGroupID $ userGroupID user
-       setUserID $ userID user
-       return True
+dropPrivileges username =
+  handle ((\_ -> return False) :: SomeException -> IO Bool)
+    $ do
+      user <- getUserEntryForName username
+      setGroupID $ userGroupID user
+      setUserID $ userID user
+      return True
 
 -- | Auxiliary function that sets up the listening socket for
 --   'runGopherManual' correctly and starts to listen.
+--
+--   May throw a 'SocketException' if an error occurs while
+--   setting up the socket.
 setupGopherSocket :: GopherConfig -> IO (Socket Inet6 Stream TCP)
 setupGopherSocket cfg = do
   sock <- (socket :: IO (Socket Inet6 Stream TCP))
@@ -223,6 +227,16 @@ setupGopherSocket cfg = do
   bind sock addr
   listen sock 5
   pure sock
+
+-- $runGopherVariants
+-- The @runGopher@ function variants will generally not throw exceptions,
+-- but handle them somehow (usually by logging that a non-fatal exception
+-- occurred) except if the exception occurrs in the setup step of
+-- 'runGopherManual'.
+--
+-- You'll have to handle those exceptions yourself. To see which exceptions
+-- can be thrown by 'runGopher' and 'runGopherPure', read the documentation
+-- of 'setupGopherSocket'.
 
 -- | Run a gopher application that may cause effects in 'IO'.
 --   The application function is given the gopher request (path)
@@ -263,14 +277,17 @@ runGopherManual sockAction ready term cfg f = bracket
 
       liftIO $ ready
 
-      -- TODO exception
-      (forever (acceptAndHandle sock) `catchError`
-        (\e -> do
-          logError $ "Error while accepting new connection: "
-            <> toGopherLogStr (show e))))
+      forever $ acceptAndHandle sock)
 
-forkGopherM :: GopherM () -> GopherM ThreadId
-forkGopherM action = ask >>= liftIO . forkIO . (flip gopherM) action
+forkGopherM :: GopherM () -> IO () -> GopherM ThreadId
+forkGopherM action cleanup = do
+  env <- ask
+  liftIO $ forkIO $ do
+    gopherM env action `catch`
+      (logException
+        (cLogHandler $ serverConfig env)
+        "Thread failed with exception: " :: SomeException -> IO ())
+    cleanup
 
 handleIncoming :: Socket Inet6 Stream TCP -> SocketAddress Inet6 -> GopherM ()
 handleIncoming clientSock addr = do
@@ -278,22 +295,27 @@ handleIncoming clientSock addr = do
   logInfo $ "New Request \"" <> toGopherLogStr req <> "\" from "
     <> makeSensitive (toGopherLogStr addr)
 
+  logger <- cLogHandler . serverConfig <$> ask
   fun <- serverFun <$> ask
-  res <- liftIO (fun req) >>= response
+  res <- liftIO (fun req `catch` \e -> do
+      let msg = "Unhandled exception in handler: "
+            <> toGopherLogStr (show (e :: SomeException))
+      logIO logger GopherLogLevelError msg
+      pure $ ErrorResponse "Unknown error occurred")
+    >>= response
 
-  _ <- liftIO $ sendAll clientSock res msgNoSignal
-  liftIO $ close clientSock
-  logInfo $ "Closed Connection to " <> makeSensitive (toGopherLogStr addr)
+  liftIO $ void (sendAll clientSock res msgNoSignal) `catch` \e ->
+    logException logger "Exception while sending response to client: " (e :: SocketException)
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
 acceptAndHandle sock = do
-  (clientSock, addr) <- liftIO $ accept sock
-  logInfo $ "New connection from " <> makeSensitive (toGopherLogStr addr)
-  _ <- forkGopherM $ handleIncoming clientSock addr `catchError` (\e -> do
-    liftIO (close clientSock `catchError` const (pure ()))
-    logError $ "Closed connection to " <> makeSensitive (toGopherLogStr addr)
-      <> " after error:" <> toGopherLogStr (show e))
-  return ()
+  connection <- liftIO $ fmap Right (accept sock) `catch` (pure . Left)
+  case connection of
+    Left e -> logError $ "Failure while accepting connection "
+      <> toGopherLogStr (show (e :: SocketException))
+    Right (clientSock, addr) -> do
+      logInfo $ "New connection from " <> makeSensitive (toGopherLogStr addr)
+      void $ forkGopherM (handleIncoming clientSock addr) (close clientSock)
 
 -- | Run a gopher application that may not cause effects in 'IO'.
 runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
