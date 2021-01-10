@@ -76,6 +76,8 @@ import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (fromMaybe)
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
@@ -322,15 +324,22 @@ runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
 runGopherPure cfg f = runGopher cfg (fmap pure f)
 
 response :: GopherResponse -> GopherM ByteString
-response (MenuResponse items) = do
-  env <- ask
-  pure $ foldl (\acc (Item fileType title path host port) ->
-                 B.append acc $
-                   fileTypeToChar fileType `B.cons`
-                     B.concat [ title, uEncode "\t", uEncode path, uEncode "\t", fromMaybe (cServerName (serverConfig env)) host,
-                                uEncode "\t", uEncode . show $ fromMaybe (cServerPort (serverConfig env)) port, uEncode "\r\n" ])
-              B.empty items
-
 response (FileResponse str) = pure str
 response (ErrorResponse reason) = response . MenuResponse $
     [ Item Error (uEncode reason) "Err" Nothing Nothing ]
+response (MenuResponse items) =
+  let appendItem cfg acc (Item fileType title path host port) =
+        acc <> BB.word8 (fileTypeToChar fileType) <> mconcat
+          [ BB.byteString title
+          , BB.charUtf8 '\t'
+          , BB.stringUtf8 path
+          , BB.charUtf8 '\t'
+          , BB.byteString $ fromMaybe (cServerName cfg) host
+          , BB.charUtf8 '\t'
+          , BB.intDec . fromIntegral $ fromMaybe (cServerPort cfg) port
+          , BB.byteString "\r\n"
+          ]
+   in do
+  cfg <- serverConfig <$> ask
+  pure . BL.toStrict . BB.toLazyByteString
+    $ foldl (appendItem cfg) mempty items
