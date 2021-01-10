@@ -263,7 +263,7 @@ runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 --   Spacecookie assumes the 'Socket' is properly set up to listen on the
 --   port and host specified in the 'GopherConfig' (i. e. 'bind' and
 --   'listen' have been called). This can be achieved using 'setupGopherSocket'.
---   Especially note that spacecookie does *not* check if the listening
+--   Especially note that spacecookie does /not/ check if the listening
 --   address and port of the given socket match 'cListenAddr' and
 --   'cServerPort'.
 --
