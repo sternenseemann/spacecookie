@@ -10,7 +10,7 @@ import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
-import Control.Exception (catch, SomeException ())
+import Control.Exception (catch)
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
@@ -164,11 +164,11 @@ directoryResponse _ path =
         pure $
           Item fileType (uEncode (takeFileName file)) file Nothing Nothing
    in do
-  dir <- map (path </>) <$> getDirectoryContents path
-  fileTypes <- mapM gopherFileType dir
+     dir <- map (path </>) <$> getDirectoryContents path
+     fileTypes <- mapM gopherFileType dir
 
-  pure . MenuResponse . rights
-    $ zipWith makeItem fileTypes (map makeAbsolute dir)
+     pure . MenuResponse . rights
+       $ zipWith makeItem fileTypes (map makeAbsolute dir)
 
 gophermapResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
 gophermapResponse logger path = do
