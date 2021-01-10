@@ -17,7 +17,8 @@ mkDerivation {
     filepath mtl socket systemd text transformers unix
   ];
   testHaskellDepends = [
-    attoparsec base bytestring tasty tasty-hunit
+    attoparsec base bytestring containers directory filepath tasty
+    tasty-hunit
   ];
   homepage = "https://github.com/sternenseemann/spacecookie";
   description = "Gopher Library and Server Daemon";
