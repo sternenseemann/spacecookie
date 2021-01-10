@@ -5,6 +5,7 @@ module Network.Spacecookie.Systemd
   , notifyReady
   , notifyStopping
   , systemdStoreOrClose
+  , SystemdException (..)
   ) where
 
 import Control.Concurrent.MVar (newMVar, takeMVar, mkWeakMVar)

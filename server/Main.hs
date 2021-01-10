@@ -10,7 +10,7 @@ import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
-import Control.Exception (catch)
+import Control.Exception (catches, Handler (..))
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
@@ -66,13 +66,16 @@ runServer configFile = do
             , cLogHandler = logHandler
             }
 
-      let catchSetupFailure a =
-            catch a $ \e -> do
-              (fromMaybe noLog logHandler) GopherLogLevelError
-                $  "Exception occurred in setup step: "
-                <> toGopherLogStr (show (e :: SocketException))
-              logStopAction
-              exitFailure
+      let setupFailureHandler e = do
+            (fromMaybe noLog logHandler) GopherLogLevelError
+              $  "Exception occurred in setup step: "
+              <> toGopherLogStr (show e)
+            logStopAction
+            exitFailure
+          catchSetupFailure a = a `catches`
+            [ Handler (setupFailureHandler :: SystemdException -> IO ())
+            , Handler (setupFailureHandler :: SocketException -> IO ())
+            ]
 
       catchSetupFailure $ runGopherManual
         (systemdSocket cfg)
