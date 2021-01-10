@@ -49,6 +49,7 @@ executable spacecookie
   hs-source-dirs:      server
   other-modules:       Config
                      , Systemd
+                     , FileType
                      , Paths_spacecookie
   ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 

@@ -56,6 +56,9 @@ settings.
 
 #### Other changes
 
+* A not allowed error is now generated if there are any dot directories or
+  dot files along the path: `/foo/.dot/bar` would now generate an error
+  instead of being processed like before. This is a **breaking change**.
 * GHC RTS options are now enabled and the default option `-I10` is passed to
   spacecookie.
 * Fix the file not found error message erroneously stating that access of that
@@ -64,6 +67,8 @@ settings.
 * Print version when `--version` is given
 * Print simple usage instructions when `--help` is given or the command line
   can't be parsed.
+* An error is now logged when a gophermap file doesn't parse and the standard
+  directory response is used as fallback.
 
 ### Library
 

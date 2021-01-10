@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Config
+import FileType
 import Systemd
 
 import Paths_spacecookie (version)
@@ -9,19 +10,18 @@ import Network.Gopher.Util (sanitizePath, uEncode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
-import Control.Applicative ((<|>))
-import Control.Monad (when, unless, filterM)
+import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Bifunctor (first)
 import Data.ByteString.Builder (Builder ())
-import Data.Char (toLower)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Either (rights)
+import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 import System.Console.GetOpt
-import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
+import System.Directory (doesFileExist, getDirectoryContents)
 import System.Environment
-import System.FilePath.Posix (takeFileName, takeExtension, (</>), dropDrive, splitDirectories)
+import System.FilePath.Posix (takeFileName, (</>), dropDrive)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Exit
@@ -98,7 +98,7 @@ makeLogHandler lc =
         <> ((FL.toLogStr :: Builder -> FL.LogStr) . fromGopherLogStr . processMsg $ msg)
         <> "\n"
       logType = FL.LogStderr FL.defaultBufSize
-   in sequenceA . (flip boolToMaybe) (logEnable lc) $ do
+   in sequenceA . boolToMaybe (logEnable lc) $ do
      (logger, cleanup) <-
        if logHideTime lc
          then FL.newFastLogger logType
@@ -113,25 +113,27 @@ noLog = const . const $ pure ()
 spacecookie :: GopherLogHandler -> String -> IO GopherResponse
 spacecookie logger path' = do
   let path = "." </> dropDrive (sanitizePath path')
-  ft <- gopherFileType path
-  pt <- pathType path
+  pt <- gopherFileType path
 
-  if not (isListable path' pt) && pt /= DoesNotExist
-    then pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
-    else case ft of
-           Error -> pure $
-             if "URL:" `isPrefixOf` path'
-               then ErrorResponse $ mconcat
-                 [ "spacecookie does not support proxying HTTP, "
-                 , "try using a gopher client that supports URL: selectors. "
-                 , "If you tried to request a file called '"
-                 , path', "', it does not exist." ]
-               else ErrorResponse $ "The requested file '" ++ path'
-                 ++ "' does not exist or is not available."
-           -- always use gophermapResponse which falls back
-           -- to directoryResponse if there is no gophermap file
-           Directory -> gophermapResponse logger path
-           _ -> fileResponse logger path
+  case pt of
+    Left PathIsNotAllowed ->
+      pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
+    Left PathDoesNotExist -> pure $
+      if "URL:" `isPrefixOf` path'
+        then ErrorResponse $ mconcat
+          [ "spacecookie does not support proxying HTTP, "
+          , "try using a gopher client that supports URL: selectors. "
+          , "If you tried to request a file called '"
+          , path', "', it does not exist." ]
+        else ErrorResponse $ "The requested file '" ++ path'
+          ++ "' does not exist or is not available."
+    Right ft ->
+      case ft of
+        Error -> pure $ ErrorResponse $ "An unknown error occurred"
+        -- always use gophermapResponse which falls back
+        -- to directoryResponse if there is no gophermap file
+        Directory -> gophermapResponse logger path
+        _ -> fileResponse logger path
 
 fileResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
 fileResponse _ path = FileResponse <$> B.readFile path
@@ -145,14 +147,16 @@ makeAbsolute x =
 
 directoryResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
 directoryResponse _ path =
-  let makeItem t f =
-        Item t (uEncode (takeFileName f)) f Nothing Nothing
-      isListable' p = isListable p <$> pathType p
+  let makeItem :: Either a GopherFileType -> FilePath -> Either a GopherMenuItem
+      makeItem t file = do
+        fileType <- t
+        pure $
+          Item fileType (uEncode (takeFileName file)) file Nothing Nothing
    in do
-  dir <- getDirectoryContents path
-    >>= filterM isListable' . map (path </>)
+  dir <- map (path </>) <$> getDirectoryContents path
   fileTypes <- mapM gopherFileType dir
-  pure . MenuResponse
+
+  pure . MenuResponse . rights
     $ zipWith makeItem fileTypes (map makeAbsolute dir)
 
 gophermapResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
@@ -172,53 +176,8 @@ gophermapResponse logger path = do
     Right right -> pure
       $ gophermapToDirectoryResponse (makeAbsolute path) right
 
--- | calculates the file type identifier used in the Gopher protocol
--- for a given file
-gopherFileType :: FilePath -> IO GopherFileType
-gopherFileType f = do
-  isDir  <- ioCheck Directory doesDirectoryExist
-  isFile <- ioCheck File doesFileExist
-  let isGif = boolToMaybe GifFile $ takeExtension f == "gif"
-  let isImage = boolToMaybe ImageFile
-        $ map toLower (takeExtension f) `elem` imageExtensions
-  return . fromJust $
-    isDir <|> isGif <|> isImage <|>  isFile <|> Just Error
-  where ioCheck onSuccess check = fmap (boolToMaybe onSuccess) . check $ f
-        imageExtensions =
-          [ "png", "jpg", "jpeg", "raw", "cr2", "nef", "tiff", "tif"
-          , "bmp", "webp", "apng", "mng", "heif", ".heifs", ".heic"
-          , ".heics", ".avci", ".avcs", ".avif", ".avifs" ]
-
--- | isListable filters out system files for directory listings
-isListable :: FilePath -> PathType -> Bool
-isListable "" Directory' = True -- "" is root
-isListable "" _ = False
-isListable _ DoesNotExist = False
-isListable p Directory'
-  | (head . last . splitDirectories) p == '.' = False
-  | otherwise = True
-isListable p File'
-  | head (takeFileName p) == '.' = False
-  | otherwise = True
-
 -- | True -> Just a
 --   False -> Nothing
-boolToMaybe :: a -> Bool -> Maybe a
-boolToMaybe a True  = Just a
-boolToMaybe _ False = Nothing
-
-data PathType
-  = Directory'
-  | File'
-  | DoesNotExist
-  deriving (Show, Eq)
-
-pathType :: FilePath -> IO PathType
-pathType p = do
-  file <- doesFileExist p
-  dir  <- doesDirectoryExist p
-  if file
-    then pure File'
-    else if dir
-      then pure Directory'
-      else pure DoesNotExist
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe True  a = Just a
+boolToMaybe False _ = Nothing
