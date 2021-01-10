@@ -22,10 +22,11 @@ import Data.Version (showVersion)
 import System.Console.GetOpt
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.Environment
+import System.Exit
 import System.FilePath.Posix (takeFileName, (</>), dropDrive)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
-import System.Exit
+import System.Socket (SocketException ())
 
 data Flags = Version | Usage
 
@@ -69,7 +70,7 @@ runServer configFile = do
             catch a $ \e -> do
               (fromMaybe noLog logHandler) GopherLogLevelError
                 $  "Exception occurred in setup step: "
-                <> toGopherLogStr (show (e :: SomeException))
+                <> toGopherLogStr (show (e :: SocketException))
               logStopAction
               exitFailure
 
