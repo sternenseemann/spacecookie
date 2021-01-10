@@ -23,7 +23,7 @@ Spacecookie is a gopher server and…
 
 ## Installation
 
-* Nix(OS): [`pkgs.haskellPackages.spacecookie`](https://nixos.org/nixos/packages.html?channel=nixos-unstable&query=spacecookie) (see also [below](#on-nixos))
+* Nix(OS): [`pkgs.haskellPackages.spacecookie`](https://nixos.org/nixos/packages.html?channel=unstable&query=spacecookie) (see also [below](#on-nixos))
 * Cabal: `cabal v2-install spacecookie` (see also [hackage package](http://hackage.haskell.org/package/spacecookie))
 
 [Nix](https://nixos.org/nix/) is probably the most hassle-free way to install spacecookie at the moment.
