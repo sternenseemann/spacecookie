@@ -6,7 +6,10 @@ Portability : POSIX
 
 = Overview
 
-This is the main module of the spacecookie library. It allows to write gopher applications by taking care of handling gopher requests while leaving the application logic to a user-supplied function.
+This is the main module of the spacecookie library.
+It allows to write gopher applications by taking care of
+handling gopher requests while leaving the application
+logic to a user-supplied function.
 
 For a small tutorial an example of a trivial pure gopher application:
 
@@ -29,11 +32,16 @@ This server just returns the request string as a file.
 
 There are three possibilities for a 'GopherResponse':
 
-* 'FileResponse': file type agnostic file response, takes a 'ByteString' to support both text and binary files
-* 'MenuResponse': a gopher menu (“directory listing”) consisting of a list of 'GopherMenuItem's
-* 'ErrorResponse': gopher way to show an error (e. g. if a file is not found). A 'ErrorResponse' results in a menu response with a single entry.
+* 'FileResponse': file type agnostic file response, takes a
+  'ByteString' to support both text and binary files.
+* 'MenuResponse': a gopher menu (“directory listing”) consisting of a
+  list of 'GopherMenuItem's
+* 'ErrorResponse': gopher way to show an error (e. g. if a file is not found).
+  An 'ErrorResponse' results in a menu response with a single entry.
 
-If you use 'runGopher', it is the same story like in the example above, but you can do 'IO' effects. To see a more elaborate example, have a look at the server code in this package.
+If you use 'runGopher', it is the same story like in the example above, but
+you can do 'IO' effects. To see a more elaborate example, have a look at the
+server code in this package.
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
