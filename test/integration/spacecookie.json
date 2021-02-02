@@ -1,0 +1,12 @@
+{
+  "hostname" : "localhost",
+  "listen" : {
+    "addr" : "::",
+    "port" : 7000
+  },
+  "user" : null,
+  "root" : "./test/integration/root",
+  "log" : {
+    "enable" : false
+  }
+}
