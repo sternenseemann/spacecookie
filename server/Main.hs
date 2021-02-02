@@ -141,10 +141,10 @@ spacecookie logger req = do
         then ErrorResponse $ mconcat
           [ "spacecookie does not support proxying HTTP, "
           , "try using a gopher client that supports URL: selectors. "
-          , "If you tried to request a file called '"
+          , "If you tried to request a resource called '"
           , selector, "', it does not exist." ]
         else ErrorResponse $ mconcat
-          [ "The requested file '", selector
+          [ "The requested resource '", selector
           , "' does not exist or is not available." ]
     Right ft ->
       case ft of
