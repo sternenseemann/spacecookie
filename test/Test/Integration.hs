@@ -84,6 +84,9 @@ integrationAsserts step = do
       anotherNotFoundError <- openURI "gopher://localhost:7000/0/not-here.txt"
       urlNotFoundError <- openURI "gopher://localhost:7000/0URL:http://sterni.lv"
 
+      assertEqual "precise error message"
+        (Right expectedErrorMessage) anotherNotFoundError
+
       forM_ [ notFoundError, anotherNotFoundError, urlNotFoundError ]
         $ assertIsError
 
@@ -129,3 +132,8 @@ expectedDir = sort
   , "0mystery-file\t/dir/mystery-file\tlocalhost\t7000\r"
   , "4macintosh.hqx\t/dir/macintosh.hqx\tlocalhost\t7000\r"
   ]
+
+expectedErrorMessage :: ByteString
+expectedErrorMessage = mconcat
+  [ "3The requested resource '/not-here.txt' does not exist"
+  , " or is not available.\tErr\tlocalhost\t7000\r\n" ]
