@@ -29,7 +29,7 @@ common common-settings
                      , bytestring
                      , attoparsec
                      , directory
-                     , filepath
+                     , filepath-bytestring ^>=1.4
                      , containers
 
 common gopher-dependencies

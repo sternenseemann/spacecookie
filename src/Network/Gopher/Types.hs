@@ -16,13 +16,16 @@ import Data.ByteString (ByteString ())
 import Data.Word (Word8 ())
 
 -- | entry in a gopher menu
-data GopherMenuItem = Item GopherFileType ByteString FilePath (Maybe ByteString) (Maybe Integer) -- ^ file type, menu text, filepath (does not need to be a real file), server name (optional), port (optional)
+data GopherMenuItem
+  = Item GopherFileType ByteString ByteString (Maybe ByteString) (Maybe Integer)
+  -- ^ file type, menu text, selector, server name (optional), port (optional).
+  --   None of the given 'ByteString's may contain tab characters.
   deriving (Show, Eq)
 
 data GopherResponse
   = MenuResponse [GopherMenuItem] -- ^ gopher menu, wrapper around a list of 'GopherMenuItem's
   | FileResponse ByteString       -- ^ return the given 'ByteString' as a file
-  | ErrorResponse String          -- ^ gopher menu containing a single error with the given 'String' as text
+  | ErrorResponse ByteString      -- ^ gopher menu containing a single error with the given 'ByteString' as text
   deriving (Show, Eq)
 
 -- | rfc-defined gopher file types plus info line and HTML

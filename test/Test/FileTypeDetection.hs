@@ -1,9 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Test.FileTypeDetection (fileTypeDetectionTests) where
 
 import Network.Gopher (GopherFileType (..))
 import Network.Spacecookie.FileType
 
-import System.FilePath.Posix (takeExtension)
+import System.FilePath.Posix.ByteString (takeExtension)
 import Test.Tasty
 import Test.Tasty.HUnit
 

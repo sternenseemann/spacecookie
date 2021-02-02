@@ -394,13 +394,13 @@ runGopherPure cfg f = runGopher cfg (fmap pure f)
 response :: GopherResponse -> GopherM ByteString
 response (FileResponse str) = pure str
 response (ErrorResponse reason) = response . MenuResponse $
-    [ Item Error (uEncode reason) "Err" Nothing Nothing ]
+    [ Item Error reason "Err" Nothing Nothing ]
 response (MenuResponse items) =
   let appendItem cfg acc (Item fileType title path host port) =
         acc <> BB.word8 (fileTypeToChar fileType) <> mconcat
           [ BB.byteString title
           , BB.charUtf8 '\t'
-          , BB.stringUtf8 path
+          , BB.byteString path
           , BB.charUtf8 '\t'
           , BB.byteString $ fromMaybe (cServerName cfg) host
           , BB.charUtf8 '\t'

@@ -36,21 +36,21 @@ import Network.Gopher.Util
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString (), pack, unpack)
+import Data.ByteString (ByteString (), pack, unpack, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix ((</>))
+import System.FilePath.Posix.ByteString (RawFilePath, (</>))
 
 -- | Given a directory and a Gophermap contained within it,
 --   return the corresponding gopher menu response.
-gophermapToDirectoryResponse :: FilePath -> Gophermap -> GopherResponse
+gophermapToDirectoryResponse :: RawFilePath -> Gophermap -> GopherResponse
 gophermapToDirectoryResponse dir entries =
   MenuResponse (map (gophermapEntryToMenuItem dir) entries)
 
-gophermapEntryToMenuItem :: FilePath -> GophermapEntry -> GopherMenuItem
+gophermapEntryToMenuItem :: RawFilePath -> GophermapEntry -> GopherMenuItem
 gophermapEntryToMenuItem dir (GophermapEntry ft desc path host port) =
-  Item ft desc (fromMaybe (uDecode desc) (realPath <$> path)) host port
+  Item ft desc (fromMaybe desc (realPath <$> path)) host port
   where realPath p =
           case p of
             GophermapAbsolute p' -> p'
@@ -63,9 +63,9 @@ fileTypeChars = "0123456789+TgIih"
 -- | Wrapper around 'FilePath' to indicate whether it is
 --   relative or absolute.
 data GophermapFilePath
-  = GophermapAbsolute FilePath -- ^ Absolute path starting with @/@
-  | GophermapRelative FilePath -- ^ Relative path
-  | GophermapUrl String        -- ^ URL to another protocol starting with @URL:@
+  = GophermapAbsolute RawFilePath -- ^ Absolute path starting with @/@
+  | GophermapRelative RawFilePath -- ^ Relative path
+  | GophermapUrl RawFilePath      -- ^ URL to another protocol starting with @URL:@
   deriving (Show, Eq)
 
 -- | Take 'ByteString' from gophermap, decode it,
@@ -78,14 +78,9 @@ data GophermapFilePath
 --   * everything else is considered a relative path
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b =
-  case bytes of
-    -- starts with "URL:"
-    (85:82:76:58:_) -> GophermapUrl . fst $ U.decode bytes
-    -- starts with '/'
-    (47:_) -> GophermapAbsolute $ processPath bytes
-    _      -> GophermapRelative $ processPath bytes
-  where processPath = sanitizePath . fst . U.decode
-        bytes = unpack b
+  fromMaybe (GophermapRelative $ sanitizePath b)
+    $ boolToMaybe ("URL:" `isPrefixOf` b) (GophermapUrl b)
+    <|> boolToMaybe ("/" `isPrefixOf` b) (GophermapAbsolute $ sanitizePath b)
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
