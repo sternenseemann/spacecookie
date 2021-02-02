@@ -6,7 +6,7 @@ import Network.Spacecookie.Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (sanitizePath, uEncode)
+import Network.Gopher.Util (sanitizePath, uEncode, uDecode)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Data.List (isPrefixOf)
@@ -124,9 +124,10 @@ makeLogHandler lc =
 noLog :: GopherLogHandler
 noLog = const . const $ pure ()
 
-spacecookie :: GopherLogHandler -> String -> IO GopherResponse
-spacecookie logger path' = do
-  let path = "." </> dropDrive (sanitizePath path')
+spacecookie :: GopherLogHandler -> GopherRequest -> IO GopherResponse
+spacecookie logger request = do
+  let path' = uDecode $ requestSelector request
+      path  = "." </> dropDrive (sanitizePath path')
   pt <- gopherFileType path
 
   case pt of
