@@ -24,8 +24,18 @@ cfg = 'defaultConfig'
   , cServerPort = 7000
   }
 
+handler :: 'GopherRequest' -> 'GopherResponse'
+handler request =
+  case 'requestSelector' request of
+    "hello" -> 'FileResponse' "Hello, stranger!"
+    "" -> rootMenu
+    "/" -> rootMenu
+    _ -> 'ErrorResponse' "Not found"
+  where rootMenu = 'MenuResponse'
+          [ 'Item' 'File' "greeting" "hello" Nothing Nothing ]
+
 main :: IO ()
-main = 'runGopherPure' cfg (\\req -> 'FileResponse' ('uEncode' req))
+main = 'runGopherPure' cfg handler
 @
 
 This server just returns the request string as a file.
@@ -53,6 +63,8 @@ module Network.Gopher (
   , runGopherManual
   , GopherConfig (..)
   , defaultConfig
+  -- ** Requests
+  , GopherRequest (..)
   -- ** Responses
   , GopherResponse (..)
   , GopherMenuItem (..)
@@ -82,11 +94,13 @@ import Control.Exception (bracket, catch, handle, throw, SomeException (), Excep
 import Control.Monad (forever, when, void)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
+import Data.Bifunctor (second)
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (fromMaybe)
+import Data.Word (Word16 ())
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
 import System.Socket.Type.Stream
@@ -160,10 +174,24 @@ type GopherLogHandler = GopherLogLevel -> GopherLogStr -> IO ()
 -- >>> hideSensitive $ "Look at my " <> makeSensitive "secret"
 -- "Look at my [redacted]"
 
+data GopherRequest
+  = GopherRequest
+  { requestRawSelector  :: ByteString
+  -- ^ raw selector sent by the client (without the terminating @\r\n@
+  , requestSelector     :: ByteString
+  -- ^ only the request selector minus the search expression if present
+  , requestSearchString :: Maybe ByteString
+  -- ^ raw search string if the clients sends a search transaction
+  , requestClientAddr   :: (Word16, Word16, Word16, Word16, Word16, Word16, Word16, Word16)
+  -- ^ IPv6 address of the client which sent the request. IPv4 addresses are
+  --   <https://en.wikipedia.org/wiki/IPv6#IPv4-mapped_IPv6_addresses mapped>
+  --   to an IPv6 address.
+  } deriving (Show, Eq)
+
 data Env
   = Env
   { serverConfig :: GopherConfig
-  , serverFun    :: (String -> IO GopherResponse)
+  , serverFun    :: GopherRequest -> IO GopherResponse
   }
 
 newtype GopherM a = GopherM { runGopherM :: ReaderT Env IO a }
@@ -252,9 +280,9 @@ setupGopherSocket cfg = do
 -- of 'setupGopherSocket'.
 
 -- | Run a gopher application that may cause effects in 'IO'.
---   The application function is given the gopher request (path)
---   and required to produce a GopherResponse.
-runGopher :: GopherConfig -> (String -> IO GopherResponse) -> IO ()
+--   The application function is given the 'GopherRequest'
+--   sent by the client and must produce a GopherResponse.
+runGopher :: GopherConfig -> (GopherRequest -> IO GopherResponse) -> IO ()
 runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 
 -- | Same as 'runGopher', but allows you to setup the 'Socket' manually
@@ -274,11 +302,11 @@ runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 --   but may also be used to support other use cases were more control is
 --   necessary. Always use 'runGopher' if possible, as it offers less ways
 --   of messing things up.
-runGopherManual :: IO (Socket Inet6 Stream TCP)       -- ^ action to set up listening socket
-                -> IO ()                              -- ^ ready action called after startup
-                -> (Socket Inet6 Stream TCP -> IO ()) -- ^ socket clean up action
-                -> GopherConfig                       -- ^ server config
-                -> (String -> IO GopherResponse)      -- ^ request handler
+runGopherManual :: IO (Socket Inet6 Stream TCP)         -- ^ action to set up listening socket
+                -> IO ()                                -- ^ ready action called after startup
+                -> (Socket Inet6 Stream TCP -> IO ())   -- ^ socket clean up action
+                -> GopherConfig                         -- ^ server config
+                -> (GopherRequest -> IO GopherResponse) -- ^ request handler
                 -> IO ()
 runGopherManual sockAction ready term cfg f = bracket
   sockAction
@@ -312,10 +340,29 @@ forkGopherM action cleanup = do
         "Thread failed with exception: " :: SomeException -> IO ())
     cleanup
 
+-- | Split an selector in the actual search selector and
+--   an optional search expression as documented in the
+--   RFC1436 appendix.
+splitSelector :: ByteString -> (ByteString, Maybe ByteString)
+splitSelector = second checkSearch . B.breakSubstring "\t"
+  where checkSearch search =
+          if B.length search > 1
+            then Just $ B.tail search
+            else Nothing
+
 handleIncoming :: Socket Inet6 Stream TCP -> SocketAddress Inet6 -> GopherM ()
-handleIncoming clientSock addr = do
-  req <- liftIO $ uDecode . stripNewline <$> receiveRequest clientSock
-  logInfo $ "New Request \"" <> toGopherLogStr req <> "\" from "
+handleIncoming clientSock addr@(SocketAddressInet6 cIpv6 _ _ _) = do
+  rawSelector <- liftIO $ receiveRequest clientSock
+
+  let (onlySel, search) = splitSelector rawSelector
+      req = GopherRequest
+        { requestRawSelector = rawSelector
+        , requestSelector = onlySel
+        , requestSearchString = search
+        , requestClientAddr  = inet6AddressToTuple cIpv6
+        }
+
+  logInfo $ "New Request \"" <> toGopherLogStr rawSelector <> "\" from "
     <> makeSensitive (toGopherLogStr addr)
 
   logger <- cLogHandler . serverConfig <$> ask
@@ -340,8 +387,8 @@ acceptAndHandle sock = do
       logInfo $ "New connection from " <> makeSensitive (toGopherLogStr addr)
       void $ forkGopherM (handleIncoming clientSock addr) (close clientSock)
 
--- | Run a gopher application that may not cause effects in 'IO'.
-runGopherPure :: GopherConfig -> (String -> GopherResponse) -> IO ()
+-- | Like 'runGopher', but may not cause effects in 'IO' (or anywhere else).
+runGopherPure :: GopherConfig -> (GopherRequest -> GopherResponse) -> IO ()
 runGopherPure cfg f = runGopher cfg (fmap pure f)
 
 response :: GopherResponse -> GopherM ByteString
