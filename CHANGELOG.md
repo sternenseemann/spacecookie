@@ -72,6 +72,44 @@ settings.
 
 ### Library
 
+### New Representation of Request and Response
+
+The following changes are the most significant to the library as they
+break virtually all downstream usage of spacecookie as a library.
+
+The gopher request handler for the `runGopher`-variants now receives
+a `GopherRequest` record representing the request instead of the
+selector as a `String`. The upsides of this are as follows:
+
+* Handlers now know the IPv6 address of the client in question
+* Simple support for search transaction is introduced as the request
+  sent by the client is split into selector and search string.
+* Selectors are no longer required to be UTF-8 as `ByteString` is used.
+
+If you want to reuse old handlers with minimal adjustments you can
+use a snippet like the following. Note though that you might have
+to make additional adjustments due to the changes to responses.
+
+    wrapLegacyHandler :: (String -> GopherResponse)
+                      -> (GopherRequest -> GopherResponse)
+    wrapLegacyHandler f = f . uDecode . requestSelectorRaw
+
+Corresponding to the switch to `ByteString` in `GopherRequest` the
+whole API now uses `ByteString` to represent paths and selectors.
+This prompts the following additional, breaking changes:
+
+* `ErrorResponse` now uses a `ByteString` instead of a `String`.
+* `GopherMenuItem`'s `Item` now uses a `ByteString` instead of a `FilePath`
+  (you can use `encodeFilePath` from `filepath-bytestring` to fix downstream
+  usage).
+* `sanitizePath` and `sanitizeIfNotUrl` now operate on `RawFilePath`s
+  (which is an alias for `ByteString`).
+* The gophermap API uses `RawFilePath`s instead of `FilePath`s as well,
+  for details read on.
+
+See also [#38](https://github.com/sternenseemann/spacecookie/pull/38)
+and [#26](https://github.com/sternenseemann/spacecookie/issues/26).
+
 #### Logging
 
 The built-in logging support has been removed in favor of a log handler the
@@ -145,6 +183,8 @@ are broken by this. The specific **breaking changes** are:
 
 * `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
   which may either be `GophermapAbsolute`, `GophermapRelative` or `GophermapUrl`.
+  Similar to the changes elsewhere, `GophermapFilePath` is a wrapper around
+  `RawFilePath`.
 * `gophermapToDirectoryResponse` takes an additional parameter describing
   the directory the gophermap is located in to resolve relative to absolute
   selectors.
@@ -176,6 +216,9 @@ The remaining, less significant changes are:
 * `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
   and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
   interface of `Network.Gopher.Util`.
+* Requests from clients are now limited to 1MB in size and are received by
+  a single call to `recv(2)`. If this causes issues with any gopher client,
+  please open an issue.
 
 ## 0.2.1.2 Bump fast-logger
 
