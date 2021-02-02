@@ -6,10 +6,10 @@ import Network.Spacecookie.Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (sanitizePath, uEncode, uDecode)
+import Network.Gopher.Util (sanitizePath, boolToMaybe)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
-import Data.List (isPrefixOf)
+import Control.Applicative ((<|>))
 import Control.Exception (catches, Handler (..))
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
@@ -23,7 +23,9 @@ import System.Console.GetOpt
 import System.Directory (doesFileExist, getDirectoryContents)
 import System.Environment
 import System.Exit
-import System.FilePath.Posix (takeFileName, (</>), dropDrive)
+import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
+                                        , dropDrive, decodeFilePath
+                                        , encodeFilePath)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Socket (SocketException ())
@@ -125,23 +127,25 @@ noLog :: GopherLogHandler
 noLog = const . const $ pure ()
 
 spacecookie :: GopherLogHandler -> GopherRequest -> IO GopherResponse
-spacecookie logger request = do
-  let path' = uDecode $ requestSelector request
-      path  = "." </> dropDrive (sanitizePath path')
+spacecookie logger req = do
+  let selector = requestSelector req
+      path = "." </> dropDrive (sanitizePath selector)
   pt <- gopherFileType path
 
   case pt of
     Left PathIsNotAllowed ->
-      pure . ErrorResponse $ "Accessing '" ++ path' ++ "' is not allowed."
+      pure . ErrorResponse $ mconcat
+        [ "Accessing '",  selector, "' is not allowed." ]
     Left PathDoesNotExist -> pure $
-      if "URL:" `isPrefixOf` path'
+      if "URL:" `B.isPrefixOf` selector
         then ErrorResponse $ mconcat
           [ "spacecookie does not support proxying HTTP, "
           , "try using a gopher client that supports URL: selectors. "
           , "If you tried to request a file called '"
-          , path', "', it does not exist." ]
-        else ErrorResponse $ "The requested file '" ++ path'
-          ++ "' does not exist or is not available."
+          , selector, "', it does not exist." ]
+        else ErrorResponse $ mconcat
+          [ "The requested file '", selector
+          , "' does not exist or is not available." ]
     Right ft ->
       case ft of
         Error -> pure $ ErrorResponse $ "An unknown error occurred"
@@ -150,37 +154,37 @@ spacecookie logger request = do
         Directory -> gophermapResponse logger path
         _ -> fileResponse logger path
 
-fileResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
-fileResponse _ path = FileResponse <$> B.readFile path
+fileResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
+fileResponse _ path = FileResponse <$> B.readFile (decodeFilePath path)
 
-makeAbsolute :: FilePath -> FilePath
-makeAbsolute x =
-  case x of
-    ('.':'/':_) -> tail x
-    "." -> "/"
-    _ -> x
+makeAbsolute :: RawFilePath -> RawFilePath
+makeAbsolute x = fromMaybe x
+  $   boolToMaybe ("./" `B.isPrefixOf` x) (B.tail x)
+  <|> boolToMaybe ("." == x) "/"
 
-directoryResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
+directoryResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 directoryResponse _ path =
-  let makeItem :: Either a GopherFileType -> FilePath -> Either a GopherMenuItem
+  let makeItem :: Either a GopherFileType -> RawFilePath -> Either a GopherMenuItem
       makeItem t file = do
         fileType <- t
         pure $
-          Item fileType (uEncode (takeFileName file)) file Nothing Nothing
+          Item fileType (takeFileName file) file Nothing Nothing
    in do
-     dir <- map (path </>) <$> getDirectoryContents path
+     dir <- map ((path </>) . encodeFilePath)
+       <$> getDirectoryContents (decodeFilePath path)
      fileTypes <- mapM gopherFileType dir
 
      pure . MenuResponse . rights
        $ zipWith makeItem fileTypes (map makeAbsolute dir)
 
-gophermapResponse :: GopherLogHandler -> FilePath -> IO GopherResponse
+gophermapResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 gophermapResponse logger path = do
   let gophermap = path </> ".gophermap"
-  exists <- doesFileExist gophermap
+      gophermapWide = decodeFilePath gophermap
+  exists <- doesFileExist gophermapWide
   parsed <-
     if exists
-      then parseOnly parseGophermap <$> B.readFile gophermap
+      then parseOnly parseGophermap <$> B.readFile gophermapWide
       else pure $ Left "Gophermap file does not exist"
   case parsed of
     Left err -> do
@@ -190,9 +194,3 @@ gophermapResponse logger path = do
       directoryResponse logger path
     Right right -> pure
       $ gophermapToDirectoryResponse (makeAbsolute path) right
-
--- | True -> Just a
---   False -> Nothing
-boolToMaybe :: Bool -> a -> Maybe a
-boolToMaybe True  a = Just a
-boolToMaybe False _ = Nothing

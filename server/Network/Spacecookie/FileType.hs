@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Network.Spacecookie.FileType
   ( PathError (..)
   , gopherFileType
@@ -5,14 +6,17 @@ module Network.Spacecookie.FileType
   , lookupSuffix
   ) where
 
-import Data.Char (toLower)
+import Control.Applicative ((<|>))
+import qualified Data.ByteString as B
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Network.Gopher (GopherFileType (..))
+import Network.Gopher.Util (boolToMaybe, asciiToLower)
 import System.Directory (doesDirectoryExist, doesFileExist)
-import System.FilePath.Posix (takeExtension, splitDirectories)
+import System.FilePath.Posix.ByteString ( RawFilePath, takeExtension
+                                        , splitDirectories, decodeFilePath)
 
-fileTypeMap :: M.Map FilePath GopherFileType
+fileTypeMap :: M.Map RawFilePath GopherFileType
 fileTypeMap = M.fromList
   [ (".gif", GifFile)
   , (".png", ImageFile)
@@ -57,10 +61,10 @@ fileTypeMap = M.fromList
   , (".hqx", BinHexMacintoshFile)
   ]
 
-lookupSuffix :: FilePath -> GopherFileType
+lookupSuffix :: RawFilePath -> GopherFileType
 lookupSuffix = fromMaybe File
   . (flip M.lookup) fileTypeMap
-  . map toLower
+  . B.map asciiToLower
 
 data PathError
   = PathDoesNotExist
@@ -70,19 +74,16 @@ data PathError
 -- | Action in the 'Either' monad which causes a
 --   failure if there's any dot files or directory
 --   in the given path
-checkNoDotFiles :: FilePath -> Either PathError ()
+checkNoDotFiles :: RawFilePath -> Either PathError ()
 checkNoDotFiles path = do
-  let segments = splitDirectories $
-        case path of
-          -- this prevents relative directories
-          -- from being forbidden while singular
-          -- '.' in the path somewhere get
-          -- flagged and "." stays allowed.
-          ('.':'/':_) -> tail path
-          "."         -> ""
-          _           -> path
+  -- this prevents relative directories from being
+  -- forbidden while singular '.' in the path somewhere
+  -- get flagged and "." stays allowed.
+  let segments = splitDirectories $ fromMaybe path
+        $   boolToMaybe ("./" `B.isPrefixOf` path) (B.tail path)
+        <|> boolToMaybe ("." == path) ""
 
-  if any ((== ".") . take 1) segments
+  if any ((== ".") . B.take 1) segments
     then Left  PathIsNotAllowed
     else Right ()
 
@@ -90,13 +91,14 @@ checkNoDotFiles path = do
 --   protocol for a given file and returns a descriptive error
 --   if the file is not accessible or a dot file (and thus not
 --   allowed to access)
-gopherFileType :: FilePath -> IO (Either PathError GopherFileType)
+gopherFileType :: RawFilePath -> IO (Either PathError GopherFileType)
 gopherFileType path = (checkNoDotFiles path >>) <$> do
-  isDir <- doesDirectoryExist path
+  let pathWide = decodeFilePath path
+  isDir <- doesDirectoryExist pathWide
   if isDir
     then pure $ Right Directory
     else do
-      fileExists <- doesFileExist path
+      fileExists <- doesFileExist pathWide
       pure $
         if fileExists
           then Right $ lookupSuffix $ takeExtension path

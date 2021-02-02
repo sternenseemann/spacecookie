@@ -13,19 +13,20 @@ module Network.Gopher.Util (
   -- * String Encoding
   , asciiOrd
   , asciiChr
+  , asciiToLower
   , uEncode
   , uDecode
   -- * Misc Helpers
   , stripNewline
+  , boolToMaybe
   ) where
 
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
-import Data.Char (ord, chr)
-import Data.List (isPrefixOf)
+import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix (normalise, joinPath, splitPath)
+import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath)
 
 -- | 'chr' a 'Word8'
 asciiChr :: Word8 -> Char
@@ -34,6 +35,17 @@ asciiChr = chr . fromIntegral
 -- | 'ord' a 'Word8'
 asciiOrd :: Char -> Word8
 asciiOrd = fromIntegral . ord
+
+-- | Transform a 'Word8' to lowercase if the solution is in bounds.
+asciiToLower :: Word8 -> Word8
+asciiToLower w =
+  if inBounds lower
+    then fromIntegral lower
+    else w
+  where inBounds i = i >= fromIntegral (minBound :: Word8) &&
+          i <= fromIntegral (maxBound :: Word8)
+        lower :: Int
+        lower = ord . toLower . asciiChr $ w
 
 -- | Encode a 'String' to a UTF-8 'ByteString'
 uEncode :: String -> ByteString
@@ -52,13 +64,19 @@ stripNewline s
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
 -- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
-sanitizePath :: FilePath -> FilePath
+sanitizePath :: RawFilePath -> RawFilePath
 sanitizePath = joinPath
   . filter (\p -> p /= ".." && p /= ".")
   . splitPath . normalise
 
-sanitizeIfNotUrl :: FilePath -> FilePath
+sanitizeIfNotUrl :: RawFilePath -> RawFilePath
 sanitizeIfNotUrl path =
-  if "URL:" `isPrefixOf` path
+  if "URL:" `B.isPrefixOf` path
     then path
     else sanitizePath path
+
+-- | prop> boolToMaybe True x == Just x
+--   prop> boolToMaybe False x == Nothing
+boolToMaybe :: Bool -> a -> Maybe a
+boolToMaybe True  a = Just a
+boolToMaybe False _ = Nothing

@@ -8,6 +8,7 @@ import Data.Either
 import Network.Gopher (GopherFileType (..))
 import Network.Gopher.Util (stripNewline)
 import Network.Gopher.Util.Gophermap
+import System.FilePath.Posix.ByteString (RawFilePath)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -28,7 +29,7 @@ checkPygopherd file = testCase "pygopherd example gophermap" $
 infoLine :: B.ByteString -> GophermapEntry
 infoLine b = GophermapEntry InfoLine b Nothing Nothing Nothing
 
-absDir :: B.ByteString -> FilePath -> B.ByteString -> GophermapEntry
+absDir :: B.ByteString -> RawFilePath -> B.ByteString -> GophermapEntry
 absDir n p s =
   GophermapEntry Directory n (Just (GophermapAbsolute p)) (Just s) $ Just 70
 
