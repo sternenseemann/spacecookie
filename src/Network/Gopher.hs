@@ -191,16 +191,19 @@ logException :: Exception e => Maybe GopherLogHandler -> GopherLogStr -> e -> IO
 logException logger msg e =
   logIO logger GopherLogLevelError $ msg <> toGopherLogStr (show e)
 
+maxRequestSize :: Int
+maxRequestSize = 1024 * 1024
+
 receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
-receiveRequest sock = receiveRequest' mempty
-  where lengthLimit = 1024
-        receiveRequest' acc = do
-          bs <- liftIO $ receive sock lengthLimit mempty
-          case (B.elemIndex (asciiOrd '\n') bs) of
-            Just i -> return (acc `B.append` (B.take (i + 1) bs))
-            Nothing -> if B.length bs < lengthLimit
-                         then return (acc `B.append` bs)
-                         else receiveRequest' (acc `B.append` bs)
+receiveRequest sock = do
+  req <- fst . B.breakSubstring "\r\n"
+    <$> receive sock maxRequestSize mempty
+  -- Support requests which are terminated by '\n'
+  -- for backwards compatibility, but only if no
+  -- additional data is sent.
+  pure $ if B.length req > 0 && B.last req == asciiOrd '\n'
+           then B.init req
+           else req
 
 dropPrivileges :: String -> IO Bool
 dropPrivileges username =
