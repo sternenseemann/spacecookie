@@ -69,12 +69,16 @@ test-suite test
   type:                exitcode-stdio-1.0
   main-is:             Main.hs
   hs-source-dirs:      test, server
-  other-modules:       Test.Gophermap
-                     , Test.FileTypeDetection
+  other-modules:       Test.FileTypeDetection
+                     , Test.Gophermap
+                     , Test.Integration
                      , Network.Spacecookie.FileType
   build-depends:       tasty >=1.2 && < 1.5
                      , tasty-hunit ^>=0.10
+                     , tasty-expected-failure >=0.11 && < 0.13
                      , spacecookie
+                     , process >=1.2.0 && <1.7
+                     , download-curl ^>=0.1
   ghc-options:         -Wall -Wno-orphans
 
 source-repository head
