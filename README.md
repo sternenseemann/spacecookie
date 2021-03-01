@@ -40,7 +40,7 @@ convenient to generate.
 
 The config file should consist of a single object which may contain the
 following fields (some are required). An example can be found in
-[`etc/spacecookie.json](./etc/spacecookie.json).
+[`etc/spacecookie.json`](./etc/spacecookie.json).
 
 ### `hostname`
 
@@ -194,7 +194,6 @@ Further documentation:
 spacecookie's portability is mostly limited by
 [haskell-socket](https://github.com/lpeterse/haskell-socket)
 which should work on any POSIX-compliant Operating system.
-
 However I personally have only tested spacecookie on GNU/Linux
 so far. Feel free to send me an email or open an issue if you
 have any trouble!
