@@ -19,8 +19,8 @@ spacecookie intentionally does not support:
 * HTTP, Gemini: Multi protocol support is a non-goal for spacecookie.
   For HTTP you can [proxy](https://github.com/sternenseemann/gopher-proxy)
   pretty easily, however.
-* Search: Gopher supports search transactions, but spacecookie doesn't offer
-  the possibility to add enable search for a gopherspace. It is however
+* Search: Gopher supports search transactions, but the spacecookie daemon doesn't offer
+  the possibility to add a search engine to a gopherspace. It is however
   entirely possible to implement an index search server using [the
   spacecookie library](https://hackage.haskell.org/package/spacecookie/docs/Network-Gopher.html)
 
