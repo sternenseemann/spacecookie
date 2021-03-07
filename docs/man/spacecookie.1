@@ -1,0 +1,103 @@
+.Dd $Mdocdate$
+.Dt SPACECOOKIE 1
+.Os
+.Sh NAME
+.Nm spacecookie
+.Nd gopher server daemon
+.Sh SYNOPSIS
+.Nm
+.Op Fl -version
+.Ar config.json
+.Sh DESCRIPTION
+.Nm
+is a simple to use gopher daemon for serving static files.
+It is either invoked with the
+.Fl -version
+flag to print its version or with the path to its config file
+as the single argument.
+The minimal config file needs to tell
+.Nm
+about the directory to serve and the server's name, i. e. the hostname
+or IP address the server is reachable through.
+All configuration options, the format and default values are explained in
+.Xr spacecookie.json 5 .
+.Pp
+On startup,
+.Nm
+will check if it has been started with systemd socket activation.
+If that's true, it will use the socket passed from systemd, if not,
+it will setup the socket itself.
+After that it will call
+.Xr setuid 2
+to switch to a less privileged user if configured to do so and start
+accepting incoming gopher requests on the socket.
+Note that using socket activation eliminates the need for starting
+as a privileged user in the first place because systemd will setup
+the socket.
+.Nm
+will not fork itself to the background or otherwise daemonize
+which can be achieved using a supervisor like
+.Xr systemd 1 .
+Logs are always written to
+.Ql stderr
+and can be collected and rotated by another daemon or tool if desired.
+.Pp
+Incoming requests are filtered: No files or directories outside
+the served directory or that start with a dot may be accessed by clients.
+Allowed files are returned to clients unfiltered. For directories,
+.Nm
+checks if they contain a
+.Ql .gophermap
+file: If it contains one, it is used to generate the directory response,
+otherwise one is generated automatically which involves guessing all file
+types from file extensions.
+The default file type is
+.Ql 0 ,
+text file.
+The file format of the
+.Ql gophermap
+files and its use are explained in
+.Xr spacecookie-gophermap 5 .
+.Sh SEE ALSO
+.Xr spacecookie.json 5 ,
+.Xr spacecookie-gophermap 5 ,
+.Xr systemd.service 5
+and
+.Xr systemd.socket 5 .
+.Pp
+For writing custom gopher application using the spacecookie library refer to the
+.Lk https://hackage.haskell.org/package/spacecookie API documentation .
+.Sh STANDARDS
+By default,
+.Nm
+always behaves like a gopher server as described in
+.Lk https://tools.ietf.org/html/rfc1436 RFC1436 .
+However users can configure
+.Nm
+to utilize common protocol extensions like the
+.Ql h
+and
+.Ql i
+types and
+.Lk http://gopher.quux.org:70/Archives/Mailing%20Lists/gopher/gopher.2002-02%7C/MBOX-MESSAGE/34 URLs to other protocols .
+.Sh AUTHORS
+.Nm
+has been written and documented by
+.An sternenseemann ,
+.Mt sterni-spacecookie@systemli.org .
+.Sh SECURITY CONSIDERATIONS
+.Nm
+supports no migitations or attack surface reduction measures other than
+automatically switching to a less privileged user after binding.
+It is recommended to use this feature and to make use of containering
+or sandboxing like for example
+.Xr systemd.exec 5
+supports.
+.Pp
+TLS-enabled gopher, like the
+.Ql gophers
+protocol supported by
+.Xr curl 1
+is not natively supported by
+.Nm
+at this time.
