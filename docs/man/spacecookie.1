@@ -32,14 +32,15 @@ After that it will call
 to switch to a less privileged user if configured to do so and start
 accepting incoming gopher requests on the socket.
 Note that using socket activation eliminates the need for starting
-as a privileged user in the first place because systemd will setup
-the socket.
+as a privileged user in the first place because systemd will take
+care of the socket.
+The systemd integration is explained in more detail in its own section.
+.Pp
 .Nm
 will not fork itself to the background or otherwise daemonize
-which can be achieved using a supervisor like
-.Xr systemd 1 .
+which can, however, be achieved using a supervisor.
 Logs are always written to
-.Ql stderr
+.Sy stderr
 and can be collected and rotated by another daemon or tool if desired.
 .Pp
 Incoming requests are filtered: No files or directories outside
@@ -48,7 +49,7 @@ Allowed files are returned to clients unfiltered. For directories,
 .Nm
 checks if they contain a
 .Ql .gophermap
-file: If it contains one, it is used to generate the directory response,
+file: If they contain one, it is used to generate the directory response,
 otherwise one is generated automatically which involves guessing all file
 types from file extensions.
 The default file type is
@@ -58,6 +59,59 @@ The file format of the
 .Ql gophermap
 files and its use are explained in
 .Xr spacecookie-gophermap 5 .
+.Sh SYSTEMD INTEGRATION
+.Nm
+optionally supports two systemd-specific features:
+It acts as a
+.Sy notify
+type service and supports socket activation.
+.Pp
+If you are writing a
+.Xr systemd.service 5
+file, be sure to use the
+.Ql Type=notify
+directive which allows
+.Nm
+to tell systemd when it has finished starting up and
+when it is stopping before actually exiting.
+.Pp
+For socket activation, create a
+.Xr systemd.socket 5
+file that starts the
+.Nm
+service.
+This has several advantages: For one, it allows starting
+.Nm
+on demand only and reducing the load on server startup.
+Additionally it means that the daemon doesn't ever need
+to be started as root because it won't need to setup a
+socket bound to a well-known port.
+A thing to watch out for is to make sure that the settings in
+.Xr spacecookie.json 5
+match the settings in the
+.Xr systemd.socket 5
+file: Specifically in
+.Ql listen ,
+.Ql port
+needs to match the settings in the systemd configuration while
+.Ql addr
+won't have any effect.
+As always
+.Ql hostname
+has to be configured correctly as well.
+.Nm
+doesn't run any sanity checks comparing the socket from systemd
+with information from the configuration (yet).
+.Pp
+An example
+.Xr systemd.service 5
+and
+.Xr systemd.socket 5
+file are provided in the
+.Nm
+source distribution in the
+.Ql etc
+directory.
 .Sh SEE ALSO
 .Xr spacecookie.json 5 ,
 .Xr spacecookie-gophermap 5 ,
