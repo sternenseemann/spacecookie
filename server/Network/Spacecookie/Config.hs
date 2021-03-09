@@ -71,6 +71,7 @@ instance FromJSON GopherLogLevel where
   parseJSON (String s) =
     case toLower s of
       "info"  -> pure GopherLogLevelInfo
+      "warn" -> pure GopherLogLevelWarn
       "error" -> pure GopherLogLevelError
       _ -> mzero
   parseJSON _ = mzero
