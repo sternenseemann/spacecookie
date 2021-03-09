@@ -13,7 +13,7 @@ let pkgs = import <nixpkgs> {};
             src = builtins.path {
               name = "spacecookie-source";
               path = ./.;
-              filter = pkgs.nix-gitignore.gitignoreFilter "" ./.gitignore;
+              filter = pkgs.nix-gitignore.gitignoreFilter (builtins.readFile ./.gitignore) ./.;
             };
             # run integration test
             preCheck = ''
