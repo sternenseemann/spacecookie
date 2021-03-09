@@ -1,6 +1,6 @@
 { mkDerivation, aeson, attoparsec, base, bytestring, containers
 , directory, download-curl, fast-logger, filepath-bytestring
-, hxt-unicode, mtl, process, socket, stdenv, systemd, tasty
+, hxt-unicode, lib, mtl, process, socket, systemd, tasty
 , tasty-expected-failure, tasty-hunit, text, transformers, unix
 }:
 mkDerivation {
@@ -24,5 +24,5 @@ mkDerivation {
   ];
   homepage = "https://github.com/sternenseemann/spacecookie";
   description = "Gopher Library and Server Daemon";
-  license = stdenv.lib.licenses.gpl3;
+  license = lib.licenses.gpl3;
 }
