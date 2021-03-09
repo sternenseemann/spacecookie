@@ -1,0 +1,261 @@
+.Dd $Mdocdate$
+.Dt SPACECOOKIE.JSON 5
+.Os
+.Sh NAME
+.Nm spacecookie.json
+.Nd configuration file for
+.Xr spacecookie 1
+.Sh DESCRIPTION
+The
+.Xr spacecookie 1
+config file is a JSON file which contains a single object.
+The allowed fields representing individual settings and their effect are explained below.
+.Ss REQUIRED SETTINGS
+The following settings must be part of every configuration file as there
+is no default or fallback value for them.
+.Bl -tag -width 2n -offset 0n
+.It Sy hostname
+Describes the public server name
+.Xr spacecookie 1
+is reachable through, i. e. the address clients will use to connect to it.
+It will be used to populate gopher menus with the correct server name, so
+follow up requests from clients actually reach the correct server.
+For testing purposes, it can be useful to set it to
+.Ql localhost .
+.Pp
+Type: string.
+.It Sy root
+Sets the the directory
+.Xr spacecookie 1
+should serve via gopher.
+All gopher requests will be resolved to files or directories under that root.
+Files and directories will be served to users if no component of the resolved
+path starts with a dot and they are readable for the user
+.Xr spacecookie 1
+is running as.
+.Pp
+Type: string.
+.El
+.Ss OPTIONAL SETTINGS
+The following settings are optional, meaning there is either a default value
+or an obvious default behavior if they are not given.
+.Bl -tag -width 2n -offset 0n
+.It Sy listen
+Describes the address and port
+.Xr spacecookie 1
+should listen on.
+Both aspects can be controlled individually by the two optional fields
+described below.
+.Pp
+Type: object.
+.Bl -tag -offset 0n -width 2n
+.It Sy port
+Port to listen on.
+The well-known port for gopher is
+.Ms 70 .
+.Pp
+If
+.Xr systemd.socket 5
+activation is used, this setting will have no effect on the actual
+port the socket is bound to since this is done by
+.Xr systemd 1 .
+It will then only be used to display the server's port in gopher menus for
+subsequent requests, so make sure whatever is set here matches what
+.Xr systemd 1
+is doing.
+.Pp
+Type: number.
+Default:
+.Ql 70 .
+.It Sy addr
+Address to listen and accept gopher requests on.
+In contrast to
+.Sy hostname ,
+this option controls the socket setup and not what is used in gopher menus.
+This option is especially useful to limit the addresses
+.Xr spacecookie 1
+will listen on since it listens on all available addresses
+for incoming requests by default, i. e.
+.Sy INADDR_ANY .
+For example,
+.Ql ::1
+can be used to listen on the link-local addresses only.
+This is especially useful if you are setting up a onion service using
+.Xr tor 1
+and want to avoid leaking the server's identity.
+.Pp
+When given,
+.Xr getaddrinfo 3
+is used to resolve the given hostname or parse the given IP address and
+.Xr spacecookie 1
+will only listen on the resulting address(es).
+Note that
+.Sy IPV6_V6ONLY
+is always disabled, so, if possible, both the resulting v4 and v6 address will be used.
+.Pp
+If
+.Xr systemd.socket 5
+activation is used, this setting has no effect.
+.Pp
+Type: string.
+.El
+.It Sy user
+The name of the user spacecookie should run as.
+When this option is given and not
+.Ql null ,
+.Xr spacecookie 1
+will call
+.Xr setuid 2
+and
+.Xr setgid 2
+after setting up its socket to switch to that user and their primary group.
+Note that this is only necessary to set if
+.Xr spacecookie 1
+is started with root privileges in the first place as the binary shouldn't have
+the setuid bit set.
+An alternative to starting the daemon as root, so it can bind its socket to a
+well-known port, is to use
+.Xr systemd 1
+socket activation.
+See the
+.Xr spacecookie 1
+man page for details on setting this up.
+.Pp
+Warning: Errors related to switching user are not fatal,
+.Xr spacecookie 1
+will only log a warning if the
+.Xr setuid 2
+call fails.
+.Pp
+Type: string.
+Default:
+.Ql null .
+.It Sy log
+Allows to customize the logging output of
+.Xr spacecookie 1
+to
+.Sy stderr .
+.Pp
+Type: object.
+.Bl -tag -offset 0n -width 2n
+.It Sy enable
+Wether to enable logging.
+.Pp
+Type: bool.
+Default:
+.Ql true .
+.It Sy hide-ips
+Wether to hide IP addresses of clients in the log output.
+If enabled,
+.Ql [redacted]
+is displayed instead of client's IP addresses to avoid writing personal
+information to disk.
+.Pp
+Type: bool.
+Default:
+.Ql true .
+.It Sy hide-time
+If this is set to
+.Ql true ,
+.Xr spacecookie 1
+will not print timestamps at the beginning of every log line.
+This is useful if you use an additional daemon or tool to take care of logs
+which records timestamps automatically, like
+.Xr systemd 1 .
+.Pp
+Type: bool.
+Default:
+.Ql false .
+.It Sy level
+Controls verbosity of logging.
+It is recommended to either use
+.Qq warn
+or
+.Qq info
+since
+.Qq error
+hides warnings that are indicative of configuration issues.
+.Pp
+Type: either
+.Qq error ,
+.Qq warn
+or
+.Qq info .
+Default:
+.Qq info .
+.El
+.El
+.Sh EXAMPLE
+The following configuration equates to the default behavior of
+.Xr spacecookie 1
+for all optional settings, although it is much verboser than necessary.
+.Bd -literal -offset Ds
+{
+  "hostname" : "localhost",
+  "root" : "/srv/gopher",
+  "listen" : {
+    "addr" : "::",
+    "port" : 70
+  },
+  "user" : null,
+  "log" : {
+    "enable" : true,
+    "hide-ips" : true,
+    "hide-time" : false,
+    "level" : "info"
+  }
+}
+.Ed
+.Pp
+This configuration is suitable for running as an onion service:
+It disables logging completely to not collect any kind of meta data about user's
+and only listens on the link-local address to avoid leaking its identity.
+We can also use a non-well-known port since
+.Xr tor 1
+allows free mapping from local to exposed ports, so
+.Xr spacecookie 1
+can be started as a normal user.
+.Bd -literal -offset Ds
+{
+  "hostname": "myonionservicehash.onion",
+  "root": "/srv/onion-gopher",
+  "listen": {
+    "addr": "::1",
+    "port": 7070
+  },
+  "log": {
+    "enable": false
+  }
+}
+.Ed
+.Pp
+If you are not using socket activation for running a gopher server on the
+well-known port for gopher, a config like this is apporpriate, provided the
+user
+.Ql gopher
+exists:
+.Bd -literal -offset Ds
+{
+  "hostname": "example.org",
+  "root": "/srv/gopher",
+  "user": "gopher"
+}
+.Ed
+.Pp
+For a
+.Xr systemd.socket 5
+based setup, the
+.Ql user
+field should be omitted and
+.Xr spacecookie 1
+started as the target user directly in the
+.Xr systemd.service 5
+file.
+.Sh SEE ALSO
+.Xr spacecookie 1 .
+.Sh AUTHORS
+The
+.Nm
+documentation has been written by
+.An sternenseemann ,
+.Mt sterni-spacecookie@systemli.org .
