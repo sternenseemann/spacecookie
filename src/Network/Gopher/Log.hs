@@ -31,7 +31,7 @@ import System.Socket.Family.Inet6
 --   holds:
 --
 -- @
--- 'GopherLogLevelError' < 'GopherLogLevelInfo'
+-- 'GopherLogLevelError' < 'GopherLogLevelWarn' < 'GopherLogLevelInfo'
 -- @
 data GopherLogLevel
   = GopherLogLevelError

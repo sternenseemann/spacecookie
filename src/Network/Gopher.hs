@@ -38,8 +38,6 @@ main :: IO ()
 main = 'runGopherPure' cfg handler
 @
 
-This server just returns the request string as a file.
-
 There are three possibilities for a 'GopherResponse':
 
 * 'FileResponse': file type agnostic file response, takes a
@@ -177,7 +175,7 @@ type GopherLogHandler = GopherLogLevel -> GopherLogStr -> IO ()
 data GopherRequest
   = GopherRequest
   { requestRawSelector  :: ByteString
-  -- ^ raw selector sent by the client (without the terminating @\r\n@
+  -- ^ raw selector sent by the client (without the terminating @\\r\\n@
   , requestSelector     :: ByteString
   -- ^ only the request selector minus the search expression if present
   , requestSearchString :: Maybe ByteString
@@ -299,7 +297,7 @@ runGopher cfg f = runGopherManual (setupGopherSocket cfg) (pure ()) close cfg f
 --   'cServerPort'.
 --
 --   This is intended for supporting systemd socket activation and storage,
---   but may also be used to support other use cases were more control is
+--   but may also be used to support other use cases where more control is
 --   necessary. Always use 'runGopher' if possible, as it offers less ways
 --   of messing things up.
 runGopherManual :: IO (Socket Inet6 Stream TCP)         -- ^ action to set up listening socket

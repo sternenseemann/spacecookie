@@ -69,6 +69,8 @@ sanitizePath = joinPath
   . filter (\p -> p /= ".." && p /= ".")
   . splitPath . normalise
 
+-- | Use 'sanitizePath' except if the path starts with @URL:@
+--   in which case the original string is returned.
 sanitizeIfNotUrl :: RawFilePath -> RawFilePath
 sanitizeIfNotUrl path =
   if "URL:" `B.isPrefixOf` path

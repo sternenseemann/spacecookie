@@ -60,7 +60,7 @@ gophermapEntryToMenuItem dir (GophermapEntry ft desc path host port) =
 fileTypeChars :: [Char]
 fileTypeChars = "0123456789+TgIih"
 
--- | Wrapper around 'FilePath' to indicate whether it is
+-- | Wrapper around 'RawFilePath' to indicate whether it is
 --   relative or absolute.
 data GophermapFilePath
   = GophermapAbsolute RawFilePath -- ^ Absolute path starting with @/@
