@@ -31,87 +31,18 @@ spacecookie intentionally does not support:
 * Cabal: `cabal v2-install spacecookie`
   (see also [hackage package](http://hackage.haskell.org/package/spacecookie))
 
+## Documentation
+
+* User Documentation: [spacecookie(1)](https://sternenseemann.github.io/spacecookie/spacecookie.1.html)
+* [Developer Documentation](hackage.haskell.org/package/spacecookie)
+
 ## Configuration
 
-In order to run your new gopher server, you have to configure it first.
-You can find an example configuration file in `./etc/spacecookie.json`.
-JSON is mostly used due to legacy reasons, but has the plus of being
-convenient to generate.
-
-The config file should consist of a single object which may contain the
-following fields (some are required). An example can be found in
-[`etc/spacecookie.json`](./etc/spacecookie.json).
-
-### `hostname`
-
-The public hostname spacecookie will be reachable through. This hostname is
-used by gopher clients to determine the target address when following entries
-in a gopher menu.
-
-### `user`
-
-The user that should be used to run spacecookie. If given, spacecookie will switch
-to this user after setting up its socket. This requires the possibility to call
-`setuid` and `setgid`.
-
-Can be omitted or set to `null`, if root privileges are not needed (e. g. if
-systemd socket activation or a non well-known port is used).
-
-### `root`
-
-Directory which contains the files to serve via gopher.
-
-### `listen`
-
-Describes the address to listen on. Its value must be
-an object of the following form.
-
-```json
-{
-  "addr": "::1",
-  "port": 70
-}
-```
-
-* The `addr` field describes the address to listen on and can be
-  anything that can be resolved by `getaddrinfo`, e. g. a hostname
-  or an IP address. It may be omitted and defaults to `::`.
-* The `port` field describes the port to listen on. If it is omitted
-  the well-known port for gopher is used (70).
-
-`listen` may be omitted altogether in which case the default values
-described before are used.
-
-### `log`
-
-Configure log output. The option expects an object of the following
-format:
-
-```json
-{
-  "enable": true,
-  "hide-ips": true,
-  "hide-time": false,
-  "level": "info"
-}
-```
-
-* The `enable` field determines whether to enable logging. Defaults to
-  `true`.
-* The `hide-ips` field determines whether IP addresses should show up in
-  the log. This is an optional setting which defaults to `true` in order
-  to avoid leaking user related data to the log output.
-* The `hide-time` field can be set to `true` to disable timestamps in the
-  log output, e. g. if you are using systemd. Defaults to `false`.
-* The `level` field can either be set to `"info"` or `"error"`. Default
-  value is `"info"`.
-
-If `log` is not given, it defaults to enabled with the default values for
-all optional settings.
-
-### `port`
-
-Legacy option for backwards compatibility, use `listen` → `port` instead.
+spacecookie is configured via a JSON configuration file.
+All available options are documented in
+[spacecookie.json(5)](https://sternenseemann.github.io/spacecookie/spacecookie.json.5.html).
+This repository also contains an example configuration file in
+[`etc/spacecookie.json`.](./etc/spacecookie.json).
 
 ## Running
 
@@ -135,6 +66,9 @@ to install `spacecookie.service` and `spacecookie.socket` like so:
 	systemctl start  spacecookie.service # optional, started by the socket automatically if needed
 
 Of course make sure that all the used paths are correct!
+
+How the systemd integration works is explained in
+[spacecookie(1)](https://sternenseemann.github.io/spacecookie/spacecookie.1.html#SYSTEMD_INTEGRATION).
 
 ### On NixOS
 
@@ -172,22 +106,16 @@ Such a file looks like this:
 	0about me	/about.txt
 	1Floodgap's gopher server	/	gopher.floodgap.com	70
 
-So what does that all mean? These are the rules for a gophermap file:
+As you can see, it largely works like the actual gopher menu a server will
+send to clients, but allows to omit redundant information and to insert
+lines that are purely informational and not associated with a file.
+[spacecookie-gophermap(5)](https://sternenseemann.github.io/spacecookie/spacecookie-gophermap.5.html)
+explains syntax and semantics in more detail.
 
-* Info lines (sometimes also called comment lines) are just lines of text
-  without any tab characters. They will be displayed as lines of text by
-  the gopher client.
-* Menu entries for files or directories start with a single character which
-  specifies the file type, followed by the text for that file without a space
-  or tab between them! Then the path is added after a tab.
-* Links to other servers are like file/directory menu entries but the server's
-  hostname and its port must be added (tab-separated).
-
-Further documentation:
-
-* Detailed documentation: `spacecookie-gophermap(5)`
-* [File type characters](https://tools.ietf.org/html/rfc1436#page-10)
-* [Original gophermap description from Bucktooth](./docs/bucktooth-gophermap.txt)
+The format is compatible with the ones supported by
+[Bucktooth](gopher://gopher.floodgap.com/1/buck/) and
+[pygopherd](https://github.com/jgoerzen/pygopherd).
+If you notice any incompatibilities, please open an issue.
 
 ## Portability
 
