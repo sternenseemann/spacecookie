@@ -42,7 +42,7 @@ spacecookie is configured via a JSON configuration file.
 All available options are documented in
 [spacecookie.json(5)](https://sternenseemann.github.io/spacecookie/spacecookie.json.5.html).
 This repository also contains an example configuration file in
-[`etc/spacecookie.json`.](./etc/spacecookie.json).
+[`etc/spacecookie.json`](./etc/spacecookie.json).
 
 ## Running
 
