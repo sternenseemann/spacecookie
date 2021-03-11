@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" href="style.css" type="text/css" media="all"/>
+  <title>SPACECOOKIE(1)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">SPACECOOKIE(1)</td>
+    <td class="head-vol">General Commands Manual</td>
+    <td class="head-rtitle">SPACECOOKIE(1)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<code class="Nm">spacecookie</code> &#x2014;
+<div class="Nd">gopher server daemon</div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SYNOPSIS"><a class="permalink" href="#SYNOPSIS">SYNOPSIS</a></h1>
+<table class="Nm">
+  <tr>
+    <td><code class="Nm">spacecookie</code></td>
+    <td>[<code class="Fl">--version</code>]
+      <var class="Ar">config.json</var></td>
+  </tr>
+</table>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+<code class="Nm">spacecookie</code> is a simple to use gopher daemon for serving
+  static files. It is either invoked with the <code class="Fl">--version</code>
+  flag to print its version or with the path to its config file as the single
+  argument. The minimal config file needs to tell
+  <code class="Nm">spacecookie</code> about the directory to serve and the
+  server's name, i. e. the hostname or IP address the server is reachable
+  through. All configuration options, the format and default values are
+  explained in
+  <a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a>.
+<p class="Pp">On startup, <code class="Nm">spacecookie</code> will check if it
+    has been started with systemd socket activation. If that's true, it will use
+    the socket passed from systemd, if not, it will setup the socket itself.
+    After that it will call
+    <a class="Xr" href="https://manpages.debian.org/unstable/setuid.2.en.html">setuid(2)</a>
+    to switch to a less privileged user if configured to do so and start
+    accepting incoming gopher requests on the socket. Note that using socket
+    activation eliminates the need for starting as a privileged user in the
+    first place because systemd will take care of the socket. The systemd
+    integration is explained in more detail in its own section.</p>
+<p class="Pp"><code class="Nm">spacecookie</code> will not fork itself to the
+    background or otherwise daemonize which can, however, be achieved using a
+    supervisor. Logs are always written to <b class="Sy">stderr</b> and can be
+    collected and rotated by another daemon or tool if desired.</p>
+<p class="Pp">Incoming requests are filtered: No files or directories outside
+    the served directory or that start with a dot may be accessed by clients.
+    Allowed files are returned to clients unfiltered. For directories,
+    <code class="Nm">spacecookie</code> checks if they contain a
+    &#x2018;<code class="Li">.gophermap</code>&#x2019; file: If they contain
+    one, it is used to generate the directory response, otherwise one is
+    generated automatically which involves guessing all file types from file
+    extensions. The default file type is
+    &#x2018;<code class="Li">0</code>&#x2019;, text file. The file format of the
+    &#x2018;<code class="Li">gophermap</code>&#x2019; files and its use are
+    explained in
+    <a class="Xr" href="./spacecookie-gophermap.5.html">spacecookie-gophermap(5)</a>.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SYSTEMD_INTEGRATION"><a class="permalink" href="#SYSTEMD_INTEGRATION">SYSTEMD
+  INTEGRATION</a></h1>
+<code class="Nm">spacecookie</code> optionally supports two systemd-specific
+  features: It acts as a <b class="Sy">notify</b> type service and supports
+  socket activation.
+<p class="Pp">If you are writing a
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.service.5.en.html">systemd.service(5)</a>
+    file, be sure to use the &#x2018;<code class="Li">Type=notify</code>&#x2019;
+    directive which allows <code class="Nm">spacecookie</code> to tell systemd
+    when it has finished starting up and when it is stopping before actually
+    exiting.</p>
+<p class="Pp">For socket activation, create a
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+    file that starts the <code class="Nm">spacecookie</code> service. This has
+    several advantages: For one, it allows starting
+    <code class="Nm">spacecookie</code> on demand only and reducing the load on
+    server startup. Additionally it means that the daemon doesn't ever need to
+    be started as root because it won't need to setup a socket bound to a
+    well-known port. A thing to watch out for is to make sure that the settings
+    in <a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a>
+    match the settings in the
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+    file: Specifically in &#x2018;<code class="Li">listen</code>&#x2019;,
+    &#x2018;<code class="Li">port</code>&#x2019; needs to match the settings in
+    the systemd configuration while &#x2018;<code class="Li">addr</code>&#x2019;
+    won't have any effect. As always
+    &#x2018;<code class="Li">hostname</code>&#x2019; has to be configured
+    correctly as well. <code class="Nm">spacecookie</code> doesn't run any
+    sanity checks comparing the socket from systemd with information from the
+    configuration (yet).</p>
+<p class="Pp">An example
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.service.5.en.html">systemd.service(5)</a>
+    and
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+    file are provided in the <code class="Nm">spacecookie</code> source
+    distribution in the &#x2018;<code class="Li">etc</code>&#x2019;
+  directory.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a>,
+  <a class="Xr" href="./spacecookie-gophermap.5.html">spacecookie-gophermap(5)</a>,
+  <a class="Xr" href="https://manpages.debian.org/unstable/systemd.service.5.en.html">systemd.service(5)</a>
+  and
+  <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>.
+<p class="Pp">For writing custom gopher application using the spacecookie
+    library refer to the
+    <a class="Lk" href="https://hackage.haskell.org/package/spacecookie">API
+    documentation</a>.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="STANDARDS"><a class="permalink" href="#STANDARDS">STANDARDS</a></h1>
+By default, <code class="Nm">spacecookie</code> always behaves like a gopher
+  server as described in
+  <a class="Lk" href="https://tools.ietf.org/html/rfc1436">RFC1436</a>. However
+  users can configure <code class="Nm">spacecookie</code> to utilize common
+  protocol extensions like the &#x2018;<code class="Li">h</code>&#x2019; and
+  &#x2018;<code class="Li">i</code>&#x2019; types and
+  <a class="Lk" href="http://gopher.quux.org:70/Archives/Mailing%20Lists/gopher/gopher.2002-02%7C/MBOX-MESSAGE/34">URLs
+  to other protocols</a>.
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUTHORS"><a class="permalink" href="#AUTHORS">AUTHORS</a></h1>
+<code class="Nm">spacecookie</code> has been written and documented by
+  <span class="An">sternenseemann</span>,
+  <a class="Mt" href="mailto:sterni-spacecookie@systemli.org">sterni-spacecookie@systemli.org</a>.
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SECURITY_CONSIDERATIONS"><a class="permalink" href="#SECURITY_CONSIDERATIONS">SECURITY
+  CONSIDERATIONS</a></h1>
+<code class="Nm">spacecookie</code> supports no migitations or attack surface
+  reduction measures other than automatically switching to a less privileged
+  user after binding. It is recommended to use this feature and to make use of
+  containering or sandboxing like for example
+  <a class="Xr" href="https://manpages.debian.org/unstable/systemd.exec.5.en.html">systemd.exec(5)</a>
+  supports.
+<p class="Pp">TLS-enabled gopher, like the
+    &#x2018;<code class="Li">gophers</code>&#x2019; protocol supported by
+    <a class="Xr" href="https://manpages.debian.org/unstable/curl.1.en.html">curl(1)</a>
+    is not natively supported by <code class="Nm">spacecookie</code> at this
+    time.</p>
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">March 11, 2021</td>
+    <td class="foot-os">NixOS</td>
+  </tr>
+</table>
+</body>
+</html>

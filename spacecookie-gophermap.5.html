@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" href="style.css" type="text/css" media="all"/>
+  <title>SPACECOOKIE-GOPHERMAP(5)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">SPACECOOKIE-GOPHERMAP(5)</td>
+    <td class="head-vol">File Formats Manual</td>
+    <td class="head-rtitle">SPACECOOKIE-GOPHERMAP(5)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<code class="Nm">spacecookie-gophermap</code> &#x2014;
+<div class="Nd">gophermap file format supported by
+  <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a></div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+A gophermap file allows to describe a gopher menu without the need to include
+  redundant information. The format supported by
+  <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> has originally
+  been introduced by Bucktooth and is supported by most popular gopher server
+  daemons like for example
+  <a class="Xr" href="https://manpages.debian.org/unstable/pygopherd.8.en.html">pygopherd(8)</a>.
+<p class="Pp">A gophermap file stored as
+    &#x2018;<code class="Li">.gophermap</code>&#x2019; in a directory under the
+    gopher root of <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>
+    is parsed and used as a gopher menu instead of the automatically generated
+    default variant. This allows users to customize the directory listings by
+    specifying informational text, links to files, (other) directories, gopher
+    servers or protocols themselves.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="FORMAT"><a class="permalink" href="#FORMAT">FORMAT</a></h1>
+The format is plain text and line based. Both Unix and DOS style line endings
+  are allowed. <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>
+  distinguishes between two, technically three types of lines:
+<dl class="Bl-tag">
+  <dt><b class="Sy">info lines</b></dt>
+  <dd>Info lines are lines of text in a gophermap which don't have any special
+      format requirements except that they may not contain any tab characters.
+    <p class="Pp"></p>
+    <div class="Bd Bd-indent"><code class="Li">Any text which may contain
+      anything but tabs.</code></div>
+    <p class="Pp">They are also rendered als plain text without any associated
+        links to gopher clients which support them. Info lines are technically
+        not part of the gopher protocol nor mentioned in RFC1436, but this
+        protocol extension is widely supported and generally used.</p>
+    <p class="Pp">The usual purpose is to display additional text, headings and
+        decorative elements which are not directly related to other resources
+        served via gopher:</p>
+    <div class="Bd Pp Bd-indent">
+    <pre>
++------------------------------+
+| Welcome to my Gopher Server! |
++------------------------------+
+
+Below you can find a collection of files I deemed
+interesting or useful enough to publish them.
+    </pre>
+    </div>
+    <p class="Pp">Empty lines are interpreted as info lines which have no
+        content.</p>
+  </dd>
+  <dt><b class="Sy">menu entries</b></dt>
+  <dd>Lines describing menu entries are of the following form. All spaces are
+      for readability only and must not be present in the actual format.
+      Everything in brackets may be omitted, the semantics of which are
+      explained below.
+    <p class="Pp"></p>
+    <div class="Bd Bd-indent"><code class="Li">gopherfiletypeNAME\t [SELECTOR
+      [\tSERVER [\tPORT]]]</code></div>
+    <dl class="Bl-tag">
+      <dt><i class="Em">gopherfiletype</i></dt>
+      <dd>File type character indicating the file type of the linked resource to
+          the client. See
+          <a class="Lk" href="https://tools.ietf.org/html/rfc1436#page-14">RFC1436</a>
+          for a list of valid file types. Additionally,
+          <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> supports
+          &#x2018;<code class="Li">i</code>&#x2019; which indicates an info line
+          and &#x2018;<code class="Li">h</code>&#x2019; which indicates an HTML
+          document.</dd>
+      <dt><i class="Em">NAME</i></dt>
+      <dd>Name of the linked resource which will show up as the text of the menu
+          entry. May contain any characters except newlines and tabs.
+          <i class="Em">NAME</i> must always be terminated by a tab.</dd>
+      <dt><i class="Em">SELECTOR</i></dt>
+      <dd>Gopher selector the entry should link to. Same restrictions in terms
+          of characters apply as for <i class="Em">NAME</i>, but there should
+          only be a tab character afterwards if another field is specified. If
+          it is omitted, the value of <i class="Em">NAME</i> is used. If the
+          <i class="Em">SELECTOR</i> starts with
+          &#x2018;<code class="Li">/</code>&#x2019;, it is interpreted as an
+          absolute path and given to the client as-is. If it starts with
+          &#x2018;<code class="Li">URL:</code>&#x2019;, it is assumed that it is
+          a link to another protocol and passed to the client without
+          modification (see below). In all other cases, it is assumed that the
+          selector is a relative path and is converted to an absolute path
+          before serving the menu to a client.
+        <p class="Pp">You can read more about
+            &#x2018;<code class="Li">URL:</code>&#x2019; links which are another
+            common gopher protocol extension in
+            <a class="Lk" href="http://gopher.quux.org:70/Archives/Mailing%20Lists/gopher/gopher.2002-02%7C/MBOX-MESSAGE/34">this
+            email from John Goerzen.</a></p>
+      </dd>
+      <dt><i class="Em">SERVER</i></dt>
+      <dd>Describes the server <i class="Em">SELECTOR</i> should be retrieved
+          from. Same character restrictions apply and it must come after a tab
+          character as well. If it is omitted, the hostname of the server
+          generating the menu is used.</dd>
+      <dt><i class="Em">PORT</i></dt>
+      <dd>Describes the port <i class="Em">SERVER</i> is running on. Must come
+          after a tab and is terminated by the end of the line or file. If this
+          field is left out, the server generating the menu uses its own
+        port.</dd>
+    </dl>
+  </dd>
+</dl>
+<p class="Pp">A gophermap file may contain any number of menu and info lines.
+    They are then converted to actual gopher protocol menu entries clients
+    understand line by line as described above.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="EXAMPLE"><a class="permalink" href="#EXAMPLE">EXAMPLE</a></h1>
+Tabs are marked with &#x2018;<code class="Li">^I</code>&#x2019; for clarity.
+<div class="Bd Pp Bd-indent">
+<pre>
+spacecookie
+===========
+
+Welcome to spacecookie's gopher page!
+
+Get a copy either by downloading the latest
+stable release or cloning the development version:
+
+hGitHub page^I	URL:https://github.com/sternenseemann/spacecookie/
+9latest tarball^I	/software/releases/spacecookie-0.3.0.0.tar.gz
+
+The following documentation resources should get you started:
+
+0README^I	README.md
+1man pages^I	manpages/
+
+Other gopher server daemons (the first link only works
+if this server is running on port 70):
+
+1pygopherd^I	/devel/gopher/pygopherd^I	gopher.quux.org
+1Bucktooth^I	/buck^I	gopher.floodgap.com^I	70
+</pre>
+</div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<a class="Xr" href="https://manpages.debian.org/unstable/pygopherd.8.en.html">pygopherd(8)</a>,
+  <a class="Lk" href="gopher://gopher.floodgap.com/0/buck/dbrowse?faquse%201a">Bucktooth's
+  gophermap documentation</a> and
+  <a class="Lk" href="https://tools.ietf.org/html/rfc1436#page-14">the file type
+  list from RFC1436</a>.
+<p class="Pp"><a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>,
+    <a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a></p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUTHORS"><a class="permalink" href="#AUTHORS">AUTHORS</a></h1>
+The <code class="Nm">spacecookie-gophermap</code> documentation has been written
+  by <span class="An">sternenseemann</span>,
+  <a class="Mt" href="mailto:sterni-spacecookie@systemli.org">sterni-spacecookie@systemli.org</a>.
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">March 11, 2021</td>
+    <td class="foot-os">NixOS</td>
+  </tr>
+</table>
+</body>
+</html>

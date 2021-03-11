@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <link rel="stylesheet" href="style.css" type="text/css" media="all"/>
+  <title>SPACECOOKIE.JSON(5)</title>
+</head>
+<body>
+<table class="head">
+  <tr>
+    <td class="head-ltitle">SPACECOOKIE.JSON(5)</td>
+    <td class="head-vol">File Formats Manual</td>
+    <td class="head-rtitle">SPACECOOKIE.JSON(5)</td>
+  </tr>
+</table>
+<div class="manual-text">
+<section class="Sh">
+<h1 class="Sh" id="NAME"><a class="permalink" href="#NAME">NAME</a></h1>
+<code class="Nm">spacecookie.json</code> &#x2014;
+<div class="Nd">configuration file for
+  <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a></div>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="DESCRIPTION"><a class="permalink" href="#DESCRIPTION">DESCRIPTION</a></h1>
+The <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> config file is
+  a JSON file which contains a single object. The allowed fields representing
+  individual settings and their effect are explained below.
+<section class="Ss">
+<h2 class="Ss" id="REQUIRED_SETTINGS"><a class="permalink" href="#REQUIRED_SETTINGS">REQUIRED
+  SETTINGS</a></h2>
+The following settings must be part of every configuration file as there is no
+  default or fallback value for them.
+<div class="Bd-indent">
+<dl class="Bl-tag">
+  <dt><b class="Sy">hostname</b></dt>
+  <dd>Describes the public server name
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> is reachable
+      through, i. e. the address clients will use to connect to it. It will be
+      used to populate gopher menus with the correct server name, so follow up
+      requests from clients actually reach the correct server. For testing
+      purposes, it can be useful to set it to
+      &#x2018;<code class="Li">localhost</code>&#x2019;.
+    <p class="Pp">Type: string.</p>
+  </dd>
+  <dt><b class="Sy">root</b></dt>
+  <dd>Sets the the directory
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> should serve
+      via gopher. All gopher requests will be resolved to files or directories
+      under that root. Files and directories will be served to users if no
+      component of the resolved path starts with a dot and they are readable for
+      the user <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> is
+      running as.
+    <p class="Pp">Type: string.</p>
+  </dd>
+</dl>
+</div>
+</section>
+<section class="Ss">
+<h2 class="Ss" id="OPTIONAL_SETTINGS"><a class="permalink" href="#OPTIONAL_SETTINGS">OPTIONAL
+  SETTINGS</a></h2>
+The following settings are optional, meaning there is either a default value or
+  an obvious default behavior if they are not given.
+<div class="Bd-indent">
+<dl class="Bl-tag">
+  <dt><b class="Sy">listen</b></dt>
+  <dd>Describes the address and port
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> should listen
+      on. Both aspects can be controlled individually by the two optional fields
+      described below.
+    <p class="Pp">Type: object.</p>
+    <div class="Bd-indent">
+    <dl class="Bl-tag">
+      <dt><b class="Sy">port</b></dt>
+      <dd>Port to listen on. The well-known port for gopher is
+          <span class="Ms">70</span>.
+        <p class="Pp">If
+            <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+            activation is used, this setting will have no effect on the actual
+            port the socket is bound to since this is done by
+            <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>.
+            It will then only be used to display the server's port in gopher
+            menus for subsequent requests, so make sure whatever is set here
+            matches what
+            <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>
+            is doing.</p>
+        <p class="Pp">Type: number. Default:
+            &#x2018;<code class="Li">70</code>&#x2019;.</p>
+      </dd>
+      <dt><b class="Sy">addr</b></dt>
+      <dd>Address to listen and accept gopher requests on. In contrast to
+          <b class="Sy">hostname</b>, this option controls the socket setup and
+          not what is used in gopher menus. This option is especially useful to
+          limit the addresses
+          <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> will
+          listen on since it listens on all available addresses for incoming
+          requests by default, i. e. <b class="Sy">INADDR_ANY</b>. For example,
+          &#x2018;<code class="Li">::1</code>&#x2019; can be used to listen on
+          the link-local addresses only. This is especially useful if you are
+          setting up a onion service using
+          <a class="Xr" href="https://manpages.debian.org/unstable/tor.1.en.html">tor(1)</a>
+          and want to avoid leaking the server's identity.
+        <p class="Pp">When given,
+            <a class="Xr" href="https://manpages.debian.org/unstable/getaddrinfo.3.en.html">getaddrinfo(3)</a>
+            is used to resolve the given hostname or parse the given IP address
+            and <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>
+            will only listen on the resulting address(es). Note that
+            <b class="Sy">IPV6_V6ONLY</b> is always disabled, so, if possible,
+            both the resulting v4 and v6 address will be used.</p>
+        <p class="Pp">If
+            <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+            activation is used, this setting has no effect.</p>
+        <p class="Pp">Type: string.</p>
+      </dd>
+    </dl>
+    </div>
+  </dd>
+  <dt><b class="Sy">user</b></dt>
+  <dd>The name of the user spacecookie should run as. When this option is given
+      and not &#x2018;<code class="Li">null</code>&#x2019;,
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> will call
+      <a class="Xr" href="https://manpages.debian.org/unstable/setuid.2.en.html">setuid(2)</a>
+      and
+      <a class="Xr" href="https://manpages.debian.org/unstable/setgid.2.en.html">setgid(2)</a>
+      after setting up its socket to switch to that user and their primary
+      group. Note that this is only necessary to set if
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> is started
+      with root privileges in the first place as the binary shouldn't have the
+      setuid bit set. An alternative to starting the daemon as root, so it can
+      bind its socket to a well-known port, is to use
+      <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>
+      socket activation. See the
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> man page for
+      details on setting this up.
+    <p class="Pp">Warning: Errors related to switching user are not fatal,
+        <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> will only
+        log a warning if the
+        <a class="Xr" href="https://manpages.debian.org/unstable/setuid.2.en.html">setuid(2)</a>
+        call fails.</p>
+    <p class="Pp">Type: string. Default:
+        &#x2018;<code class="Li">null</code>&#x2019;.</p>
+  </dd>
+  <dt><b class="Sy">log</b></dt>
+  <dd>Allows to customize the logging output of
+      <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> to
+      <b class="Sy">stderr</b>.
+    <p class="Pp">Type: object.</p>
+    <div class="Bd-indent">
+    <dl class="Bl-tag">
+      <dt><b class="Sy">enable</b></dt>
+      <dd>Wether to enable logging.
+        <p class="Pp">Type: bool. Default:
+            &#x2018;<code class="Li">true</code>&#x2019;.</p>
+      </dd>
+      <dt><b class="Sy">hide-ips</b></dt>
+      <dd>Wether to hide IP addresses of clients in the log output. If enabled,
+          &#x2018;<code class="Li">[redacted]</code>&#x2019; is displayed
+          instead of client's IP addresses to avoid writing personal information
+          to disk.
+        <p class="Pp">Type: bool. Default:
+            &#x2018;<code class="Li">true</code>&#x2019;.</p>
+      </dd>
+      <dt><b class="Sy">hide-time</b></dt>
+      <dd>If this is set to &#x2018;<code class="Li">true</code>&#x2019;,
+          <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> will not
+          print timestamps at the beginning of every log line. This is useful if
+          you use an additional daemon or tool to take care of logs which
+          records timestamps automatically, like
+          <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>.
+        <p class="Pp">Type: bool. Default:
+            &#x2018;<code class="Li">false</code>&#x2019;.</p>
+      </dd>
+      <dt><b class="Sy">level</b></dt>
+      <dd>Controls verbosity of logging. It is recommended to either use
+          &#x201C;warn&#x201D; or &#x201C;info&#x201D; since
+          &#x201C;error&#x201D; hides warnings that are indicative of
+          configuration issues.
+        <p class="Pp">Type: either &#x201C;error&#x201D;, &#x201C;warn&#x201D;
+            or &#x201C;info&#x201D;. Default: &#x201C;info&#x201D;.</p>
+      </dd>
+    </dl>
+    </div>
+  </dd>
+</dl>
+</div>
+</section>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="EXAMPLE"><a class="permalink" href="#EXAMPLE">EXAMPLE</a></h1>
+The following configuration equates to the default behavior of
+  <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> for all optional
+  settings, although it is much verboser than necessary.
+<div class="Bd Pp Bd-indent">
+<pre>
+{
+  &quot;hostname&quot; : &quot;localhost&quot;,
+  &quot;root&quot; : &quot;/srv/gopher&quot;,
+  &quot;listen&quot; : {
+    &quot;addr&quot; : &quot;::&quot;,
+    &quot;port&quot; : 70
+  },
+  &quot;user&quot; : null,
+  &quot;log&quot; : {
+    &quot;enable&quot; : true,
+    &quot;hide-ips&quot; : true,
+    &quot;hide-time&quot; : false,
+    &quot;level&quot; : &quot;info&quot;
+  }
+}
+</pre>
+</div>
+<p class="Pp">This configuration is suitable for running as an onion service: It
+    disables logging completely to not collect any kind of meta data about
+    user's and only listens on the link-local address to avoid leaking its
+    identity. We can also use a non-well-known port since
+    <a class="Xr" href="https://manpages.debian.org/unstable/tor.1.en.html">tor(1)</a>
+    allows free mapping from local to exposed ports, so
+    <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> can be started
+    as a normal user.</p>
+<div class="Bd Pp Bd-indent">
+<pre>
+{
+  &quot;hostname&quot;: &quot;myonionservicehash.onion&quot;,
+  &quot;root&quot;: &quot;/srv/onion-gopher&quot;,
+  &quot;listen&quot;: {
+    &quot;addr&quot;: &quot;::1&quot;,
+    &quot;port&quot;: 7070
+  },
+  &quot;log&quot;: {
+    &quot;enable&quot;: false
+  }
+}
+</pre>
+</div>
+<p class="Pp">If you are not using socket activation for running a gopher server
+    on the well-known port for gopher, a config like this is apporpriate,
+    provided the user &#x2018;<code class="Li">gopher</code>&#x2019; exists:</p>
+<div class="Bd Pp Bd-indent">
+<pre>
+{
+  &quot;hostname&quot;: &quot;example.org&quot;,
+  &quot;root&quot;: &quot;/srv/gopher&quot;,
+  &quot;user&quot;: &quot;gopher&quot;
+}
+</pre>
+</div>
+<p class="Pp">For a
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+    based setup, the &#x2018;<code class="Li">user</code>&#x2019; field should
+    be omitted and <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>
+    started as the target user directly in the
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.service.5.en.html">systemd.service(5)</a>
+    file.</p>
+</section>
+<section class="Sh">
+<h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
+  ALSO</a></h1>
+<a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a>.
+</section>
+<section class="Sh">
+<h1 class="Sh" id="AUTHORS"><a class="permalink" href="#AUTHORS">AUTHORS</a></h1>
+The <code class="Nm">spacecookie.json</code> documentation has been written by
+  <span class="An">sternenseemann</span>,
+  <a class="Mt" href="mailto:sterni-spacecookie@systemli.org">sterni-spacecookie@systemli.org</a>.
+</section>
+</div>
+<table class="foot">
+  <tr>
+    <td class="foot-date">March 11, 2021</td>
+    <td class="foot-os">NixOS</td>
+  </tr>
+</table>
+</body>
+</html>
