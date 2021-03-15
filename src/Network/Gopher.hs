@@ -89,7 +89,7 @@ import Network.Gopher.Util.Gophermap
 import Network.Gopher.Util.Socket
 
 import Control.Concurrent (forkIO, ThreadId ())
-import Control.Exception (bracket, catch, handle, throw, SomeException (), Exception ())
+import Control.Exception (bracket, catch, throw, SomeException (), Exception ())
 import Control.Monad (forever, when, void)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
@@ -104,7 +104,6 @@ import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
 import System.Socket.Type.Stream
 import System.Socket.Protocol.TCP
-import System.Posix.User
 
 -- | Necessary information to handle gopher requests
 data GopherConfig
@@ -118,8 +117,6 @@ data GopherConfig
   --   If 'Nothing', listen on all addresses.
   , cServerPort    :: Integer
   -- ^ Port to listen on
-  , cRunUserName   :: Maybe String
-  -- ^ User to run the process as
   , cLogHandler    :: Maybe GopherLogHandler
   -- ^ 'IO' action spacecookie will call to output its log messages.
   --   If it is 'Nothing', logging is disabled. See [the logging section](#logging)
@@ -129,7 +126,7 @@ data GopherConfig
 -- | Default 'GopherConfig' describing a server on @localhost:70@ with
 --   no registered log handler.
 defaultConfig :: GopherConfig
-defaultConfig = GopherConfig "localhost" Nothing 70 Nothing Nothing
+defaultConfig = GopherConfig "localhost" Nothing 70 Nothing
 
 -- | Type for an user defined 'IO' action which handles logging a
 --   given 'GopherLogStr' of a given 'GopherLogLevel'. It may
@@ -232,15 +229,6 @@ receiveRequest sock = do
            then B.init req
            else req
 
-dropPrivileges :: String -> IO Bool
-dropPrivileges username =
-  handle ((\_ -> return False) :: SomeException -> IO Bool)
-    $ do
-      user <- getUserEntryForName username
-      setGroupID $ userGroupID user
-      setUserID $ userID user
-      return True
-
 -- | Auxiliary function that sets up the listening socket for
 --   'runGopherManual' correctly and starts to listen.
 --
@@ -314,16 +302,6 @@ runGopherManual sockAction ready term cfg f = bracket
     gopherM (Env cfg f) $ do
       addr <- liftIO $ getAddress sock
       logInfo $ "Listening on " <> toGopherLogStr addr
-
-      -- Change UID and GID if necessary
-      case cRunUserName cfg of
-        Nothing -> pure ()
-        Just u -> do
-          success <- liftIO $ dropPrivileges u
-          if success
-            then logInfo $ "Changed to user " <> toGopherLogStr u
-            else logError $ "Can' change to user " <> toGopherLogStr u
-            -- TODO: abort?
 
       liftIO $ ready
 

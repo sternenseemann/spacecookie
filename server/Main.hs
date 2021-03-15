@@ -6,7 +6,7 @@ import Network.Spacecookie.Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (sanitizePath, boolToMaybe)
+import Network.Gopher.Util (sanitizePath, boolToMaybe, dropPrivileges)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Control.Applicative ((<|>))
@@ -64,12 +64,12 @@ runServer configFile = do
             { cServerName = serverName config
             , cListenAddr = listenAddr config
             , cServerPort = serverPort config
-            , cRunUserName = runUserName config
             , cLogHandler = logHandler
             }
+          logIO = fromMaybe noLog logHandler
 
       let setupFailureHandler e = do
-            (fromMaybe noLog logHandler) GopherLogLevelError
+            logIO GopherLogLevelError
               $  "Exception occurred in setup step: "
               <> toGopherLogStr (show e)
             logStopAction
@@ -81,12 +81,23 @@ runServer configFile = do
 
       catchSetupFailure $ runGopherManual
         (systemdSocket cfg)
-        (notifyReady >> pure ())
+        (afterSocketSetup logIO config)
         (\s -> do
           _ <- notifyStopping
           logStopAction
           systemdStoreOrClose s)
-        cfg $ spacecookie (fromMaybe noLog logHandler)
+        cfg
+        (spacecookie logIO)
+
+afterSocketSetup :: GopherLogHandler -> Config -> IO ()
+afterSocketSetup logIO cfg = do
+  case runUserName cfg of
+    Nothing -> pure ()
+    Just u  -> do
+      dropPrivileges u
+      logIO GopherLogLevelInfo $ "Changed to user " <> toGopherLogStr u
+  _ <- notifyReady
+  pure ()
 
 printUsage :: IO ()
 printUsage = do
