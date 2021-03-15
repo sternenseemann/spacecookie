@@ -8,7 +8,7 @@ module Network.Spacecookie.Systemd
   , SystemdException (..)
   ) where
 
-import Control.Concurrent.MVar (newMVar, takeMVar, mkWeakMVar)
+import Control.Concurrent.MVar (newMVar, swapMVar, mkWeakMVar)
 import Control.Exception.Base
 import Control.Monad (when)
 import Data.Maybe (fromMaybe)
@@ -36,8 +36,12 @@ closeFd fd = do
     $ mkIOError userErrorType "Could not close File Descriptor" Nothing Nothing
 
 -- | Irreversibly convert a 'Socket' into an 'Fd'.
+--   Invalidates the socket and returns the file descriptor
+--   contained within it.
 toFd :: Socket a b c -> IO Fd
-toFd (Socket mvar) = fmap (Fd . fromIntegral) (takeMVar mvar)
+toFd (Socket mvar) = fmap (Fd . fromIntegral) (swapMVar mvar (-1))
+-- putting an invalid file descriptor into the 'MVar' makes
+-- the 'Socket' appear to System.Socket as if it were closed
 
 -- | Create an 'Socket' from an 'Fd'. This action is unsafe
 --   since the type of the socket is not checked meaning that
