@@ -119,12 +119,14 @@ If you notice any incompatibilities, please open an issue.
 
 ## Portability
 
-spacecookie's portability is mostly limited by
+spacecookie is regularly tested on GNU/Linux via CI, but
+should also work on other Unix-like operating systems.
+Most portability problems arise due to
 [haskell-socket](https://github.com/lpeterse/haskell-socket)
-which should work on any POSIX-compliant Operating system.
-However I personally have only tested spacecookie on GNU/Linux
-so far. Feel free to send me an email or open an issue if you
-have any trouble!
+which is for example known
+[not to work on OpenBSD](https://github.com/lpeterse/haskell-socket/issues/63).
 
-Windows is currently not supported as some Unix-specific features
-are used, but there is probably little demand for it as well.
+Windows support would be possible, but could be tricky as gopher
+expects Unix-style directory separators in paths. I personally
+don't want to invest time into it, but would accept patches adding
+Windows support.
