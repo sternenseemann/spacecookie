@@ -86,6 +86,7 @@ import Network.Gopher.Log
 import Network.Gopher.Types
 import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
+import Network.Gopher.Util.Socket
 
 import Control.Concurrent (forkIO, ThreadId ())
 import Control.Exception (bracket, catch, handle, throw, SomeException (), Exception ())
@@ -383,7 +384,7 @@ acceptAndHandle sock = do
       <> toGopherLogStr (show (e :: SocketException))
     Right (clientSock, addr) -> do
       logInfo $ "New connection from " <> makeSensitive (toGopherLogStr addr)
-      void $ forkGopherM (handleIncoming clientSock addr) (close clientSock)
+      void $ forkGopherM (handleIncoming clientSock addr) (gracefulClose clientSock)
 
 -- | Like 'runGopher', but may not cause effects in 'IO' (or anywhere else).
 runGopherPure :: GopherConfig -> (GopherRequest -> GopherResponse) -> IO ()
