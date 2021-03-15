@@ -63,7 +63,9 @@ library
                      , Network.Gopher.Util
   other-modules:       Network.Gopher.Types
                      , Network.Gopher.Log
+                     , Network.Gopher.Util.Socket
   build-depends:       hxt-unicode
+                     , async >= 2.2
   ghc-options:         -Wall -Wno-orphans
 
 test-suite test
