@@ -88,7 +88,8 @@ import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 import Network.Gopher.Util.Socket
 
-import Control.Concurrent (forkIO, ThreadId ())
+import Control.Concurrent (forkIO, ThreadId (), threadDelay)
+import Control.Concurrent.Async (race)
 import Control.Exception (bracket, catch, throw, SomeException (), Exception ())
 import Control.Monad (forever, when, void)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
@@ -215,19 +216,37 @@ logException :: Exception e => Maybe GopherLogHandler -> GopherLogStr -> e -> IO
 logException logger msg e =
   logIO logger GopherLogLevelError $ msg <> toGopherLogStr (show e)
 
-maxRequestSize :: Int
-maxRequestSize = 1024 * 1024
-
-receiveRequest :: Socket Inet6 Stream TCP -> IO ByteString
-receiveRequest sock = do
-  req <- fst . B.breakSubstring "\r\n"
-    <$> receive sock maxRequestSize mempty
-  -- Support requests which are terminated by '\n'
-  -- for backwards compatibility, but only if no
-  -- additional data is sent.
-  pure $ if B.length req > 0 && B.last req == asciiOrd '\n'
-           then B.init req
-           else req
+-- | Read request from a client socket.
+--   The complexity of this function is caused by the
+--   following design features:
+--
+--   * Requests may be terminated by either "\n\r" or "\n"
+--   * After the terminating newline no extra data is accepted
+--   * Give up on waiting on a request from the client after
+--     a certain amount of time (request timeout)
+--   * Don't accept selectors bigger than a certain size to
+--     avoid DoS attacks filling up our memory.
+receiveRequest :: Socket Inet6 Stream TCP -> IO (Either ByteString ByteString)
+receiveRequest sock = fmap (either id id)
+  $ race (threadDelay reqTimeout >> pure (Left "Request Timeout")) $ do
+    req <- loop mempty 0
+    pure $
+      case B.break newline req of
+        (r, "\r\n") -> Right r
+        (r, "\n")   -> Right r
+        (_, "")     -> Left "Request too big or unterminated"
+        _           -> Left "Unexpected data after newline"
+  where newline = (||)
+          <$> (== asciiOrd '\n')
+          <*> (== asciiOrd '\r')
+        reqTimeout = 10000000 -- 10s
+        maxSize = 1024 * 1024
+        loop bs size = do
+          part <- receive sock maxSize msgNoSignal
+          let newSize = size + B.length part
+          if newSize >= maxSize || part == mempty || B.elem (asciiOrd '\n') part
+            then pure $ bs `mappend` part
+            else loop (bs `mappend` part) newSize
 
 -- | Auxiliary function that sets up the listening socket for
 --   'runGopherManual' correctly and starts to listen.
@@ -329,29 +348,33 @@ splitSelector = second checkSearch . B.breakSubstring "\t"
 
 handleIncoming :: Socket Inet6 Stream TCP -> SocketAddress Inet6 -> GopherM ()
 handleIncoming clientSock addr@(SocketAddressInet6 cIpv6 _ _ _) = do
-  rawSelector <- liftIO $ receiveRequest clientSock
-
-  let (onlySel, search) = splitSelector rawSelector
-      req = GopherRequest
-        { requestRawSelector = rawSelector
-        , requestSelector = onlySel
-        , requestSearchString = search
-        , requestClientAddr  = inet6AddressToTuple cIpv6
-        }
-
-  logInfo $ "New Request \"" <> toGopherLogStr rawSelector <> "\" from "
-    <> makeSensitive (toGopherLogStr addr)
-
+  request <- liftIO $ receiveRequest clientSock
   logger <- cLogHandler . serverConfig <$> ask
-  fun <- serverFun <$> ask
-  res <- liftIO (fun req `catch` \e -> do
-      let msg = "Unhandled exception in handler: "
-            <> toGopherLogStr (show (e :: SomeException))
-      logIO logger GopherLogLevelError msg
-      pure $ ErrorResponse "Unknown error occurred")
-    >>= response
+  intermediateResponse <-
+    case request of
+      Left e -> pure $ ErrorResponse e
+      Right rawSelector -> do
+        let (onlySel, search) = splitSelector rawSelector
+            req = GopherRequest
+              { requestRawSelector = rawSelector
+              , requestSelector = onlySel
+              , requestSearchString = search
+              , requestClientAddr  = inet6AddressToTuple cIpv6
+              }
 
-  liftIO $ void (sendAll clientSock res msgNoSignal) `catch` \e ->
+        logInfo $ "New Request \"" <> toGopherLogStr rawSelector <> "\" from "
+          <> makeSensitive (toGopherLogStr addr)
+
+        fun <- serverFun <$> ask
+        liftIO $ fun req `catch` \e -> do
+          let msg = "Unhandled exception in handler: "
+                <> toGopherLogStr (show (e :: SomeException))
+          logIO logger GopherLogLevelError msg
+          pure $ ErrorResponse "Unknown error occurred"
+
+  rawResponse <- response intermediateResponse
+
+  liftIO $ void (sendAll clientSock rawResponse msgNoSignal) `catch` \e ->
     logException logger "Exception while sending response to client: " (e :: SocketException)
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
