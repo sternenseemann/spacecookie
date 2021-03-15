@@ -1,32 +1,80 @@
 # Revision history for spacecookie
 
-## 0.3.0.0 (UNRELEASED)
+## 1.0.0.0 (UNRELEASED)
 
-What a way to start your year.
+TL;DR:
 
-### Server
+* For server users, new features and configuration options have been
+  added and old configuration stays compatible. However some gophermap
+  files may need adjusting, especially if they contain absolute paths
+  not starting with a slash.
+* For library users there are multiple braking changes
+  to core APIs that probably need adjusting in downstream usage as well
+  as some changes to behavior. Please read through the fairly detailed
+  [changelog below](#library-users)
+
+### Server and Library Users
 
 #### Gophermap parsing
 
-These changes may result to broken links in menus after upgrading, but
-on the plus side, spacecookie now fully supports pygopherd and bucktooth
-style gophermaps.
+There have been quite a few, partly breaking changes to gophermap parsing in
+the library in an effort to fully support the format used in pygopherd and
+bucktooth. Instances where spacecookie's parsing deviated from the established
+format have been resolved and we now ship a test suite which checks compliance
+against sample files from bucktooth and pygopherd.
 
-* Gophermaps now support relative paths.
-  See [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
-  [#23](https://github.com/sternenseemann/spacecookie/pull/23).
-  * Selectors in gophermaps that start with a `/` are still interpreted
-    like before, as well as URLs starting with `URL:`.
-  * Selectors to which neither of those conditions apply are treated as
-    relative and processed accordingly before sent to gopher clients.
-* Info lines are no longer misinterpreted as menu entries if they start
-  with a valid gopher file type character. This in turn requires that
-  menu entries without a path field are terminated with a tab. Info
-  lines may contain no tab characters.
-* Fixed parsing of gophermap files whose last line ends in an `EOF`.
+We now support relative paths correctly: If a selector in a gophermap doesn't
+start with `/` or `URL:` it is interpreted as a relative path and prefixed
+with the directory the gophermap is located in. This should make writing
+gophermaps much more convenient, as it isn't necessary anymore to enter
+absolute selectors. However, absolute selectors not starting with `/`
+are broken by this.
 
-See the [library changelog](#gophermap) for a detailed explanation of
-the changes.
+To facilitate these changes, the API of `Network.Gopher.Util.Gophermap`
+changed in the following way:
+
+* `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
+  which may either be `GophermapAbsolute`, `GophermapRelative` or `GophermapUrl`.
+  Similar to the changes elsewhere, `GophermapFilePath` is a wrapper around
+  `RawFilePath`.
+* `gophermapToDirectoryResponse` takes an additional parameter describing
+  the directory the gophermap is located in to resolve relative to absolute
+  selectors.
+
+See also [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
+[#23](https://github.com/sternenseemann/spacecookie/pull/23).
+
+Menu lines which only contain a file type and name are now required to be
+terminated by a tab before the newline. This also reflects the behavior
+of bucktooth and pygopherd (although the latter's documentation on this
+is a bit misleading). Although this **breaks** entries like `0/file`,
+info lines which start with a valid file type character like
+`1. foo bar baz` no longer get mistaken for normal menu entries.
+See [#34](https://github.com/sternenseemann/spacecookie/pull/34).
+
+The remaining, less significant changes are:
+
+* Fixed parsing of gophermap files whose last line isn't terminated
+  by a newline.
+* The `gophermaplineWithoutFileTypeChar` line type which mapped menu entries
+  with incompatible file type characters to info lines has been removed. Such
+  lines now result in a parse error. This is a **breaking change** if you
+  relied on this behavior.
+* `parseGophermap` now consumes the end of input.
+
+#### Other changes
+
+* We now wait up to 1 second for the client to close the connection on
+  their side after sending all data. This fixes an issue specific to
+  `curl` which would result in it failing with a recv error (exit code
+  56) randomly.
+  See also [#42](https://github.com/sternenseemann/spacecookie/issues/42)
+  and [#44](https://github.com/sternenseemann/spacecookie/pull/44).
+* Requests from clients are now limited to 1MB in size and are received by
+  a single call to `recv(2)`. If this causes issues with any gopher client,
+  please open an issue.
+
+### Server Users
 
 #### Configuration
 
@@ -61,18 +109,25 @@ settings.
   instead of being processed like before. This is a **breaking change**.
 * GHC RTS options are now enabled and the default option `-I10` is passed to
   spacecookie.
+* Exit if dropping privileges fails instead of just logging an error like before.
+  See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
+* Expand user documentation by adding three man pages
+  ([rendered](https://sternenseemann.github.io/spacecookie/)) on the server daemon:
+  * `spacecookie(1)`: daemon invocation and behavior
+  * `spacecookie.json(5)`: daemon configuration
+  * `spacecookie-gophermap(5)`: gophermap format documentation
 * Fix the file not found error message erroneously stating that access of that
   file was not permitted.
 * Clarify error message when an URL: selector is sent to spacecookie.
 * Print version when `--version` is given
 * Print simple usage instructions when `--help` is given or the command line
   can't be parsed.
-* An error is now logged when a gophermap file doesn't parse and the standard
+* A warning is now logged when a gophermap file doesn't parse and the standard
   directory response is used as fallback.
-* Exit if dropping privileges fails instead of just logging an error like before.
-  See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
 
-### Library
+<a name="library-users"></a>
+
+### Library Users
 
 ### New Representation of Request and Response
 
@@ -163,69 +218,19 @@ The new logging mechanism was implemented in
 Previously it was attempted to make built-in logging more configurable
 (see [#13](https://github.com/sternenseemann/spacecookie/issues/13) and
 [#19](https://github.com/sternenseemann/spacecookie/pull/19)), but this
-was overly complicated and not as flexible as the new solution as well
-as more hassle for the library user except in very specific cases.
-
-#### Changes to `Network.Gopher.Util.Gophermap`
-
-<a name="gophermap"></a>
-
-There have been quite a few, partly breaking changes to gophermap parsing in
-the library in an effort to fully support the format used in pygopherd and
-bucktooth. Instances where spacecookie's parsing deviated from the established
-format have been resolved and we now ship a test suite which checks compliance
-against sample files from bucktooth and pygopherd.
-
-We now support relative paths correctly: If a selector in a gophermap doesn't
-start with `/` or `URL:` it is interpreted as a relative path and prefixed
-with the gophermap's directory in `gophermapToDirectoryResponse` which should
-make writing gophermaps much more convenient, as it isn't necessary anymore
-to enter absolute selectors. However, absolute selectors not starting with `/`
-are broken by this. The specific **breaking changes** are:
-
-* `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
-  which may either be `GophermapAbsolute`, `GophermapRelative` or `GophermapUrl`.
-  Similar to the changes elsewhere, `GophermapFilePath` is a wrapper around
-  `RawFilePath`.
-* `gophermapToDirectoryResponse` takes an additional parameter describing
-  the directory the gophermap is located in to resolve relative to absolute
-  selectors.
-
-See also [#22](https://github.com/sternenseemann/spacecookie/issues/22) and
-[#23](https://github.com/sternenseemann/spacecookie/pull/23).
-
-Menu lines which only contain a file type and name are now required to be
-terminated by a tab before the newline. This also reflects the behavior
-of bucktooth and pygopherd (although the latter's documentation on this
-is a bit misleading). Although this **breaks** entries like `0/file`,
-info lines which start with a valid file type character like
-`1. foo bar baz` no longer get mistaken for normal menu entries.
-See [#34](https://github.com/sternenseemann/spacecookie/pull/34).
-
-The remaining, less significant changes are:
-
-* The `gophermaplineWithoutFileTypeChar` line type which mapped menu entries
-  with incompatible file type characters to info lines has been removed. Such
-  lines now result in a parse error. This is a **breaking change** if you
-  relied on this behavior.
-* Fix the last line being ignored in `parseGophermap` if it ended with an
-  `EOF` rather than a newline.
-* Potentially **breaking change**: `parseGophermap` now consumes the end of
-  input.
+was overly complicated and not as flexible as the new solution. It has
+been abandoned thus.
 
 #### Other Changes
 
-* `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
-  and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
-  interface of `Network.Gopher.Util`.
-* Requests from clients are now limited to 1MB in size and are received by
-  a single call to `recv(2)`. If this causes issues with any gopher client,
-  please open an issue.
 * `cRunUserName` has been removed from `GopherConfig` since the functionality
   doesn't need special treatment as users can implement it easily via the
   ready action of `runGopherManual`. The formerly internal `dropPrivileges`
   function is now available via `Network.Gopher.Util` to be used for this
   purpose. See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
+* `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
+  and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
+  interface of `Network.Gopher.Util`.
 
 ## 0.2.1.2 Bump fast-logger
 
