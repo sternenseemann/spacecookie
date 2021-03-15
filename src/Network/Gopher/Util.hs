@@ -10,6 +10,7 @@ module Network.Gopher.Util (
   -- * Security
     sanitizePath
   , sanitizeIfNotUrl
+  , dropPrivileges
   -- * String Encoding
   , asciiOrd
   , asciiChr
@@ -27,6 +28,7 @@ import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath)
+import System.Posix.User
 
 -- | 'chr' a 'Word8'
 asciiChr :: Word8 -> Char
@@ -82,3 +84,15 @@ sanitizeIfNotUrl path =
 boolToMaybe :: Bool -> a -> Maybe a
 boolToMaybe True  a = Just a
 boolToMaybe False _ = Nothing
+
+-- | Call 'setGroupID' and 'setUserID' to switch to
+--   the given user and their primary group.
+--   Requires special privileges.
+--   Will raise an exception if either the user
+--   does not exist or the current user has no
+--   permission to change UID/GID.
+dropPrivileges :: String -> IO ()
+dropPrivileges username = do
+  user <- getUserEntryForName username
+  setGroupID $ userGroupID user
+  setUserID $ userID user

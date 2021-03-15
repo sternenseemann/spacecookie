@@ -69,6 +69,8 @@ settings.
   can't be parsed.
 * An error is now logged when a gophermap file doesn't parse and the standard
   directory response is used as fallback.
+* Exit if dropping privileges fails instead of just logging an error like before.
+  See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
 
 ### Library
 
@@ -219,6 +221,11 @@ The remaining, less significant changes are:
 * Requests from clients are now limited to 1MB in size and are received by
   a single call to `recv(2)`. If this causes issues with any gopher client,
   please open an issue.
+* `cRunUserName` has been removed from `GopherConfig` since the functionality
+  doesn't need special treatment as users can implement it easily via the
+  ready action of `runGopherManual`. The formerly internal `dropPrivileges`
+  function is now available via `Network.Gopher.Util` to be used for this
+  purpose. See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
 
 ## 0.2.1.2 Bump fast-logger
 
