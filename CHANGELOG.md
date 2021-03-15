@@ -70,9 +70,11 @@ The remaining, less significant changes are:
   56) randomly.
   See also [#42](https://github.com/sternenseemann/spacecookie/issues/42)
   and [#44](https://github.com/sternenseemann/spacecookie/pull/44).
-* Requests from clients are now limited to 1MB in size and are received by
-  a single call to `recv(2)`. If this causes issues with any gopher client,
-  please open an issue.
+* Requests from clients are now checked more vigorously and limited to
+  prevent denial of service attacks.
+  * Requests may not exceed 1MB in size
+  * The client is only given 10s to send its request
+  * After the `\r\n` no additional data may be sent
 
 ### Server Users
 
