@@ -60,6 +60,7 @@ executable spacecookie
                      , Network.Spacecookie.Systemd
                      , Network.Spacecookie.FileType
                      , Paths_spacecookie
+  autogen-modules:     Paths_spacecookie
   ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 
 library
