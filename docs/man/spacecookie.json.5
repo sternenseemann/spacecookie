@@ -179,6 +179,19 @@ Default:
 .Qq info .
 .El
 .El
+.Ss DEPRECATED SETTINGS
+The following settings are only supported for backwards compatibility
+and should be replaced in existing configurations in the way described
+for each respectively.
+.Pp
+.Bl -tag -width 2n -offset 0n
+.It Sy port
+The top level
+.Sy port
+is an alias for the setting of the same name inside the
+.Sy listen
+object and should be replaced by the latter.
+.El
 .Sh EXAMPLE
 The following configuration equates to the default behavior of
 .Xr spacecookie 1
