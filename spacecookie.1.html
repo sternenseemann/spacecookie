@@ -86,18 +86,28 @@
     <code class="Nm">spacecookie</code> on demand only and reducing the load on
     server startup. Additionally it means that the daemon doesn't ever need to
     be started as root because it won't need to setup a socket bound to a
-    well-known port. A thing to watch out for is to make sure that the settings
-    in <a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a>
-    match the settings in the
-    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
-    file: Specifically in &#x2018;<code class="Li">listen</code>&#x2019;,
-    &#x2018;<code class="Li">port</code>&#x2019; needs to match the settings in
-    the systemd configuration while &#x2018;<code class="Li">addr</code>&#x2019;
-    won't have any effect. As always
-    &#x2018;<code class="Li">hostname</code>&#x2019; has to be configured
-    correctly as well. <code class="Nm">spacecookie</code> doesn't run any
-    sanity checks comparing the socket from systemd with information from the
-    configuration (yet).</p>
+    well-known port.</p>
+<p class="Pp">Mind the following points when configuring socket activation:</p>
+<ul class="Bl-bullet">
+  <li>The port set in the
+      <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
+      file must match the port configured in
+      <a class="Xr" href="./spacecookie.json.5.html">spacecookie.json(5)</a>.</li>
+  <li>The socket set up by
+      <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>
+      must use the IPv6 address family and the TCP protocol. It is recommended
+      to always set &#x2018;<code class="Li">BindIPv6Only=both</code>&#x2019; in
+      <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>.
+      To listen on an IPv4 address only, you can use an IPv6 socket with a
+      mapped IPv4 address.</li>
+  <li>As always the <b class="Sy">hostname</b> setting must match the public
+      address or hostname the socket is listening on.</li>
+</ul>
+<p class="Pp">Make sure to check your socket configuration settings carefully
+    since <code class="Nm">spacecookie</code> doesn't run any sanity checks on
+    the socket received from
+    <a class="Xr" href="https://manpages.debian.org/unstable/systemd.1.en.html">systemd(1)</a>
+    yet.</p>
 <p class="Pp">An example
     <a class="Xr" href="https://manpages.debian.org/unstable/systemd.service.5.en.html">systemd.service(5)</a>
     and
@@ -154,7 +164,7 @@ By default, <code class="Nm">spacecookie</code> always behaves like a gopher
 </div>
 <table class="foot">
   <tr>
-    <td class="foot-date">March 15, 2021</td>
+    <td class="foot-date">March 16, 2021</td>
     <td class="foot-os">NixOS</td>
   </tr>
 </table>

@@ -95,8 +95,8 @@ The following settings are optional, meaning there is either a default value or
           listen on since it listens on all available addresses for incoming
           requests by default, i. e. <b class="Sy">INADDR_ANY</b>. For example,
           &#x2018;<code class="Li">::1</code>&#x2019; can be used to listen on
-          the link-local addresses only. This is especially useful if you are
-          setting up a onion service using
+          the link-local addresses only which comes in handy if you are setting
+          up a onion service using
           <a class="Xr" href="https://manpages.debian.org/unstable/tor.1.en.html">tor(1)</a>
           and want to avoid leaking the server's identity.
         <p class="Pp">When given,
@@ -131,11 +131,6 @@ The following settings are optional, meaning there is either a default value or
       socket activation. See the
       <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> man page for
       details on setting this up.
-    <p class="Pp">Warning: Errors related to switching user are not fatal,
-        <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> will only
-        log a warning if the
-        <a class="Xr" href="https://manpages.debian.org/unstable/setuid.2.en.html">setuid(2)</a>
-        call fails.</p>
     <p class="Pp">Type: string. Default:
         &#x2018;<code class="Li">null</code>&#x2019;.</p>
   </dd>
@@ -209,9 +204,9 @@ The following configuration equates to the default behavior of
 </pre>
 </div>
 <p class="Pp">This configuration is suitable for running as an onion service: It
-    disables logging completely to not collect any kind of meta data about
-    user's and only listens on the link-local address to avoid leaking its
-    identity. We can also use a non-well-known port since
+    disables logging completely to not collect any kind of meta data about users
+    and only listens on the link-local address to avoid leaking its identity. We
+    can also use a non-well-known port since
     <a class="Xr" href="https://manpages.debian.org/unstable/tor.1.en.html">tor(1)</a>
     allows free mapping from local to exposed ports, so
     <a class="Xr" href="./spacecookie.1.html">spacecookie(1)</a> can be started
@@ -265,7 +260,7 @@ The <code class="Nm">spacecookie.json</code> documentation has been written by
 </div>
 <table class="foot">
   <tr>
-    <td class="foot-date">March 15, 2021</td>
+    <td class="foot-date">March 16, 2021</td>
     <td class="foot-os">NixOS</td>
   </tr>
 </table>
