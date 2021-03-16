@@ -86,22 +86,35 @@ on demand only and reducing the load on server startup.
 Additionally it means that the daemon doesn't ever need
 to be started as root because it won't need to setup a
 socket bound to a well-known port.
-A thing to watch out for is to make sure that the settings in
-.Xr spacecookie.json 5
-match the settings in the
+.Pp
+Mind the following points when configuring socket activation:
+.Bl -bullet
+.It
+The port set in the
 .Xr systemd.socket 5
-file: Specifically in
-.Ql listen ,
-.Ql port
-needs to match the settings in the systemd configuration while
-.Ql addr
-won't have any effect.
-As always
-.Ql hostname
-has to be configured correctly as well.
+file must match the port configured in
+.Xr spacecookie.json 5 .
+.It
+The socket set up by
+.Xr systemd 1
+must use the IPv6 address family and the TCP protocol.
+It is recommended to always set
+.Ql BindIPv6Only=both
+in
+.Xr systemd.socket 5 .
+To listen on an IPv4 address only, you can use an IPv6 socket
+with a mapped IPv4 address.
+.It
+As always the
+.Sy hostname
+setting must match the public address or hostname the socket is listening on.
+.El
+.Pp
+Make sure to check your socket configuration settings carefully since
 .Nm
-doesn't run any sanity checks comparing the socket from systemd
-with information from the configuration (yet).
+doesn't run any sanity checks on the socket received from
+.Xr systemd 1
+yet.
 .Pp
 An example
 .Xr systemd.service 5
