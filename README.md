@@ -34,7 +34,7 @@ spacecookie intentionally does not support:
 ## Documentation
 
 * User Documentation: [spacecookie(1)](https://sternenseemann.github.io/spacecookie/spacecookie.1.html)
-* [Developer Documentation](hackage.haskell.org/package/spacecookie)
+* [Developer Documentation](https://hackage.haskell.org/package/spacecookie)
 
 ## Configuration
 
