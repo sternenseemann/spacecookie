@@ -236,9 +236,13 @@ been abandoned thus.
 
 ## 0.2.1.2 Bump fast-logger
 
+2020-05-23
+
 * Bump fast-logger dependency, fix build
 
 ## 0.2.1.1 Fixed Privilege Dropping
+
+2019-12-10
 
 * Server
   * Make `user` parameter in config optional. If it is not given or set to `null`, `spacecookie` won't attempt
@@ -256,6 +260,8 @@ been abandoned thus.
 
 ## 0.2.1.0 Systemd Support
 
+2019-10-20
+
 * Improved systemd support.
   * Support for the notify service type
   * Support for socket activation and socket (fd) storage
@@ -266,9 +272,13 @@ been abandoned thus.
 
 ## 0.2.0.1 Hackage release
 
+2019-05-23
+
 Fixed a problem hindering the hackage release.
 
 ## 0.2.0.0 initial release
+
+2019-05-23
 
 * First version. Released on an unsuspecting world. Includes:
   * Library for writing any gopher server / application.
