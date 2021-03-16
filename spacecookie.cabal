@@ -24,6 +24,13 @@ extra-source-files:  CHANGELOG.md
                      docs/man/spacecookie-gophermap.5
                      test/data/pygopherd.gophermap
                      test/data/bucktooth.gophermap
+                     test/integration/root/.gophermap
+                     test/integration/root/dir/.hidden
+                     test/integration/root/dir/another/.git-hello
+                     test/integration/root/dir/macintosh.hqx
+                     test/integration/root/dir/mystery-file
+                     test/integration/root/plain.txt
+                     test/integration/spacecookie.json
 
 common common-settings
   default-language:    Haskell2010
