@@ -109,7 +109,7 @@ Such a file looks like this:
 As you can see, it largely works like the actual gopher menu a server will
 send to clients, but allows to omit redundant information and to insert
 lines that are purely informational and not associated with a file.
-[spacecookie-gophermap(5)](https://sternenseemann.github.io/spacecookie/spacecookie-gophermap.5.html)
+[spacecookie.gophermap(5)](https://sternenseemann.github.io/spacecookie/spacecookie.gophermap.5.html)
 explains syntax and semantics in more detail.
 
 The format is compatible with the ones supported by

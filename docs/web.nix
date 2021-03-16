@@ -30,7 +30,7 @@ depot.users.sterni.htmlman {
   pages = [
     { name = "spacecookie";           section = 1; }
     { name = "spacecookie.json";      section = 5; }
-    { name = "spacecookie-gophermap"; section = 5; }
+    { name = "spacecookie.gophermap"; section = 5; }
   ];
   linkXr = "inManDir";
 }

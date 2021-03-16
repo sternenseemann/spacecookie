@@ -21,7 +21,7 @@ extra-source-files:  CHANGELOG.md
                      docs/rfc1436.txt
                      docs/man/spacecookie.1
                      docs/man/spacecookie.json.5
-                     docs/man/spacecookie-gophermap.5
+                     docs/man/spacecookie.gophermap.5
                      test/data/pygopherd.gophermap
                      test/data/bucktooth.gophermap
                      test/integration/root/.gophermap

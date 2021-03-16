@@ -117,7 +117,7 @@ settings.
   ([rendered](https://sternenseemann.github.io/spacecookie/)) on the server daemon:
   * `spacecookie(1)`: daemon invocation and behavior
   * `spacecookie.json(5)`: daemon configuration
-  * `spacecookie-gophermap(5)`: gophermap format documentation
+  * `spacecookie.gophermap(5)`: gophermap format documentation
 * Fix the file not found error message erroneously stating that access of that
   file was not permitted.
 * Clarify error message when an URL: selector is sent to spacecookie.
