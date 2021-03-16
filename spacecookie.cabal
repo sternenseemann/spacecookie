@@ -35,24 +35,24 @@ extra-source-files:  CHANGELOG.md
 common common-settings
   default-language:    Haskell2010
   build-depends:       base >=4.9 && <5
-                     , bytestring
-                     , attoparsec
-                     , directory
+                     , bytestring >= 0.10
+                     , attoparsec >= 0.13
+                     , directory >= 1.3
                      , filepath-bytestring >=1.4
-                     , containers
+                     , containers >= 0.6
 
 common gopher-dependencies
-  build-depends:       unix
-                     , socket
-                     , mtl
-                     , transformers
-                     , text ^>= 1.2
+  build-depends:       unix >= 2.7
+                     , socket >= 0.8.2
+                     , mtl >= 2.2
+                     , transformers >= 0.5
+                     , text >= 1.2
 
 executable spacecookie
   import:              common-settings, gopher-dependencies
   main-is:             Main.hs
   build-depends:       spacecookie
-                     , aeson
+                     , aeson >= 1.5
                      , systemd >= 2.1.0
                      , fast-logger >= 2.4.0
   hs-source-dirs:      server
@@ -72,7 +72,7 @@ library
   other-modules:       Network.Gopher.Types
                      , Network.Gopher.Log
                      , Network.Gopher.Util.Socket
-  build-depends:       hxt-unicode
+  build-depends:       hxt-unicode >= 9.0
                      , async >= 2.2
   ghc-options:         -Wall -Wno-orphans
 
