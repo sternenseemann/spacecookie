@@ -75,6 +75,7 @@ module Network.Gopher (
   -- ** Networking
   , setupGopherSocket
   -- ** Gophermaps
+  -- $gophermapDoc
   , gophermapToDirectoryResponse
   , Gophermap
   , GophermapEntry (..)
@@ -170,6 +171,10 @@ type GopherLogHandler = GopherLogLevel -> GopherLogStr -> IO ()
 --
 -- >>> hideSensitive $ "Look at my " <> makeSensitive "secret"
 -- "Look at my [redacted]"
+
+-- $gophermapDoc
+-- Helper functions for converting 'Gophermap's into 'MenuResponse's.
+-- For parsing gophermap files, refer to "Network.Gopher.Util.Gophermap".
 
 data GopherRequest
   = GopherRequest
