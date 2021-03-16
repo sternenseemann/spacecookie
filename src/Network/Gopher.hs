@@ -99,12 +99,11 @@ import Data.Bifunctor (second)
 import Data.ByteString (ByteString ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (fromMaybe)
 import Data.Word (Word16 ())
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
-import System.Socket.Type.Stream
+import System.Socket.Type.Stream (Stream, sendAllBuilder)
 import System.Socket.Protocol.TCP
 
 -- | Necessary information to handle gopher requests
@@ -379,7 +378,7 @@ handleIncoming clientSock addr@(SocketAddressInet6 cIpv6 _ _ _) = do
 
   rawResponse <- response intermediateResponse
 
-  liftIO $ void (sendAll clientSock rawResponse msgNoSignal) `catch` \e ->
+  liftIO $ void (sendAllBuilder clientSock 10240 rawResponse msgNoSignal) `catch` \e ->
     logException logger "Exception while sending response to client: " (e :: SocketException)
 
 acceptAndHandle :: Socket Inet6 Stream TCP -> GopherM ()
@@ -396,8 +395,8 @@ acceptAndHandle sock = do
 runGopherPure :: GopherConfig -> (GopherRequest -> GopherResponse) -> IO ()
 runGopherPure cfg f = runGopher cfg (fmap pure f)
 
-response :: GopherResponse -> GopherM ByteString
-response (FileResponse str) = pure str
+response :: GopherResponse -> GopherM BB.Builder
+response (FileResponse str) = pure $ BB.byteString str
 response (ErrorResponse reason) = response . MenuResponse $
     [ Item Error reason "Err" Nothing Nothing ]
 response (MenuResponse items) =
@@ -414,5 +413,4 @@ response (MenuResponse items) =
           ]
    in do
   cfg <- serverConfig <$> ask
-  pure . BL.toStrict . BB.toLazyByteString
-    $ foldl (appendItem cfg) mempty items
+  pure $ foldl (appendItem cfg) mempty items
