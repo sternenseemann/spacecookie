@@ -5,13 +5,12 @@
 TL;DR:
 
 * For server users, new features and configuration options have been
-  added and old configuration stays compatible. However some gophermap
+  added, but old configuration stays compatible. However some gophermap
   files may need adjusting, especially if they contain absolute paths
   not starting with a slash.
-* For library users there are multiple braking changes
-  to core APIs that probably need adjusting in downstream usage as well
-  as some changes to behavior. Please read through the fairly detailed
-  [changelog below](#library-users)
+* For library users there are multiple braking changes to the core API
+  that probably need adjusting in downstream usage as well as some
+  changes to behavior.
 
 ### Server and Library Users
 
@@ -26,17 +25,17 @@ against sample files from bucktooth and pygopherd.
 We now support relative paths correctly: If a selector in a gophermap doesn't
 start with `/` or `URL:` it is interpreted as a relative path and prefixed
 with the directory the gophermap is located in. This should make writing
-gophermaps much more convenient, as it isn't necessary anymore to enter
-absolute selectors. However, absolute selectors not starting with `/`
-are broken by this.
+gophermaps much more convenient, as it isn't necessary to enter absolute
+selectors anymore. However, absolute selectors not starting with `/`
+are **broken** by this.
 
 To facilitate these changes, the API of `Network.Gopher.Util.Gophermap`
 changed in the following way:
 
 * `GophermapEntry` changed to use `GophermapFilePath` instead of `FilePath`
   which may either be `GophermapAbsolute`, `GophermapRelative` or `GophermapUrl`.
-  Similar to the changes elsewhere, `GophermapFilePath` is a wrapper around
-  `RawFilePath`.
+  Additionally, `GophermapFilePath` is a wrapper around `RawFilePath`, contrary
+  to the previous use of `FilePath`.
 * `gophermapToDirectoryResponse` takes an additional parameter describing
   the directory the gophermap is located in to resolve relative to absolute
   selectors.
@@ -62,7 +61,7 @@ The remaining, less significant changes are:
   relied on this behavior.
 * `parseGophermap` now consumes the end of input.
 
-#### Other changes
+#### Changes to Connection Handling
 
 * We now wait up to 1 second for the client to close the connection on
   their side after sending all data. This fixes an issue specific to
@@ -70,8 +69,8 @@ The remaining, less significant changes are:
   56) randomly.
   See also [#42](https://github.com/sternenseemann/spacecookie/issues/42)
   and [#44](https://github.com/sternenseemann/spacecookie/pull/44).
-* Requests from clients are now checked more vigorously and limited to
-  prevent denial of service attacks.
+* Requests from clients are now checked more vigorously and limited
+  in size and time to prevent denial of service attacks.
   * Requests may not exceed 1MB in size
   * The client is only given 10s to send its request
   * After the `\r\n` no additional data may be sent
@@ -108,7 +107,7 @@ settings.
 
 * A not allowed error is now generated if there are any dot directories or
   dot files along the path: `/foo/.dot/bar` would now generate an error
-  instead of being processed like before. This is a **breaking change**.
+  instead of being processed like before.
 * GHC RTS options are now enabled and the default option `-I10` is passed to
   spacecookie.
 * Exit if dropping privileges fails instead of just logging an error like before.
@@ -126,8 +125,6 @@ settings.
   can't be parsed.
 * A warning is now logged when a gophermap file doesn't parse and the standard
   directory response is used as fallback.
-
-<a name="library-users"></a>
 
 ### Library Users
 
@@ -163,8 +160,8 @@ This prompts the following additional, breaking changes:
   usage).
 * `sanitizePath` and `sanitizeIfNotUrl` now operate on `RawFilePath`s
   (which is an alias for `ByteString`).
-* The gophermap API uses `RawFilePath`s instead of `FilePath`s as well,
-  for details read on.
+* As already mentioned, the gophermap API uses `RawFilePath`s instead
+  of `FilePath`s as well.
 
 See also [#38](https://github.com/sternenseemann/spacecookie/pull/38)
 and [#26](https://github.com/sternenseemann/spacecookie/issues/26).
@@ -197,8 +194,8 @@ want) is to let the library user implement logging. This allows any target
 output, any kind of logging, any kind of clock interaction to generate
 timestamps (or not) etc. This is why the spacecookie library no longer
 implements logging. Instead it lets you configure a `GopherLogHandler`
-which also can be used by the user application as it is a simple `IO`
-action. This additionally scales well: In the simplest case this could
+which may also be used by the user application (it is a simple `IO`
+action). This additionally scales well: In the simplest case this could
 be a trivial wrapper around `putStrLn`.
 
 The second part to the solution is `GopherLogStr` which is the string type
@@ -220,8 +217,8 @@ The new logging mechanism was implemented in
 Previously it was attempted to make built-in logging more configurable
 (see [#13](https://github.com/sternenseemann/spacecookie/issues/13) and
 [#19](https://github.com/sternenseemann/spacecookie/pull/19)), but this
-was overly complicated and not as flexible as the new solution. It has
-been abandoned thus.
+was overly complicated and not as flexible as the new solution. Therefore
+it was scrapped in favor of the new system.
 
 #### Other Changes
 
@@ -230,6 +227,8 @@ been abandoned thus.
   ready action of `runGopherManual`. The formerly internal `dropPrivileges`
   function is now available via `Network.Gopher.Util` to be used for this
   purpose. See [#45](https://github.com/sternenseemann/spacecookie/pull/45).
+  This is a **breaking change** and requires adjustment if you used the built
+  in privilege deescalation capabilities.
 * `santinizePath` and `santinizeIfNotUrl` have been corrected to `sanitizePath`
   and `sanitizeIfNotUrl` respectively. This is a **breaking change** to the
   interface of `Network.Gopher.Util`.
