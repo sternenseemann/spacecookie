@@ -79,8 +79,8 @@ for incoming requests by default, i. e.
 .Sy INADDR_ANY .
 For example,
 .Ql ::1
-can be used to listen on the link-local addresses only.
-This is especially useful if you are setting up a onion service using
+can be used to listen on the link-local addresses only
+which comes in handy if you are setting up a onion service using
 .Xr tor 1
 and want to avoid leaking the server's identity.
 .Pp
@@ -202,7 +202,7 @@ for all optional settings, although it is much verboser than necessary.
 .Ed
 .Pp
 This configuration is suitable for running as an onion service:
-It disables logging completely to not collect any kind of meta data about user's
+It disables logging completely to not collect any kind of meta data about users
 and only listens on the link-local address to avoid leaking its identity.
 We can also use a non-well-known port since
 .Xr tor 1
