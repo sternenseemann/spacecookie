@@ -1,6 +1,8 @@
 # Revision history for spacecookie
 
-## 1.0.0.0 (UNRELEASED)
+## 1.0.0.0
+
+2021-03-16
 
 TL;DR:
 
