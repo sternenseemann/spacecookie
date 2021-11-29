@@ -18,7 +18,9 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
       - name: Build web output
         run: |
-          nix-build -A deploy docs/web.nix
+          nix-build -A deploy docs/web.nix \
+            --option substituters 'https://cache.tvl.su' \
+            --option trusted-public-keys 'cache.tvl.su:kjc6KOMupXc1vHVufJUoDUYeLzbwSr9abcAKdn/U1Jk='
           ./result -w tmp
       - name: Deploy output to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@4.1.7
