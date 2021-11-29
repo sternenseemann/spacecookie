@@ -1,5 +1,11 @@
 # Revision history for spacecookie
 
+## 1.0.0.1
+
+2021-11-29
+
+This release fixes compilation with `aeson >= 2.0`.
+
 ## 1.0.0.0
 
 2021-03-16
