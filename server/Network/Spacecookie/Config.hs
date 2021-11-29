@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP               #-}
 module Network.Spacecookie.Config
   ( Config (..)
   , LogConfig (..)
@@ -23,7 +24,13 @@ data Config
   , logConfig     :: LogConfig
   }
 
+-- We only use string literals with 'maybePath', so we can just switch between
+-- Key and Text, since both have an IsString instance for OverloadedStrings.
+#if MIN_VERSION_aeson(2,0,0)
+maybePath :: FromJSON a => [Key] -> Object -> Parser (Maybe a)
+#else
 maybePath :: FromJSON a => [Text] -> Object -> Parser (Maybe a)
+#endif
 maybePath []     _ = fail "got empty path"
 maybePath [x]    v = v .:? x
 maybePath (x:xs) v = v .:? x >>= fmap join . traverse (maybePath xs)
