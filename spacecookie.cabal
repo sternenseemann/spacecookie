@@ -52,7 +52,7 @@ executable spacecookie
   import:              common-settings, gopher-dependencies
   main-is:             Main.hs
   build-depends:       spacecookie
-                     , aeson >= 1.5
+                     , aeson >= 1.5 && < 2.0
                      , systemd >= 2.1.0
                      , fast-logger >= 2.4.0
   hs-source-dirs:      server
