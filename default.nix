@@ -42,6 +42,4 @@ in
 
 if !pkgs.lib.inNixShell
 then profiled.spacecookie
-else profiled.spacecookie.env.overrideAttrs (old: {
-  nativeBuildInputs = old.nativeBuildInputs ++ [ profiled.policeman ];
-})
+else profiled.spacecookie.env
