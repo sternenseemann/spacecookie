@@ -40,6 +40,15 @@ common common-settings
                      , directory >= 1.3
                      , filepath-bytestring >=1.4
                      , containers >= 0.6
+  ghc-options:
+      -- Needed by curl to work reliably in the test suite
+      -- https://github.com/GaloisInc/curl/pull/25
+      -threaded
+      -Wall
+      -Wno-orphans
+      -- Limit frequency of the idle GC to every 10s
+      -rtsopts
+      -with-rtsopts=-I10
 
 common gopher-dependencies
   build-depends:       unix >= 2.7
@@ -61,7 +70,6 @@ executable spacecookie
                      , Network.Spacecookie.FileType
                      , Paths_spacecookie
   autogen-modules:     Paths_spacecookie
-  ghc-options:         -Wall -Wno-orphans -rtsopts -with-rtsopts=-I10 -threaded
 
 library
   import:              common-settings, gopher-dependencies
@@ -74,7 +82,6 @@ library
                      , Network.Gopher.Util.Socket
   build-depends:       hxt-unicode >= 9.0
                      , async >= 2.2
-  ghc-options:         -Wall -Wno-orphans
 
 test-suite test
   import:              common-settings
@@ -91,7 +98,6 @@ test-suite test
                      , spacecookie
                      , process >=1.2.0
                      , download-curl >=0.1
-  ghc-options:         -Wall -Wno-orphans
 
 source-repository head
   type: git
