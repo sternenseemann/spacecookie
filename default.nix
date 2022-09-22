@@ -21,12 +21,10 @@ let
         (drv: {
           version = "unstable";
           # build from sdist to make sure it isn't missing anything
-          src = pkgs.runCommandNoCC "spacecookie-sdist.tar.gz" {} ''
-            export HOME="$(mktemp -d)"
-            cd ${src}
-            ${self.cabal-install}/bin/cabal v2-sdist \
-              --builddir="$HOME/dist" --verbose=0 -o - > "$out"
-          '';
+          src = self.cabalSdist {
+            src = ./.;
+            name = "spacecookie-unstable-sdist.tar.gz";
+          };
           # run integration test
           preCheck = ''
             export SPACECOOKIE_TEST_BIN=./dist/build/spacecookie/spacecookie
