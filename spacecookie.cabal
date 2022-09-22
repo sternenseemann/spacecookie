@@ -79,7 +79,7 @@ library
 test-suite test
   import:              common-settings
   type:                exitcode-stdio-1.0
-  main-is:             Main.hs
+  main-is:             EntryPoint.hs
   hs-source-dirs:      test, server
   other-modules:       Test.FileTypeDetection
                      , Test.Gophermap
