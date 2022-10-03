@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "spacecookie";
-  version = "1.0.0.0";
+  version = "1.0.0.2";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
@@ -25,5 +25,6 @@ mkDerivation {
   ];
   homepage = "https://github.com/sternenseemann/spacecookie";
   description = "Gopher server library and daemon";
-  license = lib.licenses.gpl3;
+  license = lib.licenses.gpl3Only;
+  mainProgram = "spacecookie";
 }

@@ -1,5 +1,14 @@
 # Revision history for spacecookie
 
+## 1.0.0.2
+
+2022-10-03
+
+* Work around [cabal#8458](https://github.com/haskell/cabal/issues/8458),
+  ensuring that the test suite can be compiled with `cabal-install` 3.8.1.0.
+* Always compile test suite with `-threaded` to avoid random
+  `CurlBadFunctionArg` exceptions when executing integration tests.
+
 ## 1.0.0.1
 
 2021-11-29

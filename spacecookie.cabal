@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                spacecookie
-version:             1.0.0.1
+version:             1.0.0.2
 synopsis:            Gopher server library and daemon
 description:         Simple gopher library that allows writing custom gopher
                      applications. Also includes a fully-featured gopher server
@@ -8,7 +8,7 @@ description:         Simple gopher library that allows writing custom gopher
 license:             GPL-3.0-only
 license-file:        LICENSE
 author:              Lukas Epple
-maintainer:          sterni-spacecookie@systemli.org
+maintainer:          sternenseemann@systemli.org
 category:            Network
 build-type:          Simple
 homepage:            https://github.com/sternenseemann/spacecookie
