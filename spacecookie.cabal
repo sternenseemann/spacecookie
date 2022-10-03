@@ -41,11 +41,14 @@ common common-settings
                      , filepath-bytestring >=1.4
                      , containers >= 0.6
   ghc-options:
+      -Wall
+      -Wno-orphans
+
+common common-executables
+  ghc-options:
       -- Needed by curl to work reliably in the test suite
       -- https://github.com/GaloisInc/curl/pull/25
       -threaded
-      -Wall
-      -Wno-orphans
       -- Limit frequency of the idle GC to every 10s
       -rtsopts
       -with-rtsopts=-I10
@@ -58,7 +61,7 @@ common gopher-dependencies
                      , text >= 1.2
 
 executable spacecookie
-  import:              common-settings, gopher-dependencies
+  import:              common-settings, common-executables, gopher-dependencies
   main-is:             Main.hs
   build-depends:       spacecookie
                      , aeson >= 1.5
@@ -84,7 +87,7 @@ library
                      , async >= 2.2
 
 test-suite test
-  import:              common-settings
+  import:              common-settings, common-executables
   type:                exitcode-stdio-1.0
   main-is:             EntryPoint.hs
   hs-source-dirs:      test, server
