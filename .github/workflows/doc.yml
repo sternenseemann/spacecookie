@@ -23,7 +23,7 @@ jobs:
             --option trusted-public-keys 'cache.tvl.su:kjc6KOMupXc1vHVufJUoDUYeLzbwSr9abcAKdn/U1Jk='
           ./result -w tmp
       - name: Deploy output to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           BRANCH: gh-pages
