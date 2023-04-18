@@ -1,7 +1,7 @@
 { depotSrc ? builtins.fetchGit {
     url = "https://code.tvl.fyi";
     ref = "canon";
-    rev = "9e16d708092e88d0013ef96ef9a33ec28b2c46ea";
+    rev = "e056a03614cbac87273e6de02b412c6245a902be";
   }
 }:
 
