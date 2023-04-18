@@ -19,8 +19,8 @@ jobs:
       - name: Build web output
         run: |
           nix-build -A deploy docs/web.nix \
-            --option substituters 'https://cache.tvl.su' \
-            --option trusted-public-keys 'cache.tvl.su:kjc6KOMupXc1vHVufJUoDUYeLzbwSr9abcAKdn/U1Jk='
+            --option substituters 'https://cache.tvl.su https://cache.nixos.org' \
+            --option trusted-public-keys 'cache.tvl.su:kjc6KOMupXc1vHVufJUoDUYeLzbwSr9abcAKdn/U1Jk= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY='
           ./result -w tmp
       - name: Deploy output to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.4.1
