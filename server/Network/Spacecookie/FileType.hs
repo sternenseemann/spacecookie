@@ -4,6 +4,7 @@ module Network.Spacecookie.FileType
   , gopherFileType
   -- exposed for tests
   , lookupSuffix
+  , checkNoDotFiles
   ) where
 
 import Control.Applicative ((<|>))
