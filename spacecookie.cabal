@@ -94,6 +94,7 @@ test-suite test
   other-modules:       Test.FileTypeDetection
                      , Test.Gophermap
                      , Test.Integration
+                     , Test.Sanitization
                      , Network.Spacecookie.FileType
   build-depends:       tasty >=1.2
                      , tasty-hunit >=0.10
