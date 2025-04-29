@@ -8,11 +8,11 @@ jobs:
   doc:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.5.2
-      - uses: cachix/install-nix-action@v20
+      - uses: actions/checkout@v4.2.2
+      - uses: cachix/install-nix-action@v31.2.0
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - uses: cachix/cachix-action@v12
+      - uses: cachix/cachix-action@v16
         with:
           name: spacecookie
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
@@ -23,7 +23,7 @@ jobs:
             --option trusted-public-keys 'cache.tvl.su:kjc6KOMupXc1vHVufJUoDUYeLzbwSr9abcAKdn/U1Jk= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY='
           ./result -w tmp
       - name: Deploy output to GitHub Pages
-        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        uses: JamesIves/github-pages-deploy-action@v4.7.3
         with:
           GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
           BRANCH: gh-pages
