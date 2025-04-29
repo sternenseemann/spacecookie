@@ -104,8 +104,8 @@ test-suite test
 
 source-repository head
   type: git
-  location: git://github.com/sternenseemann/spacecookie.git
+  location: https://github.com/sternenseemann/spacecookie.git
 
 source-repository head
   type: git
-  location: git://code.sterni.lv/spacecookie
+  location: https://code.sterni.lv/spacecookie
