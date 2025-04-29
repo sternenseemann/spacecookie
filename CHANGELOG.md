@@ -1,5 +1,27 @@
 # Revision history for spacecookie
 
+## 1.0.0.3
+
+2025-05-03
+
+**Security fix**:
+Resolve `sanitizePath` not eliminating `..` from paths. This affects users
+of `sanitizePath` and `sanitizePathIfNotUrl` from `Network.Gopher.Util`.
+
+This issue only affects the spacecookie library, not the spacecookie server
+daemon since a separate check would prevent it from handling such malicious
+requests (which delayed the discovery of this bug). It is probably wise to
+upgrade either way.
+
+Note that gophermap parsing behavior is unchanged, i.e. it just `normalise`s
+paths, even though `makeGophermapFilePath` used to call `sanitizePath` in
+previous versions. This is due to the assumption that gophermaps come from a
+trusted source and/or paths produced from gophermap parsing aren't used to
+access files directly, i.e. those paths are only served to clients (whose later
+requests are subject to selector sanitization) as selectors in menus. If those
+assumptions don't hold for your code, you will need to further sanitize the
+paths returned from `gophermapToDirectoryResponse`.
+
 ## 1.0.0.2
 
 2022-10-03
@@ -25,7 +47,7 @@ TL;DR:
   added, but old configuration stays compatible. However some gophermap
   files may need adjusting, especially if they contain absolute paths
   not starting with a slash.
-* For library users there are multiple braking changes to the core API
+* For library users there are multiple breaking changes to the core API
   that probably need adjusting in downstream usage as well as some
   changes to behavior.
 

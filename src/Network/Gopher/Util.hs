@@ -27,7 +27,7 @@ import qualified Data.ByteString as B
 import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath)
+import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath, equalFilePath)
 import System.Posix.User
 
 -- | 'chr' a 'Word8'
@@ -67,8 +67,11 @@ stripNewline s
 
 -- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
 sanitizePath :: RawFilePath -> RawFilePath
-sanitizePath = joinPath
-  . filter (\p -> p /= ".." && p /= ".")
+sanitizePath =
+  -- To retain prior behavior @"."@ after normalisation is mapped to @""@
+  (\p -> if p == "." then "" else p)
+  . joinPath
+  . filter (\p -> not (equalFilePath p ".."))
   . splitPath . normalise
 
 -- | Use 'sanitizePath' except if the path starts with @URL:@

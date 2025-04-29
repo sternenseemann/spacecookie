@@ -30,9 +30,7 @@ pathSanitization = testCase "sanitizePath behavior" $ do
   assertSanitize "/" "/."
   assertSanitize "home/eve/" "./home/./././eve////./."
 
-  -- FIXME: This is a security relevant bug if checkNoDotFiles isn't used (e.g.
-  -- by library dependents)
-  assertSanitize  "/home/bob/../alice/private.txt" "/home/bob/../alice/private.txt"
+  assertSanitize  "/home/bob/alice/private.txt" "/home/bob/../alice/private.txt"
 
 dotFileDetectionTest :: TestTree
 dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" $ do
@@ -57,14 +55,9 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
   assertDot "/home/alice/.config/foot" True
   assertDot "./nixpkgs/.git/config" True
 
-  let traversal = "dir/../traversal/../attack"
-  assertDot traversal True
-  -- FIXME: This is due to a bug in sanitizePath
-  assertEqual traversal (Left PathIsNotAllowed) $ checkNoDotFiles $ sanitizePath $ uEncode traversal
-
   -- only fail prior to sanitization
   forM_
-    [ "./.", "relative/./path" ]
+    [ "./.", "relative/./path", "dir/../traversal/../attack", "../../../actual/traversal" ]
     $ \p -> do
         let p' = uEncode p
         assertEqual p (Left PathIsNotAllowed) $ checkNoDotFiles p'

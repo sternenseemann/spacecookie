@@ -6,7 +6,7 @@
 }:
 mkDerivation {
   pname = "spacecookie";
-  version = "1.0.0.2";
+  version = "1.0.0.3";
   src = ./.;
   isLibrary = true;
   isExecutable = true;
