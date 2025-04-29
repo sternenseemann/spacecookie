@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Test.Sanitization (sanitizationTests) where
 
 import Network.Gopher.Util (uEncode, sanitizePath)
@@ -9,8 +10,29 @@ import Test.Tasty.HUnit
 
 sanitizationTests :: TestTree
 sanitizationTests = testGroup "Sanitization of user input"
- [ dotFileDetectionTest
+ [ pathSanitization
+ , dotFileDetectionTest
  ]
+
+pathSanitization :: TestTree
+pathSanitization = testCase "sanitizePath behavior" $ do
+  let assertSanitize e p = assertEqual p e $ sanitizePath (uEncode p)
+  assertSanitize "/root" "/root"
+  assertSanitize "/home/alice/.emacs.d/init.el" "/home/alice/.emacs.d/init.el"
+
+  assertSanitize "root" "./root"
+  assertSanitize"/tools/magrathea" "//tools/magrathea"
+  assertSanitize "/home/bob/Documents/important.txt" "/home/bob//Documents/important.txt"
+
+  assertSanitize "foo/bar/baz.txt" "./foo/bar/./baz.txt"
+  assertSanitize "/var/www/index..html" "/var/www/.///index..html"
+  assertSanitize "./" "./."
+  assertSanitize "/" "/."
+  assertSanitize "home/eve/" "./home/./././eve////./."
+
+  -- FIXME: This is a security relevant bug if checkNoDotFiles isn't used (e.g.
+  -- by library dependents)
+  assertSanitize  "/home/bob/../alice/private.txt" "/home/bob/../alice/private.txt"
 
 dotFileDetectionTest :: TestTree
 dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" $ do
@@ -35,8 +57,11 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
   assertDot "/home/alice/.config/foot" True
   assertDot "./nixpkgs/.git/config" True
 
-  -- unexpected cases
-  assertDot "path/../traversal/../attack" True
+  let traversal = "dir/../traversal/../attack"
+  assertDot traversal True
+  -- FIXME: This is due to a bug in sanitizePath
+  assertEqual traversal (Left PathIsNotAllowed) $ checkNoDotFiles $ sanitizePath $ uEncode traversal
+
   -- only fail prior to sanitization
   forM_
     [ "./.", "relative/./path" ]
