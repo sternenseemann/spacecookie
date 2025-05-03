@@ -77,10 +77,10 @@ data GophermapFilePath
 --     considered as an external URL and left as-is.
 --   * everything else is considered a relative path
 makeGophermapFilePath :: ByteString -> GophermapFilePath
-makeGophermapFilePath b =
-  fromMaybe (GophermapRelative $ sanitizePath b)
-    $ boolToMaybe ("URL:" `isPrefixOf` b) (GophermapUrl b)
-    <|> boolToMaybe ("/" `isPrefixOf` b) (GophermapAbsolute $ sanitizePath b)
+makeGophermapFilePath b
+  | "URL:" `isPrefixOf` b = GophermapUrl b
+  | "/" `isPrefixOf` b = GophermapAbsolute $ sanitizePath b
+  | otherwise = GophermapRelative $ sanitizePath b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
