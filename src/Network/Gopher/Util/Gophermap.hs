@@ -81,8 +81,10 @@ data GophermapFilePath
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b
   | "URL:" `isPrefixOf` b = GophermapUrl b
-  | isAbsolute b = GophermapAbsolute $ normalise b
-  | otherwise = GophermapRelative $ normalise b
+  | isAbsolute b = GophermapAbsolute normalisedPath
+  | otherwise = GophermapRelative normalisedPath
+  where
+    normalisedPath = normalise b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry
