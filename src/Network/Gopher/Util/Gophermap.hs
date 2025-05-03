@@ -40,7 +40,7 @@ import Data.ByteString (ByteString (), pack, unpack, isPrefixOf)
 import Data.Maybe (fromMaybe)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix.ByteString (RawFilePath, (</>))
+import System.FilePath.Posix.ByteString (RawFilePath, (</>), isAbsolute)
 
 -- | Given a directory and a Gophermap contained within it,
 --   return the corresponding gopher menu response.
@@ -79,7 +79,7 @@ data GophermapFilePath
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b
   | "URL:" `isPrefixOf` b = GophermapUrl b
-  | "/" `isPrefixOf` b = GophermapAbsolute $ sanitizePath b
+  | isAbsolute b = GophermapAbsolute $ sanitizePath b
   | otherwise = GophermapRelative $ sanitizePath b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
