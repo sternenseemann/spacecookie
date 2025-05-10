@@ -1,8 +1,7 @@
 { mkDerivation, aeson, async, attoparsec, base, bytestring
-, containers, directory, download-curl, fast-logger
-, filepath-bytestring, hxt-unicode, lib, mtl, process, socket
-, systemd, tasty, tasty-expected-failure, tasty-hunit, text
-, transformers, unix
+, containers, directory, download-curl, fast-logger, filepath
+, hxt-unicode, lib, mtl, os-string, process, socket, systemd, tasty
+, tasty-expected-failure, tasty-hunit, text, transformers, unix
 }:
 mkDerivation {
   pname = "spacecookie";
@@ -11,17 +10,16 @@ mkDerivation {
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [
-    async attoparsec base bytestring containers directory
-    filepath-bytestring hxt-unicode mtl socket text transformers unix
+    async attoparsec base bytestring containers directory filepath
+    hxt-unicode mtl os-string socket text transformers unix
   ];
   executableHaskellDepends = [
     aeson attoparsec base bytestring containers directory fast-logger
-    filepath-bytestring mtl socket systemd text transformers unix
+    filepath mtl os-string socket systemd text transformers unix
   ];
   testHaskellDepends = [
     attoparsec base bytestring containers directory download-curl
-    filepath-bytestring process tasty tasty-expected-failure
-    tasty-hunit
+    filepath os-string process tasty tasty-expected-failure tasty-hunit
   ];
   homepage = "https://github.com/sternenseemann/spacecookie";
   description = "Gopher server library and daemon";

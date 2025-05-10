@@ -2,6 +2,7 @@
 
 let
   hl = pkgs.haskell.lib;
+  inherit (pkgs) lib;
 
   src = builtins.path {
     name = "spacecookie-source";
@@ -10,7 +11,12 @@ let
       (builtins.readFile ./.gitignore) ./.;
   };
 
-  profiled = pkgs.haskellPackages.override {
+  haskellPackages =
+    if lib.versionAtLeast pkgs.haskellPackages.ghc.version "9.12"
+    then pkgs.haskellPackages
+    else pkgs.haskell.packages.ghc912;
+
+  profiled = haskellPackages.override {
     overrides = self: super: {
       mkDerivation = args: super.mkDerivation (args // {
         enableLibraryProfiling = true;

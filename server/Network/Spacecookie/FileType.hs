@@ -13,11 +13,12 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Network.Gopher (GopherFileType (..))
 import Network.Gopher.Util (boolToMaybe, asciiToLower)
-import System.Directory (doesDirectoryExist, doesFileExist)
-import System.FilePath.Posix.ByteString ( RawFilePath, takeExtension
-                                        , splitDirectories, decodeFilePath)
+import System.Directory.OsPath (doesDirectoryExist, doesFileExist)
+import System.OsPath.Posix ( PosixPath, takeExtension
+                           , splitDirectories)
+import System.OsString.Posix (PosixString)
 
-fileTypeMap :: M.Map RawFilePath GopherFileType
+fileTypeMap :: M.Map PosixString GopherFileType
 fileTypeMap = M.fromList
   [ (".gif", GifFile)
   , (".png", ImageFile)
@@ -62,7 +63,7 @@ fileTypeMap = M.fromList
   , (".hqx", BinHexMacintoshFile)
   ]
 
-lookupSuffix :: RawFilePath -> GopherFileType
+lookupSuffix :: PosixPath -> GopherFileType
 lookupSuffix = fromMaybe File
   . (flip M.lookup) fileTypeMap
   . B.map asciiToLower
@@ -75,7 +76,7 @@ data PathError
 -- | Action in the 'Either' monad which causes a
 --   failure if there's any dot files or directory
 --   in the given path
-checkNoDotFiles :: RawFilePath -> Either PathError ()
+checkNoDotFiles :: PosixPath -> Either PathError ()
 checkNoDotFiles path = do
   -- this prevents relative directories from being
   -- forbidden while singular '.' in the path somewhere
@@ -92,14 +93,13 @@ checkNoDotFiles path = do
 --   protocol for a given file and returns a descriptive error
 --   if the file is not accessible or a dot file (and thus not
 --   allowed to access)
-gopherFileType :: RawFilePath -> IO (Either PathError GopherFileType)
+gopherFileType :: PosixPath -> IO (Either PathError GopherFileType)
 gopherFileType path = (checkNoDotFiles path >>) <$> do
-  let pathWide = decodeFilePath path
-  isDir <- doesDirectoryExist pathWide
+  isDir <- doesDirectoryExist path
   if isDir
     then pure $ Right Directory
     else do
-      fileExists <- doesFileExist pathWide
+      fileExists <- doesFileExist path
       pure $
         if fileExists
           then Right $ lookupSuffix $ takeExtension path

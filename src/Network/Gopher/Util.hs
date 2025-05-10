@@ -5,6 +5,7 @@ Portability : POSIX
 
 Helper utilities used within the library and the server which also could be useful for other application code.
 -}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Network.Gopher.Util (
   -- * Security
@@ -27,7 +28,8 @@ import qualified Data.ByteString as B
 import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath, equalFilePath)
+import System.OsPath.Posix (PosixPath, PosixString, normalise, joinPath, splitPath, equalFilePath)
+import qualified System.OsString.Posix as PosixString
 import System.Posix.User
 
 -- | 'chr' a 'Word8'
@@ -49,6 +51,7 @@ asciiToLower w =
         lower :: Int
         lower = ord . toLower . asciiChr $ w
 
+-- TODO: use safe interface (in case of surrogates…)?
 -- | Encode a 'String' to a UTF-8 'ByteString'
 uEncode :: String -> ByteString
 uEncode = B.pack . U.encode
@@ -66,19 +69,19 @@ stripNewline s
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
 -- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
-sanitizePath :: RawFilePath -> RawFilePath
+sanitizePath :: PosixPath -> PosixPath
 sanitizePath =
   -- To retain prior behavior @"."@ after normalisation is mapped to @""@
-  (\p -> if p == "." then "" else p)
+  (\p -> if p == PosixString.fromBytestring "." then PosixString.empty else p)
   . joinPath
-  . filter (\p -> not (equalFilePath p ".."))
+  . filter (\p -> not (equalFilePath p (PosixString.fromBytestring "..")))
   . splitPath . normalise
 
 -- | Use 'sanitizePath' except if the path starts with @URL:@
 --   in which case the original string is returned.
-sanitizeIfNotUrl :: RawFilePath -> RawFilePath
+sanitizeIfNotUrl :: PosixPath -> PosixPath
 sanitizeIfNotUrl path =
-  if "URL:" `B.isPrefixOf` path
+  if PosixString.fromBytestring "URL:" `PosixString.isPrefixOf` path
     then path
     else sanitizePath path
 

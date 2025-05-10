@@ -1,0 +1,9 @@
+* [x] proof read man pages
+* [x] proof read changelog, see if anything is missing
+* [x] man page installation?
+* [x] check sdist contents
+* [x] introduce lower version bounds for everything
+* [x] bump number and release
+* [x] stackage
+* [x] aeson 2.0
+* [ ] text responess

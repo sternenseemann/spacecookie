@@ -31,6 +31,8 @@ pathSanitization = testCase "sanitizePath behavior" $ do
   assertSanitize "home/eve/" "./home/./././eve////./."
 
   assertSanitize  "/home/bob/alice/private.txt" "/home/bob/../alice/private.txt"
+  assertSanitize  "alice/private.txt" "../alice/private.txt"
+  assertSanitize  "/alice/private.txt" "/../alice/private.txt"
 
 dotFileDetectionTest :: TestTree
 dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" $ do
