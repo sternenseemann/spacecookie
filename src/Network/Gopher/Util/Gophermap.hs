@@ -70,14 +70,18 @@ data GophermapFilePath
   | GophermapUrl RawFilePath      -- ^ URL to another protocol starting with @URL:@
   deriving (Show, Eq)
 
--- | Take 'ByteString' from gophermap, decode it,
---   sanitize and determine path type.
+-- | Take selector 'ByteString' from gophermap and
+--   determine its 'GophermapFilePath' type.
+--   Relative and absolute paths are 'normalised',
+--   URLs passed on as is.
 --
---   * Gophermap paths that start with a slash are
---     considered to be absolute.
---   * Gophermap paths that start with "URL:" are
---     considered as an external URL and left as-is.
---   * everything else is considered a relative path
+--   * Selectors that start with @"URL:"@ are considered
+--     an external URL and left as-is.
+--   * Absolute paths are identified by 'isAbsolute'.
+--   * Everything else is considered a relative path.
+--
+--   Paths are 'normalise'-d, but not subject to any other
+--   processing.
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b
   | "URL:" `isPrefixOf` b = GophermapUrl b
