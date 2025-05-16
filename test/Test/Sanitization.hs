@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Sanitization (sanitizationTests) where
 
-import Network.Gopher.Util (uEncode, sanitizePath)
+import Network.Gopher.Util (uEncode)
 import Network.Spacecookie.FileType (checkNoDotFiles, PathError (..))
+import Network.Spacecookie.Sanitization
 
 import Control.Monad (forM_)
 import Test.Tasty

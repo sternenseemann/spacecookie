@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Network.Spacecookie.Config
 import Network.Spacecookie.FileType
+import Network.Spacecookie.Sanitization
 import Network.Spacecookie.Systemd
 
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (sanitizePath, boolToMaybe, dropPrivileges)
+import Network.Gopher.Util (boolToMaybe, dropPrivileges)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Control.Applicative ((<|>))

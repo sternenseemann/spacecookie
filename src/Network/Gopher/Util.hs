@@ -8,8 +8,7 @@ Helper utilities used within the library and the server which also could be usef
 {-# LANGUAGE OverloadedStrings #-}
 module Network.Gopher.Util (
   -- * Security
-    sanitizePath
-  , dropPrivileges
+    dropPrivileges
   -- * String Encoding
   , asciiOrd
   , asciiChr
@@ -26,7 +25,6 @@ import qualified Data.ByteString as B
 import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-import System.FilePath.Posix.ByteString (RawFilePath, normalise, joinPath, splitPath, equalFilePath)
 import System.Posix.User
 
 -- | 'chr' a 'Word8'
@@ -63,15 +61,6 @@ stripNewline s
   | B.head s `elem`
     (map (fromIntegral . ord) "\n\r") = stripNewline (B.tail s)
   | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
-
--- | Normalise a path and prevent <https://en.wikipedia.org/wiki/Directory_traversal_attack directory traversal attacks>.
-sanitizePath :: RawFilePath -> RawFilePath
-sanitizePath =
-  -- To retain prior behavior @"."@ after normalisation is mapped to @""@
-  (\p -> if p == "." then "" else p)
-  . joinPath
-  . filter (\p -> not (equalFilePath p ".."))
-  . splitPath . normalise
 
 -- | prop> boolToMaybe True x == Just x
 --   prop> boolToMaybe False x == Nothing
