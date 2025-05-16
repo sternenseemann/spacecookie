@@ -9,7 +9,6 @@ Helper utilities used within the library and the server which also could be usef
 module Network.Gopher.Util (
   -- * Security
     sanitizePath
-  , sanitizeIfNotUrl
   , dropPrivileges
   -- * String Encoding
   , asciiOrd
@@ -73,14 +72,6 @@ sanitizePath =
   . joinPath
   . filter (\p -> not (equalFilePath p ".."))
   . splitPath . normalise
-
--- | Use 'sanitizePath' except if the path starts with @URL:@
---   in which case the original string is returned.
-sanitizeIfNotUrl :: RawFilePath -> RawFilePath
-sanitizeIfNotUrl path =
-  if "URL:" `B.isPrefixOf` path
-    then path
-    else sanitizePath path
 
 -- | prop> boolToMaybe True x == Just x
 --   prop> boolToMaybe False x == Nothing
