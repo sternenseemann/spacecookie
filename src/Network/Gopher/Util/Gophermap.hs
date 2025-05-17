@@ -32,7 +32,6 @@ module Network.Gopher.Util.Gophermap (
 import Prelude hiding (take, takeWhile)
 
 import Network.Gopher.Types
-import Network.Gopher.Util
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
