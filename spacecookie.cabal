@@ -71,7 +71,7 @@ executable spacecookie
   other-modules:       Network.Spacecookie.Config
                      , Network.Spacecookie.Systemd
                      , Network.Spacecookie.FileType
-                     , Network.Spacecookie.Sanitization
+                     , Network.Spacecookie.Path
                      , Paths_spacecookie
   autogen-modules:     Paths_spacecookie
 
@@ -97,7 +97,7 @@ test-suite test
                      , Test.Integration
                      , Test.Sanitization
                      , Network.Spacecookie.FileType
-                     , Network.Spacecookie.Sanitization
+                     , Network.Spacecookie.Path
   build-depends:       tasty >=1.2
                      , tasty-hunit >=0.10
                      , tasty-expected-failure >=0.11

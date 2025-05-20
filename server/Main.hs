@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Network.Spacecookie.Config
 import Network.Spacecookie.FileType
-import Network.Spacecookie.Sanitization
+import Network.Spacecookie.Path
 import Network.Spacecookie.Systemd
 
 import Paths_spacecookie (version)
@@ -10,7 +10,6 @@ import Network.Gopher
 import Network.Gopher.Util (boolToMaybe)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
-import Control.Applicative ((<|>))
 import Control.Exception (catches, Handler (..))
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
@@ -178,11 +177,6 @@ spacecookie logger req = do
 
 fileResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 fileResponse _ path = FileResponse <$> B.readFile (decodeFilePath path)
-
-makeAbsolute :: RawFilePath -> RawFilePath
-makeAbsolute x = fromMaybe x
-  $   boolToMaybe ("./" `B.isPrefixOf` x) (B.tail x)
-  <|> boolToMaybe ("." == x) "/"
 
 directoryResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 directoryResponse _ path =
