@@ -14,7 +14,6 @@ module Network.Gopher.Util (
   , uEncode
   , uDecode
   -- * Misc Helpers
-  , stripNewline
   , boolToMaybe
   ) where
 
@@ -50,14 +49,6 @@ uEncode = B.pack . U.encode
 -- | Decode a UTF-8 'ByteString' to a 'String'
 uDecode :: ByteString -> String
 uDecode = fst . U.decode . B.unpack
-
--- | Strip @\\r@ and @\\n@ from 'ByteString's
-stripNewline :: ByteString -> ByteString
-stripNewline s
-  | B.null s           = B.empty
-  | B.head s `elem`
-    (map (fromIntegral . ord) "\n\r") = stripNewline (B.tail s)
-  | otherwise          = B.head s `B.cons` stripNewline (B.tail s)
 
 -- | prop> boolToMaybe True x == Just x
 --   prop> boolToMaybe False x == Nothing

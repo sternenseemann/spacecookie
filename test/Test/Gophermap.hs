@@ -2,15 +2,19 @@
 module Test.Gophermap (gophermapTests) where
 
 import Control.Monad (forM_)
+import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString (parseOnly)
 import qualified Data.ByteString as B
 import Data.Either
+import Data.Maybe (fromMaybe)
 import Network.Gopher (GopherFileType (..))
-import Network.Gopher.Util (stripNewline)
 import Network.Gopher.Util.Gophermap
 import System.FilePath.Posix.ByteString (RawFilePath)
 import Test.Tasty
 import Test.Tasty.HUnit
+
+stripNewline :: B.ByteString -> B.ByteString
+stripNewline s = fromMaybe s $ B.stripSuffix "\r\n" s <|> B.stripSuffix "\n" s
 
 withFileContents :: FilePath -> (IO B.ByteString -> TestTree) -> TestTree
 withFileContents path = withResource (B.readFile path) (const (pure ()))
