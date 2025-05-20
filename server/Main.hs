@@ -7,7 +7,7 @@ import Network.Spacecookie.Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (boolToMaybe, dropPrivileges)
+import Network.Gopher.Util (boolToMaybe)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Control.Applicative ((<|>))
@@ -30,6 +30,7 @@ import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Socket (SocketException ())
+import System.Posix.User
 
 data Flags = Version | Usage
 
@@ -90,13 +91,22 @@ runServer configFile = do
         cfg
         (spacecookie logIO)
 
+-- | If 'runUserName' is configured, call 'setGroupID' and 'setUserID'
+--   to switch to the given user and their primary group.
+--   Requires special privileges (usually  root). Will raise an exception if
+--   either the user does not exist or the current user has no  permission to
+--   change UID/GID.
+--
+--   After that, notify systemd that we are ready if applicable.
 afterSocketSetup :: GopherLogHandler -> Config -> IO ()
 afterSocketSetup logIO cfg = do
   case runUserName cfg of
     Nothing -> pure ()
-    Just u  -> do
-      dropPrivileges u
-      logIO GopherLogLevelInfo $ "Changed to user " <> toGopherLogStr u
+    Just username  -> do
+      user <- getUserEntryForName username
+      setGroupID $ userGroupID user
+      setUserID $ userID user
+      logIO GopherLogLevelInfo $ "Changed to user " <> toGopherLogStr username
   _ <- notifyReady
   pure ()
 
