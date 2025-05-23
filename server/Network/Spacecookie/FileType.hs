@@ -10,12 +10,11 @@ module Network.Spacecookie.FileType
 import Network.Spacecookie.Path (containsDotFiles)
 
 import qualified Data.ByteString as B
-import Data.Char (ord, toLower)
+import Data.Char (ord, chr, toLower)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8 ())
 import Network.Gopher (GopherFileType (..))
-import Network.Gopher.Util (asciiChr)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath.Posix.ByteString ( RawFilePath, takeExtension
                                         , decodeFilePath)
@@ -80,7 +79,7 @@ asciiToLower orig
   | orig > 127 || lower > 127 = orig
   | otherwise = fromIntegral lower
   where lower :: Int
-        lower = ord . toLower . asciiChr $ orig
+        lower = ord . toLower . chr . fromIntegral $ orig
 
 lookupSuffix :: RawFilePath -> GopherFileType
 lookupSuffix = fromMaybe File

@@ -9,7 +9,6 @@ Helper utilities used within the library and the server which also could be usef
 module Network.Gopher.Util (
   -- * String Encoding
     asciiOrd
-  , asciiChr
   , uEncode
   , uDecode
   ) where
@@ -19,10 +18,6 @@ import qualified Data.ByteString as B
 import Data.Char (ord, chr, toLower)
 import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
-
--- | 'chr' a 'Word8'
-asciiChr :: Word8 -> Char
-asciiChr = chr . fromIntegral
 
 -- | 'ord' a 'Word8'
 asciiOrd :: Char -> Word8
