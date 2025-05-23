@@ -13,8 +13,6 @@ module Network.Gopher.Util (
   , asciiToLower
   , uEncode
   , uDecode
-  -- * Misc Helpers
-  , boolToMaybe
   ) where
 
 import Data.ByteString (ByteString ())
@@ -50,9 +48,4 @@ uEncode = B.pack . U.encode
 uDecode :: ByteString -> String
 uDecode = fst . U.decode . B.unpack
 
--- | prop> boolToMaybe True x == Just x
---   prop> boolToMaybe False x == Nothing
-boolToMaybe :: Bool -> a -> Maybe a
-boolToMaybe True  a = Just a
-boolToMaybe False _ = Nothing
 
