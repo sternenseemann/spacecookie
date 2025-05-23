@@ -71,9 +71,13 @@ fileTypeMap = M.fromList
 --   97
 --   >>> asciiToLower 97
 --   97
+--   >>> asciiToLower 220
+--   220
+--   >>> asciiToLower 252
+--   252
 asciiToLower :: Word8 -> Word8
 asciiToLower orig
-  | lower > 127 = orig
+  | orig > 127 || lower > 127 = orig
   | otherwise = fromIntegral lower
   where lower :: Int
         lower = ord . toLower . asciiChr $ orig
