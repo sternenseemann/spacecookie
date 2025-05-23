@@ -10,10 +10,12 @@ module Network.Spacecookie.FileType
 import Network.Spacecookie.Path (containsDotFiles)
 
 import qualified Data.ByteString as B
+import Data.Char (ord, toLower)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
+import Data.Word (Word8 ())
 import Network.Gopher (GopherFileType (..))
-import Network.Gopher.Util (asciiToLower)
+import Network.Gopher.Util (asciiChr)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath.Posix.ByteString ( RawFilePath, takeExtension
                                         , decodeFilePath)
@@ -62,6 +64,17 @@ fileTypeMap = M.fromList
   , (".doc", BinaryFile)
   , (".hqx", BinHexMacintoshFile)
   ]
+
+-- | Transform a 'Word8' to lowercase if the solution is in bounds.
+asciiToLower :: Word8 -> Word8
+asciiToLower w =
+  if inBounds lower
+    then fromIntegral lower
+    else w
+  where inBounds i = i >= fromIntegral (minBound :: Word8) &&
+          i <= fromIntegral (maxBound :: Word8)
+        lower :: Int
+        lower = ord . toLower . asciiChr $ w
 
 lookupSuffix :: RawFilePath -> GopherFileType
 lookupSuffix = fromMaybe File

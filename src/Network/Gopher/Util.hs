@@ -10,7 +10,6 @@ module Network.Gopher.Util (
   -- * String Encoding
     asciiOrd
   , asciiChr
-  , asciiToLower
   , uEncode
   , uDecode
   ) where
@@ -28,17 +27,6 @@ asciiChr = chr . fromIntegral
 -- | 'ord' a 'Word8'
 asciiOrd :: Char -> Word8
 asciiOrd = fromIntegral . ord
-
--- | Transform a 'Word8' to lowercase if the solution is in bounds.
-asciiToLower :: Word8 -> Word8
-asciiToLower w =
-  if inBounds lower
-    then fromIntegral lower
-    else w
-  where inBounds i = i >= fromIntegral (minBound :: Word8) &&
-          i <= fromIntegral (maxBound :: Word8)
-        lower :: Int
-        lower = ord . toLower . asciiChr $ w
 
 -- | Encode a 'String' to a UTF-8 'ByteString'
 uEncode :: String -> ByteString
