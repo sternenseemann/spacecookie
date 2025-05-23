@@ -7,10 +7,10 @@ import Control.Exception (bracket)
 import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
+import Data.Char (ord)
 import Data.List
 import Data.Maybe (isNothing, isJust, fromJust)
 import Network.Curl.Download (openURI)
-import Network.Gopher.Util (asciiOrd)
 import System.Directory (findExecutable)
 import System.Environment (lookupEnv)
 import System.Exit (ExitCode (..))
@@ -76,7 +76,7 @@ integrationAsserts step = do
 
       -- ignore ordering for the purpose of this test
       assertEqual "directory menu contains expected entries" (Right expectedDir)
-        $ sort . filter (not . B.null) . B.split (asciiOrd '\n') <$> dir
+        $ sort . filter (not . B.null) . B.split (fromIntegral $ ord '\n') <$> dir
 
       step "sanity check not found error messages"
 
