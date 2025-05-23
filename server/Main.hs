@@ -7,7 +7,6 @@ import Network.Spacecookie.Systemd
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (boolToMaybe)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
 import Control.Exception (catches, Handler (..))
@@ -116,7 +115,9 @@ printUsage = do
     mconcat [ "Usage: ", n, " CONFIG\n" ]
 
 makeLogHandler :: LogConfig -> IO (Maybe (GopherLogHandler, IO ()))
-makeLogHandler lc =
+makeLogHandler lc
+  | not (logEnable lc) = pure Nothing
+  | otherwise =
   let wrapTimedLogger :: FL.TimedFastLogger -> FL.FastLogger
       wrapTimedLogger logger str = logger $ (\t ->
         "[" <> FL.toLogStr t <> "]" <> str)
@@ -135,14 +136,14 @@ makeLogHandler lc =
         <> ((FL.toLogStr :: Builder -> FL.LogStr) . fromGopherLogStr . processMsg $ msg)
         <> "\n"
       logType = FL.LogStderr FL.defaultBufSize
-   in sequenceA . boolToMaybe (logEnable lc) $ do
+   in do
      (logger, cleanup) <-
        if logHideTime lc
          then FL.newFastLogger logType
          else first wrapTimedLogger <$> do
            timeCache <- FL.newTimeCache FL.simpleTimeFormat
            FL.newTimedFastLogger timeCache logType
-     pure (logHandler logger, cleanup)
+     pure $ Just (logHandler logger, cleanup)
 
 noLog :: GopherLogHandler
 noLog = const . const $ pure ()
