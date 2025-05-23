@@ -2,6 +2,7 @@
 module Network.Spacecookie.Path
   ( sanitizePath
   , makeAbsolute
+  , containsDotFiles
   ) where
 
 import qualified Data.ByteString as B
@@ -19,3 +20,10 @@ sanitizePath =
 --   normalisation).
 makeAbsolute :: RawFilePath -> RawFilePath
 makeAbsolute x = normalise $ "/" </> x
+
+-- | Wether any components of the given path begin with a dot, although @.@ is
+--   allowed.
+containsDotFiles :: RawFilePath -> Bool
+containsDotFiles =
+  any (\p -> "." `B.isPrefixOf` p && not (equalFilePath p "."))
+  . splitPath

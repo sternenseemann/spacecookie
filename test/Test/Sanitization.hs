@@ -51,6 +51,8 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
   assertDot "file.txt" False
   assertDot "/foo.html" False
   assertDot "./tmp/scratch.txt" False
+  assertDot "./." False
+  assertDot  "relative/./path" False
 
   assertDot ".emacs.d/init.el" True
   assertDot ".gophermap" True
@@ -60,7 +62,7 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
 
   -- only fail prior to sanitization
   forM_
-    [ "./.", "relative/./path", "dir/../traversal/../attack", "../../../actual/traversal" ]
+    [ "dir/../traversal/../attack", "../../../actual/traversal" ]
     $ \p -> do
         let p' = uEncode p
         assertEqual p (Left PathIsNotAllowed) $ checkNoDotFiles p'

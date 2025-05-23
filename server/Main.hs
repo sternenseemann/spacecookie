@@ -19,7 +19,7 @@ import Data.Either (rights)
 import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 import System.Console.GetOpt
-import System.Directory (doesFileExist, getDirectoryContents)
+import System.Directory (doesFileExist, listDirectory)
 import System.Environment
 import System.Exit
 import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
@@ -188,7 +188,7 @@ directoryResponse _ path =
           Item fileType (takeFileName file) file Nothing Nothing
    in do
      dir <- map ((path </>) . encodeFilePath)
-       <$> getDirectoryContents (decodeFilePath path)
+       <$> listDirectory (decodeFilePath path)
      fileTypes <- mapM gopherFileType dir
 
      pure . MenuResponse . rights
