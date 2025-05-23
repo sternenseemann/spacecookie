@@ -66,15 +66,17 @@ fileTypeMap = M.fromList
   ]
 
 -- | Transform a 'Word8' to lowercase if the solution is in bounds.
+--
+--   >>> asciiToLower 65
+--   97
+--   >>> asciiToLower 97
+--   97
 asciiToLower :: Word8 -> Word8
-asciiToLower w =
-  if inBounds lower
-    then fromIntegral lower
-    else w
-  where inBounds i = i >= fromIntegral (minBound :: Word8) &&
-          i <= fromIntegral (maxBound :: Word8)
-        lower :: Int
-        lower = ord . toLower . asciiChr $ w
+asciiToLower orig
+  | lower > fromIntegral (maxBound :: Word8) = orig
+  | otherwise = fromIntegral lower
+  where lower :: Int
+        lower = ord . toLower . asciiChr $ orig
 
 lookupSuffix :: RawFilePath -> GopherFileType
 lookupSuffix = fromMaybe File
