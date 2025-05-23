@@ -73,7 +73,7 @@ fileTypeMap = M.fromList
 --   97
 asciiToLower :: Word8 -> Word8
 asciiToLower orig
-  | lower > fromIntegral (maxBound :: Word8) = orig
+  | lower > 127 = orig
   | otherwise = fromIntegral lower
   where lower :: Int
         lower = ord . toLower . asciiChr $ orig
