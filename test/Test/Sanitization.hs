@@ -74,7 +74,9 @@ makeAbsoluteTest = testCase "relative paths are correctly converted to absolute 
 
   assertAbsolute "/foo/bar" "/foo/bar"
   assertAbsolute "/foo/bar" "./foo/bar"
+  assertAbsolute "/foo/bar" "foo/bar"
   assertAbsolute "/" "."
   assertAbsolute "/" "./"
-  assertAbsolute "/./bar/foo" "././bar/foo"
+  assertAbsolute "/bar/foo" "././bar/foo"
   assertAbsolute "/../bar/foo" "./../bar/foo"
+  assertAbsolute "/../bar/foo" "../bar/foo"
