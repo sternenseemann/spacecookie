@@ -25,7 +25,7 @@ import System.Environment
 import System.Exit
 import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
                                         , dropDrive, decodeFilePath
-                                        , encodeFilePath)
+                                        , encodeFilePath, normalise)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Socket (SocketException ())
@@ -150,7 +150,7 @@ noLog = const . const $ pure ()
 spacecookie :: GopherLogHandler -> GopherRequest -> IO GopherResponse
 spacecookie logger req = do
   let selector = requestSelector req
-      path = "." </> dropDrive (sanitizePath selector)
+      path = normalise $ dropDrive (sanitizePath selector)
   pt <- gopherFileType path
 
   case pt of
