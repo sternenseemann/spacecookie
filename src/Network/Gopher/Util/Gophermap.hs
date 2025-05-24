@@ -29,15 +29,17 @@ module Network.Gopher.Util.Gophermap (
   , gophermapToDirectoryResponse
   ) where
 
-import Prelude hiding (take, takeWhile)
+import Prelude hiding (take, takeWhile, length)
 
 import Network.Gopher.Types
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
-import Data.ByteString (ByteString (), pack, unpack, isPrefixOf)
+import Data.Attoparsec.ByteString.Char8 (isDigit_w8)
+import Data.ByteString (ByteString (), pack, unpack, isPrefixOf, length)
+import Data.Char (ord)
+import Data.Functor ((<&>))
 import Data.Maybe (fromMaybe)
-import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import System.FilePath.Posix.ByteString (RawFilePath, (</>), isAbsolute, normalise)
 
@@ -126,13 +128,13 @@ regularGophermapline = do
   _ <- satisfy (inClass "\t")
   pathString <- option Nothing $ Just <$> itemValue
   host <- optionalValue
-  portString <- optionalValue
+  portNumber <- optional portValue
   endOfLineOrInput
   return $ GophermapEntry (charToFileType fileTypeChar)
     text
     (makeGophermapFilePath <$> pathString)
     host
-    (byteStringToPort <$> portString)
+    portNumber
 
 emptyGophermapline :: Parser GophermapEntry
 emptyGophermapline = do
@@ -140,13 +142,21 @@ emptyGophermapline = do
   return emptyInfoLine
     where emptyInfoLine = GophermapEntry InfoLine (pack []) Nothing Nothing Nothing
 
-byteStringToPort :: ByteString -> Integer
-byteStringToPort s = read . fst . U.decode . unpack $ s
+portValue :: Parser Integer
+portValue = takeWhile1 isDigit_w8
+  <&> \bs ->
+    let digits = map ((subtract zero) . fromIntegral) $ unpack bs
+     in sum $ zipWith (*) (reverse digits) [10^e | e <- [0..length bs-1]]
+  where zero :: Integer
+        zero = fromIntegral $ ord '0'
 
 optionalValue :: Parser (Maybe ByteString)
-optionalValue = option Nothing $ do
+optionalValue = optional itemValue
+
+optional :: Parser a -> Parser (Maybe a)
+optional parser = option Nothing $ do
   _ <- satisfy (inClass "\t")
-  Just <$> itemValue
+  Just <$> parser
 
 itemValue :: Parser ByteString
 itemValue = takeWhile1 (notInClass "\t\r\n")
