@@ -97,10 +97,11 @@ import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
 import Data.Bifunctor (second)
 import Data.ByteString (ByteString ())
+import Data.Char (ord)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
 import Data.Maybe (fromMaybe)
-import Data.Word (Word16 ())
+import Data.Word (Word8 (), Word16 ())
 import System.Socket hiding (Error (..))
 import System.Socket.Family.Inet6
 import System.Socket.Type.Stream (Stream, sendAllBuilder)
@@ -240,15 +241,16 @@ receiveRequest sock = fmap (either id id)
         (r, "\n")   -> Right r
         (_, "")     -> Left "Request too big or unterminated"
         _           -> Left "Unexpected data after newline"
-  where newline = (||)
-          <$> (== asciiOrd '\n')
-          <*> (== asciiOrd '\r')
+  where cr, lf :: Word8
+        lf = fromIntegral $ ord '\n'
+        cr = fromIntegral $ ord '\r'
+        newline = (||) <$> (== lf) <*> (== cr)
         reqTimeout = 10000000 -- 10s
         maxSize = 1024 * 1024
         loop bs size = do
           part <- receive sock maxSize msgNoSignal
           let newSize = size + B.length part
-          if newSize >= maxSize || part == mempty || B.elem (asciiOrd '\n') part
+          if newSize >= maxSize || part == mempty || B.elem lf part
             then pure $ bs `mappend` part
             else loop (bs `mappend` part) newSize
 

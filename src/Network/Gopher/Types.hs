@@ -10,9 +10,8 @@ module Network.Gopher.Types
 
 import Prelude hiding (lookup)
 
-import Network.Gopher.Util
-
 import Data.ByteString (ByteString ())
+import Data.Char (chr, ord)
 import Data.Word (Word8 ())
 
 -- | entry in a gopher menu
@@ -49,7 +48,7 @@ data GopherFileType
   deriving (Show, Eq, Ord, Enum)
 
 fileTypeToChar :: GopherFileType -> Word8
-fileTypeToChar t = asciiOrd $
+fileTypeToChar t = fromIntegral . ord $
   case t of
     File -> '0'
     Directory -> '1'
@@ -70,7 +69,7 @@ fileTypeToChar t = asciiOrd $
 
 charToFileType :: Word8 -> GopherFileType
 charToFileType c =
-  case asciiChr c of
+  case chr (fromIntegral c) of
      '0' -> File
      '1' -> Directory
      '2' -> PhoneBookServer

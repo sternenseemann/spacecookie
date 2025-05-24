@@ -1,15 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 import Network.Spacecookie.Config
 import Network.Spacecookie.FileType
+import Network.Spacecookie.Path
 import Network.Spacecookie.Systemd
 
 import Paths_spacecookie (version)
 
 import Network.Gopher
-import Network.Gopher.Util (sanitizePath, boolToMaybe, dropPrivileges)
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
-import Control.Applicative ((<|>))
 import Control.Exception (catches, Handler (..))
 import Control.Monad (when, unless)
 import Data.Aeson (eitherDecodeFileStrict')
@@ -20,15 +19,16 @@ import Data.Either (rights)
 import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 import System.Console.GetOpt
-import System.Directory (doesFileExist, getDirectoryContents)
+import System.Directory (doesFileExist, listDirectory)
 import System.Environment
 import System.Exit
 import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
                                         , dropDrive, decodeFilePath
-                                        , encodeFilePath)
+                                        , encodeFilePath, normalise)
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Socket (SocketException ())
+import System.Posix.User
 
 data Flags = Version | Usage
 
@@ -89,13 +89,22 @@ runServer configFile = do
         cfg
         (spacecookie logIO)
 
+-- | If 'runUserName' is configured, call 'setGroupID' and 'setUserID'
+--   to switch to the given user and their primary group.
+--   Requires special privileges (usually  root). Will raise an exception if
+--   either the user does not exist or the current user has no  permission to
+--   change UID/GID.
+--
+--   After that, notify systemd that we are ready if applicable.
 afterSocketSetup :: GopherLogHandler -> Config -> IO ()
 afterSocketSetup logIO cfg = do
   case runUserName cfg of
     Nothing -> pure ()
-    Just u  -> do
-      dropPrivileges u
-      logIO GopherLogLevelInfo $ "Changed to user " <> toGopherLogStr u
+    Just username  -> do
+      user <- getUserEntryForName username
+      setGroupID $ userGroupID user
+      setUserID $ userID user
+      logIO GopherLogLevelInfo $ "Changed to user " <> toGopherLogStr username
   _ <- notifyReady
   pure ()
 
@@ -106,7 +115,9 @@ printUsage = do
     mconcat [ "Usage: ", n, " CONFIG\n" ]
 
 makeLogHandler :: LogConfig -> IO (Maybe (GopherLogHandler, IO ()))
-makeLogHandler lc =
+makeLogHandler lc
+  | not (logEnable lc) = pure Nothing
+  | otherwise =
   let wrapTimedLogger :: FL.TimedFastLogger -> FL.FastLogger
       wrapTimedLogger logger str = logger $ (\t ->
         "[" <> FL.toLogStr t <> "]" <> str)
@@ -125,14 +136,14 @@ makeLogHandler lc =
         <> ((FL.toLogStr :: Builder -> FL.LogStr) . fromGopherLogStr . processMsg $ msg)
         <> "\n"
       logType = FL.LogStderr FL.defaultBufSize
-   in sequenceA . boolToMaybe (logEnable lc) $ do
+   in do
      (logger, cleanup) <-
        if logHideTime lc
          then FL.newFastLogger logType
          else first wrapTimedLogger <$> do
            timeCache <- FL.newTimeCache FL.simpleTimeFormat
            FL.newTimedFastLogger timeCache logType
-     pure (logHandler logger, cleanup)
+     pure $ Just (logHandler logger, cleanup)
 
 noLog :: GopherLogHandler
 noLog = const . const $ pure ()
@@ -140,7 +151,7 @@ noLog = const . const $ pure ()
 spacecookie :: GopherLogHandler -> GopherRequest -> IO GopherResponse
 spacecookie logger req = do
   let selector = requestSelector req
-      path = "." </> dropDrive (sanitizePath selector)
+      path = normalise $ dropDrive (sanitizePath selector)
   pt <- gopherFileType path
 
   case pt of
@@ -168,11 +179,6 @@ spacecookie logger req = do
 fileResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 fileResponse _ path = FileResponse <$> B.readFile (decodeFilePath path)
 
-makeAbsolute :: RawFilePath -> RawFilePath
-makeAbsolute x = fromMaybe x
-  $   boolToMaybe ("./" `B.isPrefixOf` x) (B.tail x)
-  <|> boolToMaybe ("." == x) "/"
-
 directoryResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
 directoryResponse _ path =
   let makeItem :: Either a GopherFileType -> RawFilePath -> Either a GopherMenuItem
@@ -182,7 +188,7 @@ directoryResponse _ path =
           Item fileType (takeFileName file) file Nothing Nothing
    in do
      dir <- map ((path </>) . encodeFilePath)
-       <$> getDirectoryContents (decodeFilePath path)
+       <$> listDirectory (decodeFilePath path)
      fileTypes <- mapM gopherFileType dir
 
      pure . MenuResponse . rights

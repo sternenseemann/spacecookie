@@ -7,15 +7,17 @@ module Network.Spacecookie.FileType
   , checkNoDotFiles
   ) where
 
-import Control.Applicative ((<|>))
+import Network.Spacecookie.Path (containsDotFiles)
+
 import qualified Data.ByteString as B
+import Data.Char (ord, chr, toLower)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
+import Data.Word (Word8 ())
 import Network.Gopher (GopherFileType (..))
-import Network.Gopher.Util (boolToMaybe, asciiToLower)
 import System.Directory (doesDirectoryExist, doesFileExist)
 import System.FilePath.Posix.ByteString ( RawFilePath, takeExtension
-                                        , splitDirectories, decodeFilePath)
+                                        , decodeFilePath)
 
 fileTypeMap :: M.Map RawFilePath GopherFileType
 fileTypeMap = M.fromList
@@ -62,6 +64,23 @@ fileTypeMap = M.fromList
   , (".hqx", BinHexMacintoshFile)
   ]
 
+-- | Transform a 'Word8' to lowercase if the solution is in bounds.
+--
+--   >>> asciiToLower 65
+--   97
+--   >>> asciiToLower 97
+--   97
+--   >>> asciiToLower 220
+--   220
+--   >>> asciiToLower 252
+--   252
+asciiToLower :: Word8 -> Word8
+asciiToLower orig
+  | orig > 127 || lower > 127 = orig
+  | otherwise = fromIntegral lower
+  where lower :: Int
+        lower = ord . toLower . chr . fromIntegral $ orig
+
 lookupSuffix :: RawFilePath -> GopherFileType
 lookupSuffix = fromMaybe File
   . (flip M.lookup) fileTypeMap
@@ -76,17 +95,9 @@ data PathError
 --   failure if there's any dot files or directory
 --   in the given path
 checkNoDotFiles :: RawFilePath -> Either PathError ()
-checkNoDotFiles path = do
-  -- this prevents relative directories from being
-  -- forbidden while singular '.' in the path somewhere
-  -- get flagged and "." stays allowed.
-  let segments = splitDirectories $ fromMaybe path
-        $   boolToMaybe ("./" `B.isPrefixOf` path) (B.tail path)
-        <|> boolToMaybe ("." == path) ""
-
-  if any ((== ".") . B.take 1) segments
-    then Left  PathIsNotAllowed
-    else Right ()
+checkNoDotFiles path
+  | containsDotFiles path = Left  PathIsNotAllowed
+  | otherwise = Right ()
 
 -- | calculates the file type identifier used in the Gopher
 --   protocol for a given file and returns a descriptive error

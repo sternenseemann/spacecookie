@@ -1,10 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Sanitization (sanitizationTests) where
 
-import Network.Gopher.Util (uEncode, sanitizePath)
+import Network.Gopher.Util (uEncode)
 import Network.Spacecookie.FileType (checkNoDotFiles, PathError (..))
+import Network.Spacecookie.Path (sanitizePath, makeAbsolute)
 
 import Control.Monad (forM_)
+import System.FilePath.Posix.ByteString (isAbsolute)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -12,6 +14,7 @@ sanitizationTests :: TestTree
 sanitizationTests = testGroup "Sanitization of user input"
  [ pathSanitization
  , dotFileDetectionTest
+ , makeAbsoluteTest
  ]
 
 pathSanitization :: TestTree
@@ -48,6 +51,8 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
   assertDot "file.txt" False
   assertDot "/foo.html" False
   assertDot "./tmp/scratch.txt" False
+  assertDot "./." False
+  assertDot  "relative/./path" False
 
   assertDot ".emacs.d/init.el" True
   assertDot ".gophermap" True
@@ -57,8 +62,23 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
 
   -- only fail prior to sanitization
   forM_
-    [ "./.", "relative/./path", "dir/../traversal/../attack", "../../../actual/traversal" ]
+    [ "dir/../traversal/../attack", "../../../actual/traversal" ]
     $ \p -> do
         let p' = uEncode p
         assertEqual p (Left PathIsNotAllowed) $ checkNoDotFiles p'
         assertEqual p (Right ()) $ checkNoDotFiles (sanitizePath p')
+
+makeAbsoluteTest :: TestTree
+makeAbsoluteTest = testCase "relative paths are correctly converted to absolute ones" $ do
+  let assertAbsolute expected given = do
+        assertEqual given expected $ makeAbsolute (uEncode given)
+        assertBool ("makeAbsolute " ++ given ++ " is absolute") $ isAbsolute (makeAbsolute (uEncode given))
+
+  assertAbsolute "/foo/bar" "/foo/bar"
+  assertAbsolute "/foo/bar" "./foo/bar"
+  assertAbsolute "/foo/bar" "foo/bar"
+  assertAbsolute "/" "."
+  assertAbsolute "/" "./"
+  assertAbsolute "/bar/foo" "././bar/foo"
+  assertAbsolute "/../bar/foo" "./../bar/foo"
+  assertAbsolute "/../bar/foo" "../bar/foo"
