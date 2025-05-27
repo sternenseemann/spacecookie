@@ -35,11 +35,13 @@ import Network.Gopher.Types
 
 import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
+import Data.Attoparsec.ByteString.Char8 (isDigit_w8)
 import Data.ByteString (ByteString (), pack, unpack, isPrefixOf)
+import Data.Char (chr)
 import Data.Maybe (fromMaybe)
-import qualified Data.String.UTF8 as U
 import Data.Word (Word8 ())
 import System.FilePath.Posix.ByteString (RawFilePath, (</>), isAbsolute, normalise)
+import Text.Read (readEither)
 
 -- | Given a directory and a Gophermap contained within it,
 --   return the corresponding gopher menu response.
@@ -126,13 +128,13 @@ regularGophermapline = do
   _ <- satisfy (inClass "\t")
   pathString <- option Nothing $ Just <$> itemValue
   host <- optionalValue
-  portString <- optionalValue
+  port <- optional portValue
   endOfLineOrInput
   return $ GophermapEntry (charToFileType fileTypeChar)
     text
     (makeGophermapFilePath <$> pathString)
     host
-    (byteStringToPort <$> portString)
+    port
 
 emptyGophermapline :: Parser GophermapEntry
 emptyGophermapline = do
@@ -140,8 +142,13 @@ emptyGophermapline = do
   return emptyInfoLine
     where emptyInfoLine = GophermapEntry InfoLine (pack []) Nothing Nothing Nothing
 
-byteStringToPort :: ByteString -> Integer
-byteStringToPort s = read . fst . U.decode . unpack $ s
+portValue :: Parser Integer
+portValue = do
+  digits <- takeWhile1 isDigit_w8
+  -- we know digits is just ASCII characters ([0-9])
+  case readEither (map (chr . fromIntegral) (unpack digits)) of
+    Left e -> fail e
+    Right p -> pure p
 
 optionalValue :: Parser (Maybe ByteString)
 optionalValue = optional itemValue
