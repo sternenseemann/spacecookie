@@ -29,6 +29,7 @@ extra-source-files:  CHANGELOG.md
                      test/integration/root/dir/another/.git-hello
                      test/integration/root/dir/macintosh.hqx
                      test/integration/root/dir/mystery-file
+                     test/integration/root/dir/strange.tXT
                      test/integration/root/plain.txt
                      test/integration/spacecookie.json
 

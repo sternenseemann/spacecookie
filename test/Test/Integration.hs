@@ -130,6 +130,7 @@ expectedDir :: [ByteString]
 expectedDir = sort
   [ "1another\t/dir/another\tlocalhost\t7000\r"
   , "0mystery-file\t/dir/mystery-file\tlocalhost\t7000\r"
+  , "0strange.tXT\t/dir/strange.tXT\tlocalhost\t7000\r"
   , "4macintosh.hqx\t/dir/macintosh.hqx\tlocalhost\t7000\r"
   ]
 
