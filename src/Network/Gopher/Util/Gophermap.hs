@@ -144,9 +144,12 @@ byteStringToPort :: ByteString -> Integer
 byteStringToPort s = read . fst . U.decode . unpack $ s
 
 optionalValue :: Parser (Maybe ByteString)
-optionalValue = option Nothing $ do
+optionalValue = optional itemValue
+
+optional :: Parser a -> Parser (Maybe a)
+optional parser = option Nothing $ do
   _ <- satisfy (inClass "\t")
-  Just <$> itemValue
+  Just <$> parser
 
 itemValue :: Parser ByteString
 itemValue = takeWhile1 (notInClass "\t\r\n")
