@@ -86,6 +86,3 @@ instance FromJSON GopherLogLevel where
 instance FromJSON ByteString where
   parseJSON s@(String _) = uEncode <$> parseJSON s
   parseJSON _ = mzero
-
-instance ToJSON ByteString where
-  toJSON = toJSON . uDecode
