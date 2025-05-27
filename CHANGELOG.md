@@ -1,5 +1,12 @@
 # Revision history for spacecookie
 
+## 1.1.0.0
+
+TBD
+
+* Fix crash on malformed port values when parsing a gophermap using
+  `Network.Gopher.Util.Gophermap`.
+
 ## 1.0.0.3
 
 2025-05-03
