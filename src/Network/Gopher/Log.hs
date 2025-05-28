@@ -19,6 +19,7 @@ import qualified Data.Sequence as S
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding.Error as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import System.Socket.Family.Inet6
@@ -46,6 +47,9 @@ data GopherLogLevel
 --
 --   Note that encoding isn't checked for conversions from
 --   encoding agnostic types, e.g. 'BB.ByteString'.
+--   In 'FromGopherLogStr', invalid encoding is retained when converting to
+--   encoding agnostic types (e.g. 'BB.ByteString'), but will be replaced by
+--   replacement characters for types that enforce encoding (e.g. 'T.Text').
 newtype GopherLogStr
   = GopherLogStr { unGopherLogStr :: S.Seq GopherLogStrChunk }
 
@@ -110,11 +114,16 @@ instance FromGopherLogStr BL.ByteString where
 instance FromGopherLogStr B.ByteString where
   fromGopherLogStr = BL.toStrict . fromGopherLogStr
 
+-- | Any non-UTF-8 portions (introduced e.g. via @'ToGopherLogStr'
+--   'BB.ByteString'@) are replaced with U+FFFD.
 instance FromGopherLogStr T.Text where
-  fromGopherLogStr = T.decodeUtf8 . fromGopherLogStr
+  -- text >= 2.0 introduces a shortcut for this, but we support a wider range
+  fromGopherLogStr = T.decodeUtf8With T.lenientDecode . fromGopherLogStr
 
+-- | Any non-UTF-8 portions (introduced e.g. via @'ToGopherLogStr'
+--   'BB.ByteString'@) are replaced with U+FFFD.
 instance FromGopherLogStr TL.Text where
-  fromGopherLogStr = TL.decodeUtf8 . fromGopherLogStr
+  fromGopherLogStr = TL.decodeUtf8With T.lenientDecode . fromGopherLogStr
 
 -- | Any non-UTF-8 portions (introduced e.g. via @'ToGopherLogStr'
 --   'BB.ByteString'@) are replaced with U+FFFD.
