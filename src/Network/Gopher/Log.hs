@@ -10,12 +10,11 @@ module Network.Gopher.Log
   , FromGopherLogStr (..)
   ) where
 
-import Network.Gopher.Util (uEncode, uDecode)
-
 import Data.ByteString.Builder (Builder ())
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.UTF8 as UTF8
 import qualified Data.Sequence as S
 import Data.String (IsString (..))
 import qualified Data.Text as T
@@ -114,8 +113,10 @@ instance FromGopherLogStr T.Text where
 instance FromGopherLogStr TL.Text where
   fromGopherLogStr = TL.decodeUtf8 . fromGopherLogStr
 
+-- | Any non-UTF-8 portions (introduced e.g. via @'ToGopherLogStr'
+--   'BB.ByteString'@) are replaced with U+FFFD.
 instance FromGopherLogStr [Char] where
-  fromGopherLogStr = uDecode . fromGopherLogStr
+  fromGopherLogStr = UTF8.toString . fromGopherLogStr
 
 -- | Convert something to a 'GopherLogStr'. In terms of
 --   performance it is best to implement a 'Builder' for
@@ -142,7 +143,7 @@ instance ToGopherLogStr BL.ByteString where
   toGopherLogStr = toGopherLogStr . BB.lazyByteString
 
 instance ToGopherLogStr [Char] where
-  toGopherLogStr = toGopherLogStr . uEncode
+  toGopherLogStr = toGopherLogStr . UTF8.fromString
 
 instance ToGopherLogStr GopherLogLevel where
   toGopherLogStr l =

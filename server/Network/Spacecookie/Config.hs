@@ -10,9 +10,9 @@ import Control.Applicative ((<|>))
 import Data.Aeson
 import Data.Aeson.Types (Parser ())
 import Data.ByteString (ByteString ())
+import qualified Data.ByteString.UTF8 as UTF8
 import Data.Text (toLower, Text ())
 import Network.Gopher (GopherLogLevel (..))
-import Network.Gopher.Util
 
 data Config
   = Config
@@ -84,5 +84,5 @@ instance FromJSON GopherLogLevel where
   parseJSON _ = mzero
 
 instance FromJSON ByteString where
-  parseJSON s@(String _) = uEncode <$> parseJSON s
+  parseJSON s@(String _) = UTF8.fromString <$> parseJSON s
   parseJSON _ = mzero

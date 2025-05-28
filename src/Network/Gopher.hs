@@ -85,7 +85,6 @@ import Prelude hiding (log)
 
 import Network.Gopher.Log
 import Network.Gopher.Types
-import Network.Gopher.Util
 import Network.Gopher.Util.Gophermap
 import Network.Gopher.Util.Socket
 
@@ -100,6 +99,7 @@ import Data.ByteString (ByteString ())
 import Data.Char (ord)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Builder as BB
+import qualified Data.ByteString.UTF8 as UTF8
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8 (), Word16 ())
 import System.Socket hiding (Error (..))
@@ -269,7 +269,7 @@ setupGopherSocket cfg = do
       Nothing -> pure
         $ SocketAddressInet6 inet6Any (fromInteger (cServerPort cfg)) 0 0
       Just a -> do
-        let port = uEncode . show $ cServerPort cfg
+        let port = UTF8.fromString . show $ cServerPort cfg
         let flags = aiV4Mapped <> aiNumericService
         addrs <- (getAddressInfo (Just a) (Just port) flags :: IO [AddressInfo Inet6 Stream TCP])
 

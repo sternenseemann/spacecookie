@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Test.Sanitization (sanitizationTests) where
 
-import Network.Gopher.Util (uEncode)
 import Network.Spacecookie.FileType (checkNoDotFiles, PathError (..))
 import Network.Spacecookie.Path (sanitizePath, makeAbsolute)
 
 import Control.Monad (forM_)
+import qualified Data.ByteString.UTF8 as UTF8
 import System.FilePath.Posix.ByteString (isAbsolute)
 import Test.Tasty
 import Test.Tasty.HUnit
@@ -19,7 +19,7 @@ sanitizationTests = testGroup "Sanitization of user input"
 
 pathSanitization :: TestTree
 pathSanitization = testCase "sanitizePath behavior" $ do
-  let assertSanitize e p = assertEqual p e $ sanitizePath (uEncode p)
+  let assertSanitize e p = assertEqual p e $ sanitizePath (UTF8.fromString p)
   assertSanitize "/root" "/root"
   assertSanitize "/home/alice/.emacs.d/init.el" "/home/alice/.emacs.d/init.el"
 
@@ -38,8 +38,8 @@ pathSanitization = testCase "sanitizePath behavior" $ do
 dotFileDetectionTest :: TestTree
 dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" $ do
   let assertDot p hasDot = forM_
-        [ (p, uEncode p)
-        , (p ++ " (sanitized)", sanitizePath (uEncode p))
+        [ (p, UTF8.fromString p)
+        , (p ++ " (sanitized)", sanitizePath (UTF8.fromString p))
         ]
         $ \(title, path) -> assertEqual title
           (if hasDot then Left PathIsNotAllowed else Right ())
@@ -64,15 +64,15 @@ dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" 
   forM_
     [ "dir/../traversal/../attack", "../../../actual/traversal" ]
     $ \p -> do
-        let p' = uEncode p
+        let p' = UTF8.fromString p
         assertEqual p (Left PathIsNotAllowed) $ checkNoDotFiles p'
         assertEqual p (Right ()) $ checkNoDotFiles (sanitizePath p')
 
 makeAbsoluteTest :: TestTree
 makeAbsoluteTest = testCase "relative paths are correctly converted to absolute ones" $ do
   let assertAbsolute expected given = do
-        assertEqual given expected $ makeAbsolute (uEncode given)
-        assertBool ("makeAbsolute " ++ given ++ " is absolute") $ isAbsolute (makeAbsolute (uEncode given))
+        assertEqual given expected $ makeAbsolute (UTF8.fromString given)
+        assertBool ("makeAbsolute " ++ given ++ " is absolute") $ isAbsolute (makeAbsolute (UTF8.fromString given))
 
   assertAbsolute "/foo/bar" "/foo/bar"
   assertAbsolute "/foo/bar" "./foo/bar"
