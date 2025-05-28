@@ -9,6 +9,8 @@ TBD
   from 1.0.0.3 into their own code and adapt them to their needs.
 * Fix crash on malformed port values when parsing a gophermap using
   `Network.Gopher.Util.Gophermap`.
+* Fix crashes if encoding assumptions are violated in `GopherLogStr`
+  when converting to `String` or the `Text` types.
 
 ## 1.0.0.3
 
