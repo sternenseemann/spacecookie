@@ -43,6 +43,9 @@ data GopherLogLevel
 --   'Semigroup' and 'IsString' instances to construct
 --   'GopherLogStr's and 'FromGopherLogStr' to convert to the
 --   commonly used Haskell string types.
+--
+--   Note that encoding isn't checked for conversions from
+--   encoding agnostic types, e.g. 'BB.ByteString'.
 newtype GopherLogStr
   = GopherLogStr { unGopherLogStr :: S.Seq GopherLogStrChunk }
 
@@ -128,6 +131,7 @@ class ToGopherLogStr a where
 instance ToGopherLogStr GopherLogStr where
   toGopherLogStr = id
 
+-- | UTF-8 encoding is not checked, needs to be ensured by the user.
 instance ToGopherLogStr Builder where
   toGopherLogStr b = GopherLogStr
     . S.singleton
@@ -136,9 +140,11 @@ instance ToGopherLogStr Builder where
     , glscBuilder = b
     }
 
+-- | UTF-8 encoding is not checked, needs to be ensured by the user.
 instance ToGopherLogStr B.ByteString where
   toGopherLogStr = toGopherLogStr . BB.byteString
 
+-- | UTF-8 encoding is not checked, needs to be ensured by the user.
 instance ToGopherLogStr BL.ByteString where
   toGopherLogStr = toGopherLogStr . BB.lazyByteString
 
