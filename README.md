@@ -2,9 +2,20 @@
 
 Haskell gopher server daemon and library.
 
+## Status
+
+* The author doesn't run spacecookie in production (anymore).
+  In this sense it can be considered unproven software.
+* A known issue is that spacecookie [doesn't use text file
+  transactions for ASCII files](https://github.com/sternenseemann/spacecookie/issues/46).
+  which works well with all tested clients. It should
+  still be fixed, but it is unclear what the best approach
+  for detecting the correct transaction type would be.
+* Development is essentially in maintenance mode.
+
 ## Features
 
-* implements RFC1436
+* (mostly) implements RFC1436
 * optionally supports common protocol extensions:
   * informational entries via the `i`-type
   * [`h`-type and URL entries](http://gopher.quux.org:70/Archives/Mailing%20Lists/gopher/gopher.2002-02%7C/MBOX-MESSAGE/34)
