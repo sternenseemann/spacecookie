@@ -4,6 +4,9 @@
 
 TBD
 
+* **API BREAKING CHANGE**: Remove `Network.Gopher.Util`.
+  Previous users of these utilities are encouraged to copy the utilities
+  from 1.0.0.3 into their own code and adapt them to their needs.
 * Fix crash on malformed port values when parsing a gophermap using
   `Network.Gopher.Util.Gophermap`.
 
