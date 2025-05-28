@@ -123,7 +123,8 @@ expectedRoot = mconcat
   , "0normal text file\t/plain.txt\tlocalhost\t7000\r\n"
   , "1normal dir\t/dir\tlocalhost\t7000\r\n"
   , "i\t\tlocalhost\t7000\r\n"
-  , "1external\t/\tsterni.lv\t7000\r\n"
+  , "1external 1\t/\tthis.is.bogus.org\t7000\r\n"
+  , "1external 2\t/\tsdf.org\t70\r\n"
   ]
 
 expectedDir :: [ByteString]

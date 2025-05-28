@@ -12,7 +12,6 @@ in
 depot.users.sterni.htmlman {
   title = "spacecookie";
   description = ''
-    * [Gopher Page](gopher://sterni.lv/1/spacecookie)
     * [Source (GitHub)](https://github.com/sternenseemann/spacecookie)
     * [Source (Mirror)](https://code.sterni.lv/spacecookie)
 

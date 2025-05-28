@@ -3,4 +3,5 @@ Hello World!
 0normal text file	plain.txt
 1normal dir	dir
 
-1external	/	sterni.lv
+1external 1	/	this.is.bogus.org
+1external 2	/	sdf.org	70
