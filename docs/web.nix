@@ -13,7 +13,7 @@ depot.users.sterni.htmlman {
   title = "spacecookie";
   description = ''
     * [Source (GitHub)](https://github.com/sternenseemann/spacecookie)
-    * [Source (Mirror)](https://code.sterni.lv/spacecookie)
+    * [Source (Mirror)](https://git.sterni.lv/spacecookie)
 
     spacecookie is a gopher server daemon and library written in Haskell.
 
