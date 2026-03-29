@@ -60,12 +60,11 @@
     the served directory or that start with a dot may be accessed by clients.
     Allowed files are returned to clients unfiltered. For directories,
     <code class="Nm">spacecookie</code> checks if they contain a
-    &#x2018;<code class="Li">.gophermap</code>&#x2019; file: If they contain
-    one, it is used to generate the directory response, otherwise one is
-    generated automatically which involves guessing all file types from file
-    extensions. The default file type is
-    &#x2018;<code class="Li">0</code>&#x2019;, text file. The file format of the
-    &#x2018;<code class="Li">gophermap</code>&#x2019; files and its use are
+    <span class="Pa">.gophermap</span> file: If they contain one, it is used to
+    generate the directory response, otherwise one is generated automatically
+    which involves guessing all file types from file extensions. The default
+    file type is &#x2018;<code class="Li">0</code>&#x2019;, text file. The file
+    format of the <span class="Pa">.gophermap</span> files and its use are
     explained in
     <a class="Xr" href="./spacecookie.gophermap.5.html">spacecookie.gophermap(5)</a>.</p>
 </section>
@@ -118,8 +117,7 @@
     and
     <a class="Xr" href="https://manpages.debian.org/unstable/systemd.socket.5.en.html">systemd.socket(5)</a>
     file are provided in the <code class="Nm">spacecookie</code> source
-    distribution in the &#x2018;<code class="Li">etc</code>&#x2019;
-  directory.</p>
+    distribution in the <span class="Pa">etc</span> directory.</p>
 </section>
 <section class="Sh">
 <h1 class="Sh" id="SEE_ALSO"><a class="permalink" href="#SEE_ALSO">SEE
@@ -162,7 +160,7 @@
     <a class="Xr" href="https://manpages.debian.org/unstable/systemd.exec.5.en.html">systemd.exec(5)</a>
     supports.</p>
 <p class="Pp">TLS-enabled gopher, like the
-    &#x2018;<code class="Li">gophers</code>&#x2019; protocol supported by
+    &#x2018;<code class="Li">gophers://</code>&#x2019; protocol supported by
     <a class="Xr" href="https://manpages.debian.org/unstable/curl.1.en.html">curl(1)</a>
     is not natively supported by <code class="Nm">spacecookie</code> at this
     time.</p>
@@ -170,7 +168,7 @@
 </div>
 <table class="foot">
   <tr>
-    <td class="foot-date">May 28, 2025</td>
+    <td class="foot-date">March 29, 2026</td>
     <td class="foot-os">Nixpkgs</td>
   </tr>
 </table>
