@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import <nixpkgs> {}, inNixShell ? false }:
 
 let
   hl = pkgs.haskell.lib;
@@ -40,6 +40,6 @@ let
 
 in
 
-if !pkgs.lib.inNixShell
+if !inNixShell
 then profiled.spacecookie
 else profiled.spacecookie.env
