@@ -48,7 +48,7 @@ the served directory or that start with a dot may be accessed by clients.
 Allowed files are returned to clients unfiltered. For directories,
 .Nm
 checks if they contain a
-.Ql .gophermap
+.Pa .gophermap
 file: If they contain one, it is used to generate the directory response,
 otherwise one is generated automatically which involves guessing all file
 types from file extensions.
@@ -56,7 +56,7 @@ The default file type is
 .Ql 0 ,
 text file.
 The file format of the
-.Ql gophermap
+.Pa .gophermap
 files and its use are explained in
 .Xr spacecookie.gophermap 5 .
 .Sh SYSTEMD INTEGRATION
@@ -123,7 +123,7 @@ and
 file are provided in the
 .Nm
 source distribution in the
-.Ql etc
+.Pa etc
 directory.
 .Sh SEE ALSO
 .Xr spacecookie.json 5 ,
@@ -162,7 +162,7 @@ or sandboxing like for example
 supports.
 .Pp
 TLS-enabled gopher, like the
-.Ql gophers
+.Ql gophers://
 protocol supported by
 .Xr curl 1
 is not natively supported by
