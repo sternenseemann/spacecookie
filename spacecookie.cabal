@@ -41,10 +41,6 @@ common common
                      , filepath-bytestring >=1.4
                      , containers >= 0.6
                      , utf8-string >= 1.0
-  ghc-options:
-      -Wall
-      -Wno-orphans
-      -Wunused-packages
 
 common common-executables
   ghc-options:
