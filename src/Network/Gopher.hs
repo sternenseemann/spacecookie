@@ -91,7 +91,7 @@ import Network.Gopher.Util.Socket
 import Control.Concurrent (forkIO, ThreadId (), threadDelay)
 import Control.Concurrent.Async (race)
 import Control.Exception (bracket, catch, throw, SomeException (), Exception ())
-import Control.Monad (forever, when, void)
+import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO, MonadIO (..))
 import Control.Monad.Reader (ask, runReaderT, MonadReader (..), ReaderT (..))
 import Data.Bifunctor (second)
@@ -274,9 +274,10 @@ setupGopherSocket cfg = do
         addrs <- (getAddressInfo (Just a) (Just port) flags :: IO [AddressInfo Inet6 Stream TCP])
 
         -- should be done by getAddressInfo already
-        when (null addrs) $ throw eaiNoName
+        case addrs of
+          [] -> throw eaiNoName
+          (firstAddr:_) -> pure $ socketAddress firstAddr
 
-        pure . socketAddress $ head addrs
   bind sock addr
   listen sock 5
   pure sock

@@ -6,3 +6,5 @@ package *
     -Wall
     -Wno-orphans
     -Wunused-packages
+    -Wcompat
+    -Wredundant-constraints

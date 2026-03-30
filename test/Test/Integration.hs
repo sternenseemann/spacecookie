@@ -8,7 +8,7 @@ import Control.Monad (forM_)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (ord)
-import Data.List
+import Data.List (sort)
 import Data.Maybe (isNothing, isJust, fromJust)
 import Network.Curl.Download (openURI)
 import System.Directory (findExecutable)
