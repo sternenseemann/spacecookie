@@ -1,0 +1,8 @@
+packages: ./*.cabal
+tests: True
+
+package *
+  ghc-options:
+    -Wall
+    -Wno-orphans
+    -Wunused-packages
