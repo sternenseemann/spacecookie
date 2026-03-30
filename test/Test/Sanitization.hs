@@ -1,12 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Test.Sanitization (sanitizationTests) where
 
 import Network.Spacecookie.FileType (checkNoDotFiles, PathError (..))
 import Network.Spacecookie.Path (sanitizePath, makeAbsolute)
 
 import Control.Monad (forM_)
-import qualified Data.ByteString.UTF8 as UTF8
-import System.FilePath.Posix.ByteString (isAbsolute)
+import System.OsPath.Posix (isAbsolute)
+import System.OsString.Posix (pstr)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -19,66 +19,66 @@ sanitizationTests = testGroup "Sanitization of user input"
 
 pathSanitization :: TestTree
 pathSanitization = testCase "sanitizePath behavior" $ do
-  let assertSanitize e p = assertEqual p e $ sanitizePath (UTF8.fromString p)
-  assertSanitize "/root" "/root"
-  assertSanitize "/home/alice/.emacs.d/init.el" "/home/alice/.emacs.d/init.el"
+  let assertSanitize e p = assertEqual (show p) e $ sanitizePath p
+  assertSanitize [pstr|/root|] [pstr|/root|]
+  assertSanitize [pstr|/home/alice/.emacs.d/init.el|] [pstr|/home/alice/.emacs.d/init.el|]
 
-  assertSanitize "root" "./root"
-  assertSanitize"/tools/magrathea" "//tools/magrathea"
-  assertSanitize "/home/bob/Documents/important.txt" "/home/bob//Documents/important.txt"
+  assertSanitize [pstr|root|] [pstr|./root|]
+  assertSanitize [pstr|/tools/magrathea|] [pstr|//tools/magrathea|]
+  assertSanitize [pstr|/home/bob/Documents/important.txt|] [pstr|/home/bob//Documents/important.txt|]
 
-  assertSanitize "foo/bar/baz.txt" "./foo/bar/./baz.txt"
-  assertSanitize "/var/www/index..html" "/var/www/.///index..html"
-  assertSanitize "./" "./."
-  assertSanitize "/" "/."
-  assertSanitize "home/eve/" "./home/./././eve////./."
+  assertSanitize [pstr|foo/bar/baz.txt|] [pstr|./foo/bar/./baz.txt|]
+  assertSanitize [pstr|/var/www/index..html|] [pstr|/var/www/.///index..html|]
+  assertSanitize [pstr|./|] [pstr|./.|]
+  assertSanitize [pstr|/|] [pstr|/.|]
+  assertSanitize [pstr|home/eve/|] [pstr|./home/./././eve////./.|]
 
-  assertSanitize  "/home/bob/alice/private.txt" "/home/bob/../alice/private.txt"
+  assertSanitize  [pstr|/home/bob/alice/private.txt|] [pstr|/home/bob/../alice/private.txt|]
 
 dotFileDetectionTest :: TestTree
 dotFileDetectionTest = testCase "spacecookie server detects dot files in paths" $ do
   let assertDot p hasDot = forM_
-        [ (p, UTF8.fromString p)
-        , (p ++ " (sanitized)", sanitizePath (UTF8.fromString p))
+        [ (show p, p)
+        , (show p ++ " (sanitized)", sanitizePath p)
         ]
         $ \(title, path) -> assertEqual title
           (if hasDot then Left PathIsNotAllowed else Right ())
           $ checkNoDotFiles path
 
-  assertDot "./normal/relative/path" False
-  assertDot "." False
-  assertDot "/some/absolute/path" False
-  assertDot "file.txt" False
-  assertDot "/foo.html" False
-  assertDot "./tmp/scratch.txt" False
-  assertDot "./." False
-  assertDot  "relative/./path" False
+  assertDot [pstr|./normal/relative/path|] False
+  assertDot [pstr|.|] False
+  assertDot [pstr|/some/absolute/path|] False
+  assertDot [pstr|file.txt|] False
+  assertDot [pstr|/foo.html|] False
+  assertDot [pstr|./tmp/scratch.txt|] False
+  assertDot [pstr|./.|] False
+  assertDot [pstr|relative/./path|] False
 
-  assertDot ".emacs.d/init.el" True
-  assertDot ".gophermap" True
-  assertDot "/home/bob/.vimrc" True
-  assertDot "/home/alice/.config/foot" True
-  assertDot "./nixpkgs/.git/config" True
+  assertDot [pstr|.emacs.d/init.el|] True
+  assertDot [pstr|.gophermap|] True
+  assertDot [pstr|/home/bob/.vimrc|] True
+  assertDot [pstr|/home/alice/.config/foot|] True
+  assertDot [pstr|./nixpkgs/.git/config|] True
 
   -- only fail prior to sanitization
   forM_
-    [ "dir/../traversal/../attack", "../../../actual/traversal" ]
+    [ [pstr|dir/../traversal/../attack|], [pstr|../../../actual/traversal|] ]
     $ \p -> do
-        let p' = UTF8.fromString p
-        assertEqual p (Left PathIsNotAllowed) $ checkNoDotFiles p'
-        assertEqual p (Right ()) $ checkNoDotFiles (sanitizePath p')
+        assertEqual (show p) (Left PathIsNotAllowed) $ checkNoDotFiles p
+        assertEqual (show p) (Right ()) $ checkNoDotFiles (sanitizePath p)
 
 makeAbsoluteTest :: TestTree
 makeAbsoluteTest = testCase "relative paths are correctly converted to absolute ones" $ do
   let assertAbsolute expected given = do
-        assertEqual given expected $ makeAbsolute (UTF8.fromString given)
-        assertBool ("makeAbsolute " ++ given ++ " is absolute") $ isAbsolute (makeAbsolute (UTF8.fromString given))
+        assertEqual (show given) expected $ makeAbsolute given
+        assertBool ("makeAbsolute " ++ show given ++ " is absolute")
+          $ isAbsolute (makeAbsolute given)
 
-  assertAbsolute "/foo/bar" "/foo/bar"
-  assertAbsolute "/foo/bar" "./foo/bar"
-  assertAbsolute "/foo/bar" "foo/bar"
-  assertAbsolute "/" "."
-  assertAbsolute "/" "./"
-  assertAbsolute "/bar/foo" "././bar/foo"
-  assertAbsolute "/../bar/foo" "./../bar/foo"
-  assertAbsolute "/../bar/foo" "../bar/foo"
+  assertAbsolute [pstr|/foo/bar|] [pstr|/foo/bar|]
+  assertAbsolute [pstr|/foo/bar|] [pstr|./foo/bar|]
+  assertAbsolute [pstr|/foo/bar|] [pstr|foo/bar|]
+  assertAbsolute [pstr|/|] [pstr|.|]
+  assertAbsolute [pstr|/|] [pstr|./|]
+  assertAbsolute [pstr|/bar/foo|] [pstr|././bar/foo|]
+  assertAbsolute [pstr|/../bar/foo|] [pstr|./../bar/foo|]
+  assertAbsolute [pstr|/../bar/foo|] [pstr|../bar/foo|]

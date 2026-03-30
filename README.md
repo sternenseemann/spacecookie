@@ -140,4 +140,5 @@ which is for example known
 Windows support would be possible, but could be tricky as gopher
 expects Unix-style directory separators in paths. I personally
 don't want to invest time into it, but would accept patches adding
-Windows support.
+Windows support. For now, spacecookie will fail to compile on non-POSIX
+platforms.
