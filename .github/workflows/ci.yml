@@ -13,6 +13,9 @@ on:
 
 jobs:
   nix-build:
+    strategy:
+      matrix:
+        ghc_version: [ "9.10", "9.12" ]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.2.2
@@ -24,4 +27,4 @@ jobs:
         name: spacecookie
         authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
     - name: nix-build
-      run: nix-build
+      run: 'nix-build --argstr ghcVersion "${{ matrix.ghc_version }}"'

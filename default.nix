@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}, inNixShell ? false }:
+{ pkgs ? import <nixpkgs> {}, inNixShell ? false, ghcVersion ? pkgs.haskellPackages.ghc.version }:
 
 let
   hl = pkgs.haskell.lib;
@@ -10,7 +10,7 @@ let
       (builtins.readFile ./.gitignore) ./.;
   };
 
-  profiled = pkgs.haskellPackages.override {
+  profiled = pkgs.haskell.packages."ghc${pkgs.lib.replaceStrings [ "." ] [ "" ] ghcVersion}".override {
     overrides = self: super: {
       mkDerivation = args: super.mkDerivation (args // {
         enableLibraryProfiling = true;
