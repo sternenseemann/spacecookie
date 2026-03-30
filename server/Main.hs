@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 import Network.Spacecookie.Config
 import Network.Spacecookie.FileType
 import Network.Spacecookie.Path
@@ -9,9 +10,10 @@ import Paths_spacecookie (version)
 import Network.Gopher
 import Network.Gopher.Util.Gophermap
 import qualified Data.ByteString as B
+import Data.ByteString.Short (fromShort)
 import Control.Exception (catches, Handler (..))
 import Control.Monad (when, unless)
-import Data.Aeson (eitherDecodeFileStrict')
+import Data.Aeson (eitherDecodeStrict')
 import Data.Attoparsec.ByteString (parseOnly)
 import Data.Bifunctor (first)
 import Data.ByteString.Builder (Builder ())
@@ -19,12 +21,15 @@ import Data.Either (rights)
 import Data.Maybe (fromMaybe)
 import Data.Version (showVersion)
 import System.Console.GetOpt
-import System.Directory (doesFileExist, listDirectory)
+import System.Directory.OsPath (doesFileExist, listDirectory)
 import System.Environment
 import System.Exit
-import System.FilePath.Posix.ByteString ( RawFilePath, takeFileName, (</>)
-                                        , dropDrive, decodeFilePath
-                                        , encodeFilePath, normalise)
+import qualified System.File.OsPath as F
+import qualified System.OsPath as OP
+import System.OsPath.Posix ( PosixPath, takeFileName, (</>)
+                           , dropDrive, normalise)
+import qualified System.OsString.Posix as Posix
+import System.OsString.Internal.Types (PosixString (..), OsString (..))
 import qualified System.Log.FastLogger as FL
 import System.Posix.Directory (changeWorkingDirectory)
 import System.Socket (SocketException ())
@@ -42,18 +47,18 @@ main :: IO ()
 main = do
   args <- getArgs
   case getOpt Permute options args of
-    ([], [configFile], []) -> runServer configFile
+    ([], [configFile], []) -> runServer =<< OP.encodeUtf configFile
     -- this works because we only have two flags atm
     ([Version], _, []) -> putStrLn $ showVersion version
     (_, _, []) -> printUsage
     (_, _, es) -> die . mconcat $
       "errors occurred while parsing options:\n":es
 
-runServer :: FilePath -> IO ()
+runServer :: OP.OsPath -> IO ()
 runServer configFile = do
   doesFileExist configFile >>=
     (flip unless) (die "could not open config file")
-  config' <- eitherDecodeFileStrict' configFile
+  config' <- eitherDecodeStrict' <$> F.readFile' configFile
   case config' of
     Left err -> die $ "failed to parse config: " ++ err
     Right config -> do
@@ -151,7 +156,7 @@ noLog = const . const $ pure ()
 spacecookie :: GopherLogHandler -> GopherRequest -> IO GopherResponse
 spacecookie logger req = do
   let selector = requestSelector req
-      path = normalise $ dropDrive (sanitizePath selector)
+      path = normalise $ dropDrive $ sanitizePath (Posix.fromBytestring selector)
   pt <- gopherFileType path
 
   case pt of
@@ -176,32 +181,34 @@ spacecookie logger req = do
         Directory -> gophermapResponse logger path
         _ -> fileResponse logger path
 
-fileResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
-fileResponse _ path = FileResponse <$> B.readFile (decodeFilePath path)
+fileResponse :: GopherLogHandler -> PosixPath -> IO GopherResponse
+fileResponse _ path = FileResponse <$> F.readFile' (OsString path)
 
-directoryResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
+directoryResponse :: GopherLogHandler -> PosixPath -> IO GopherResponse
 directoryResponse _ path =
-  let makeItem :: Either a GopherFileType -> RawFilePath -> Either a GopherMenuItem
+  let makeItem :: Either a GopherFileType -> PosixPath -> Either a GopherMenuItem
       makeItem t file = do
         fileType <- t
         pure $
-          Item fileType (takeFileName file) file Nothing Nothing
+          Item fileType (pathToBS $ takeFileName file) (pathToBS file) Nothing Nothing
    in do
-     dir <- map ((path </>) . encodeFilePath)
-       <$> listDirectory (decodeFilePath path)
+     dir <- map ((path </>) . getOsString)
+       <$> listDirectory (OsString path)
      fileTypes <- mapM gopherFileType dir
 
      pure . MenuResponse . rights
        $ zipWith makeItem fileTypes (map makeAbsolute dir)
+  where
+    pathToBS :: PosixPath -> B.ByteString
+    pathToBS = fromShort . getPosixString
 
-gophermapResponse :: GopherLogHandler -> RawFilePath -> IO GopherResponse
+gophermapResponse :: GopherLogHandler -> PosixPath -> IO GopherResponse
 gophermapResponse logger path = do
-  let gophermap = path </> ".gophermap"
-      gophermapWide = decodeFilePath gophermap
-  exists <- doesFileExist gophermapWide
+  let gophermap = path </> [Posix.pstr|.gophermap|]
+  exists <- doesFileExist $ OsString gophermap
   parsed <-
     if exists
-      then parseOnly parseGophermap <$> B.readFile gophermapWide
+      then parseOnly parseGophermap <$> F.readFile' (OsString gophermap)
       else pure $ Left "Gophermap file does not exist"
   case parsed of
     Left err -> do

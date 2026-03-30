@@ -37,28 +37,33 @@ import Control.Applicative ((<|>))
 import Data.Attoparsec.ByteString
 import Data.Attoparsec.ByteString.Char8 (isDigit_w8)
 import Data.ByteString (ByteString (), pack, unpack, isPrefixOf)
+import Data.ByteString.Short (fromShort)
 import Data.Char (chr)
 import Data.Maybe (fromMaybe)
 import Data.Word (Word8 ())
-import System.FilePath.Posix.ByteString (RawFilePath, (</>), isAbsolute, normalise)
+import System.OsPath.Posix (PosixPath, (</>), isAbsolute, normalise)
+import qualified System.OsString.Posix as Posix
+import System.OsString.Internal.Types (PosixString (..))
 import Text.Read (readEither)
 
 -- | Given a directory and a Gophermap contained within it,
 --   return the corresponding gopher menu response.
-gophermapToDirectoryResponse :: RawFilePath -> Gophermap -> GopherResponse
+gophermapToDirectoryResponse :: PosixPath -> Gophermap -> GopherResponse
 gophermapToDirectoryResponse dir entries =
   MenuResponse (map (gophermapEntryToMenuItem dir) entries)
 
-gophermapEntryToMenuItem :: RawFilePath -> GophermapEntry -> GopherMenuItem
+gophermapEntryToMenuItem :: PosixPath -> GophermapEntry -> GopherMenuItem
 gophermapEntryToMenuItem dir (GophermapEntry ft desc path host port) =
   Item ft desc (fromMaybe desc (realPath <$> path)) host port
   where realPath p =
           case p of
-            GophermapAbsolute p' -> p'
+            GophermapAbsolute p' -> pathToBS p'
             -- TODO: `..` should be resolved textually for linking to the
             -- parent directory (if possible)
-            GophermapRelative p' -> dir </> p'
+            GophermapRelative p' -> pathToBS $ dir </> p'
             GophermapUrl u       -> u
+        pathToBS :: PosixString -> ByteString
+        pathToBS = fromShort . getPosixString
 
 fileTypeChars :: [Char]
 fileTypeChars = "0123456789+TgIih"
@@ -66,9 +71,9 @@ fileTypeChars = "0123456789+TgIih"
 -- | Wrapper around 'RawFilePath' to indicate whether it is
 --   relative or absolute.
 data GophermapFilePath
-  = GophermapAbsolute RawFilePath -- ^ Absolute path starting with @/@
-  | GophermapRelative RawFilePath -- ^ Relative path
-  | GophermapUrl RawFilePath      -- ^ URL to another protocol starting with @URL:@
+  = GophermapAbsolute PosixPath -- ^ Absolute path starting with @/@
+  | GophermapRelative PosixPath -- ^ Relative path
+  | GophermapUrl ByteString     -- ^ URL to another protocol starting with @URL:@
   deriving (Show, Eq)
 
 -- | Take selector 'ByteString' from gophermap and
@@ -86,10 +91,10 @@ data GophermapFilePath
 makeGophermapFilePath :: ByteString -> GophermapFilePath
 makeGophermapFilePath b
   | "URL:" `isPrefixOf` b = GophermapUrl b
-  | isAbsolute b = GophermapAbsolute normalisedPath
+  | isAbsolute normalisedPath = GophermapAbsolute normalisedPath
   | otherwise = GophermapRelative normalisedPath
   where
-    normalisedPath = normalise b
+    normalisedPath = normalise $ Posix.fromBytestring b
 
 -- | A gophermap entry makes all values of a gopher menu item optional except for file type and description. When converting to a 'GopherMenuItem', appropriate default values are used.
 data GophermapEntry = GophermapEntry

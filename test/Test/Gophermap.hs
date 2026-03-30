@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Test.Gophermap (gophermapTests) where
 
 import Control.Monad (forM_)
@@ -9,7 +10,8 @@ import Data.Either
 import Data.Maybe (fromMaybe)
 import Network.Gopher (GopherFileType (..))
 import Network.Gopher.Util.Gophermap
-import System.FilePath.Posix.ByteString (RawFilePath)
+import System.OsPath.Posix (PosixPath ())
+import System.OsString.Posix (pstr)
 import Test.Tasty
 import Test.Tasty.HUnit
 
@@ -33,7 +35,7 @@ checkPygopherd file = testCase "pygopherd example gophermap" $
 infoLine :: B.ByteString -> GophermapEntry
 infoLine b = GophermapEntry InfoLine b Nothing Nothing Nothing
 
-absDir :: B.ByteString -> RawFilePath -> B.ByteString -> GophermapEntry
+absDir :: B.ByteString -> PosixPath -> B.ByteString -> GophermapEntry
 absDir n p s =
   GophermapEntry Directory n (Just (GophermapAbsolute p)) (Just s) $ Just 70
 
@@ -47,10 +49,10 @@ expectedPygopherd =
   , infoLine ""
   , infoLine "Some links to get you started:"
   , infoLine ""
-  , absDir "Pygopherd Home" "/devel/gopher/pygopherd" "gopher.quux.org"
-  , absDir "Quux.Org Mega Server" "/" "gopher.quux.org"
-  , absDir "The Gopher Project" "/Software/Gopher" "gopher.quux.org"
-  , absDir "Traditional UMN Home Gopher" "/" "gopher.tc.umn.edu"
+  , absDir "Pygopherd Home" [pstr|/devel/gopher/pygopherd|] "gopher.quux.org"
+  , absDir "Quux.Org Mega Server" [pstr|/|] "gopher.quux.org"
+  , absDir "The Gopher Project" [pstr|/Software/Gopher|] "gopher.quux.org"
+  , absDir "Traditional UMN Home Gopher" [pstr|/|] "gopher.tc.umn.edu"
   , infoLine ""
   , infoLine "Welcome to the world of Gopher and enjoy!"
   ]
@@ -93,11 +95,11 @@ generalGophermapParsing = testGroup "gophermap entry test cases" $
         GophermapEntry t name (Just path) Nothing Nothing
       menuLines =
         [ ("1/somedir\t", GophermapEntry Directory "/somedir" Nothing Nothing Nothing)
-        , ("0file\tfile.txt\n", menuEntry File "file" (GophermapRelative "file.txt"))
-        , ("ggif\t/pic.gif", menuEntry GifFile "gif" (GophermapAbsolute "/pic.gif"))
+        , ("0file\tfile.txt\n", menuEntry File "file" (GophermapRelative [pstr|file.txt|]))
+        , ("ggif\t/pic.gif", menuEntry GifFile "gif" (GophermapAbsolute [pstr|/pic.gif|]))
         , ("hcode\tURL:https://code.sterni.lv\n", menuEntry Html "code" (GophermapUrl "URL:https://code.sterni.lv"))
-        , ("1foo\tfoo\tsterni.lv", GophermapEntry Directory "foo" (Just $ GophermapRelative "foo") (Just "sterni.lv") Nothing)
-        , ("Ibar\t/bar.png\tsterni.lv\t7070\n", GophermapEntry ImageFile "bar" (Just $ GophermapAbsolute "/bar.png") (Just "sterni.lv") (Just 7070))
+        , ("1foo\tfoo\tsterni.lv", GophermapEntry Directory "foo" (Just $ GophermapRelative [pstr|foo|]) (Just "sterni.lv") Nothing)
+        , ("Ibar\t/bar.png\tsterni.lv\t7070\n", GophermapEntry ImageFile "bar" (Just $ GophermapAbsolute [pstr|/bar.png|]) (Just "sterni.lv") (Just 7070))
         , ("imanual info line\t", infoLine "manual info line")
         ]
    in [ testCase "info lines" $ forM_ infoLines (\l -> lineEqual l $ infoLine (stripNewline l))

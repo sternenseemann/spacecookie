@@ -7,6 +7,13 @@ TBD
 * **API BREAKING CHANGE**: Remove `Network.Gopher.Util`.
   Previous users of these utilities are encouraged to copy the utilities
   from 1.0.0.3 into their own code and adapt them to their needs.
+* Migrate from `filepath-bytestring` to `filepath >= 1.5.2` and
+  `os-string >= 2.0.6`. These changes have been tested with GHC 9.10.3,
+  GHC 9.12.3 and 9.14.1.
+
+  - **API BREAKING CHANGE**: `GophermapFilePath` now uses `PosixPath`
+    for `GophermapAbsolute` and `GophermapRelative`.
+  - Added `ToGopherLogStr` instance for `PosixString`
 * Fix crash on malformed port values when parsing a gophermap using
   `Network.Gopher.Util.Gophermap`.
 * Fix crashes if encoding assumptions are violated in `GopherLogStr`

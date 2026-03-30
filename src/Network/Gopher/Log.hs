@@ -22,6 +22,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.Encoding.Error as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
+import System.OsString.Internal.Types (PosixString (..))
 import System.Socket.Family.Inet6
 
 -- | Indicates the log level of a 'GopherLogStr' to a
@@ -182,3 +183,7 @@ instance ToGopherLogStr (SocketAddress Inet6) where
         BB.word16HexFixed b7 <> BB.charUtf8 ':' <>
         BB.word16HexFixed b8 <> BB.charUtf8 ']' <>
         BB.charUtf8 ':' <> BB.intDec (fromIntegral port)
+
+-- | UTF-8 encoding is not checked, needs to be ensured by the user.
+instance ToGopherLogStr PosixString where
+  toGopherLogStr = toGopherLogStr . BB.shortByteString . getPosixString
