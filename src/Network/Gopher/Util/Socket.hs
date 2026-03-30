@@ -13,7 +13,7 @@ import Control.Monad (void, when)
 import Data.Functor ((<&>))
 import Foreign.C.Error (Errno (..), getErrno)
 import Foreign.C.Types (CInt (..))
-import System.Socket (receive, msgNoSignal, SocketException (..), close, Family ())
+import System.Socket (receive, msgNoSignal, SocketException (..), close)
 import System.Socket.Type.Stream (Stream ())
 import System.Socket.Protocol.TCP (TCP ())
 import System.Socket.Unsafe (Socket (..))
@@ -48,7 +48,7 @@ shutdown (Socket mvar) how = withMVar mvar $ \fd -> do
 --   of time to clean up on its end before closing
 --   the connection to avoid a broken pipe on the
 --   other side.
-gracefulClose :: Family f => Socket f Stream TCP -> IO ()
+gracefulClose :: Socket f Stream TCP -> IO ()
 gracefulClose sock = do
   -- send TCP FIN
   shutdown sock ShutdownWrite
