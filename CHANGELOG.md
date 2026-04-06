@@ -2,7 +2,7 @@
 
 ## 1.1.0.0
 
-TBD
+2026-04-06
 
 * **API BREAKING CHANGE**: Remove `Network.Gopher.Util`.
   Previous users of these utilities are encouraged to copy the utilities
