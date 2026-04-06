@@ -39,7 +39,7 @@ common common
                      , bytestring >= 0.10
                      , attoparsec >= 0.13
                      , containers >= 0.6
-                     , filepath >= 1.5.2.0 && < 1.5.6.0
+                     , filepath >= 1.5.2.0 && < 1.6
                      , os-string >= 2.0.6 && < 2.1
 
 common common-executables
@@ -68,7 +68,7 @@ executable spacecookie
                      , systemd >= 2.1.0
                      , fast-logger >= 2.4.0
                      , unix >= 2.7
-                     , file-io >= 0.1.0 && < 0.3.0
+                     , file-io >= 0.1.0 && < 0.3
   hs-source-dirs:      server
   other-modules:       Network.Spacecookie.Config
                      , Network.Spacecookie.Systemd
