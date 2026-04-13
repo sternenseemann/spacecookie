@@ -416,4 +416,4 @@ response (MenuResponse items) =
           ]
    in do
   cfg <- serverConfig <$> ask
-  pure $ foldl (appendItem cfg) mempty items
+  pure $ foldl (appendItem cfg) mempty items <> BB.byteString ".\r\n"
