@@ -1,5 +1,11 @@
 # Revision history for spacecookie
 
+## 1.1.0.1
+
+TBD
+
+* Fix menu responses not being terminated by the _Lastline_ pattern.
+
 ## 1.1.0.0
 
 2026-04-06

@@ -125,6 +125,7 @@ expectedRoot = mconcat
   , "i\t\tlocalhost\t7000\r\n"
   , "1external 1\t/\tthis.is.bogus.org\t7000\r\n"
   , "1external 2\t/\tsdf.org\t70\r\n"
+  , ".\r\n"
   ]
 
 expectedDir :: [ByteString]
@@ -133,9 +134,12 @@ expectedDir = sort
   , "0mystery-file\t/dir/mystery-file\tlocalhost\t7000\r"
   , "0strange.tXT\t/dir/strange.tXT\tlocalhost\t7000\r"
   , "4macintosh.hqx\t/dir/macintosh.hqx\tlocalhost\t7000\r"
+  , ".\r"
   ]
 
 expectedErrorMessage :: ByteString
 expectedErrorMessage = mconcat
   [ "3The requested resource '/not-here.txt' does not exist"
-  , " or is not available.\tErr\tlocalhost\t7000\r\n" ]
+  , " or is not available.\tErr\tlocalhost\t7000\r\n"
+  , ".\r\n"
+  ]
