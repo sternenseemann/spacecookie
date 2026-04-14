@@ -13,15 +13,15 @@ category:            Network
 build-type:          Simple
 homepage:            https://github.com/sternenseemann/spacecookie
 bug-reports:         https://github.com/sternenseemann/spacecookie/issues
-extra-source-files:  CHANGELOG.md
+extra-doc-files:     CHANGELOG.md
                      README.md
-                     etc/spacecookie.json
-                     etc/spacecookie.service
-                     etc/spacecookie.socket
                      docs/rfc1436.txt
                      docs/man/spacecookie.1
                      docs/man/spacecookie.json.5
                      docs/man/spacecookie.gophermap.5
+extra-source-files:  etc/spacecookie.json
+                     etc/spacecookie.service
+                     etc/spacecookie.socket
                      test/data/pygopherd.gophermap
                      test/data/bucktooth.gophermap
                      test/integration/root/.gophermap
