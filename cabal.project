@@ -8,3 +8,7 @@ package *
     -Wunused-packages
     -Wcompat
     -Wredundant-constraints
+
+package spacecookie
+  flags:
+    +install-daemon
