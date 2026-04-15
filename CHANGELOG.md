@@ -1,5 +1,11 @@
 # Revision history for spacecookie
 
+I am currently trying to decide on the maintenance mode of
+spacecookie going forward, especially the included server daemon.
+It would help me to hear from users of this software, in particular
+what parts of it they're using. If you count yourself among those users,
+I'd be grateful if you'd reach out to me at <sternenseemann@systemli.org>.
+
 ## 1.1.0.1
 
 TBD
