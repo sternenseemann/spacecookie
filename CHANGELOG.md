@@ -8,9 +8,11 @@ I'd be grateful if you'd reach out to me at <sternenseemann@systemli.org>.
 
 ## 1.1.0.1
 
-TBD
+2026-04-17
 
 * Fix menu responses not being terminated by the _Lastline_ pattern.
+* Add `install-daemon` Cabal flag (on by default) which controls
+  whether the executable component of the package is built.
 
 ## 1.1.0.0
 
