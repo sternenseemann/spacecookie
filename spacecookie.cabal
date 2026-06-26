@@ -73,7 +73,7 @@ executable spacecookie
 
   main-is:             Main.hs
   build-depends:       spacecookie
-                     , aeson >= 1.5 && < 2.3
+                     , aeson >= 1.5 && < 2.4
                      , systemd >= 2.1.0 && < 2.5
                      , fast-logger >= 2.4.0 && < 3.3
                      , unix >= 2.7 && < 2.9
